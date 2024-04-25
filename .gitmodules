@@ -1,0 +1,66 @@
+[submodule "rgb-std"]
+	path = rgb-std
+	url = https://github.com/RGB-WG/rgb-std.git
+[submodule "rust-aluvm"]
+	path = rust-aluvm
+	url = https://github.com/aluvm/rust-aluvm
+[submodule "rgb-interfaces"]
+	path = rgb-interfaces
+	url = https://github.com/RGB-WG/rgb-interfaces
+[submodule "client_side_validation"]
+	path = client_side_validation
+	url = https://github.com/LNP-BP/client_side_validation/
+[submodule "bp-core"]
+	path = bp-core
+	url = https://github.com/BP-WG/bp-core
+[submodule "rgb-core"]
+	path = rgb-core
+	url = https://github.com/RGB-WG/rgb-core
+[submodule "bp-std"]
+	path = bp-std
+	url = https://github.com/BP-WG/bp-std
+[submodule "rgb-schemata"]
+	path = rgb-schemata
+	url = https://github.com/RGB-WG/rgb-schemata
+[submodule "strict-types"]
+	path = strict-types
+	url = https://github.com/strict-types/strict-types
+[submodule "strict-encoding"]
+	path = strict-encoding
+	url = https://github.com/strict-types/strict-encoding
+[submodule "bp-electrum-client"]
+	path = bp-electrum-client
+	url = https://github.com/BP-WG/bp-electrum-client/
+[submodule "rust-amplify"]
+	path = rust-amplify
+	url = https://github.com/rust-amplify/rust-amplify
+[submodule "rgb"]
+	path = rgb
+	url = https://github.com/RGB-WG/rgb
+[submodule "descriptor-wallet"]
+	path = descriptor-wallet
+	url = https://github.com/BP-WG/descriptor-wallet
+[submodule "bp-wallet"]
+	path = bp-wallet
+	url = https://github.com/BP-WG/bp-wallet
+[submodule "amplify-num"]
+	path = amplify-num
+	url = https://github.com/rust-amplify/amplify-num.git
+[submodule "amplify-derive"]
+	path = amplify-derive
+	url = https://github.com/rust-amplify/amplify-derive.git
+[submodule "ascii-armor"]
+	path = ascii-armor
+	url = https://github.com/UBIDECO/ascii-armor.git
+[submodule "bitcoin_foundation"]
+	path = bitcoin_foundation
+	url = https://github.com/BP-WG/bitcoin_foundation.git
+[submodule "bp-esplora-client"]
+	path = bp-esplora-client
+	url = https://github.com/BP-WG/bp-esplora-client.git
+[submodule "vesper"]
+	path = vesper
+	url = https://github.com/UBIDECO/vesper.git
+[submodule "rust-baid64"]
+	path = rust-baid64
+	url = https://github.com/UBIDECO/rust-baid64.git
