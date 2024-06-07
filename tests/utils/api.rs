@@ -591,7 +591,10 @@ impl Wallet {
                 .next()
                 .expect("no addresses left")
                 .addr;
-            Beneficiary::WitnessVout(address.payload)
+            Beneficiary::WitnessVout(Pay2Vout {
+                address: address.payload,
+                method: close_method,
+            })
         };
 
         let mut builder = RgbInvoiceBuilder::new(XChainNet::bitcoin(network, beneficiary))

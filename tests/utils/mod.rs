@@ -58,8 +58,9 @@ pub use once_cell::sync::Lazy;
 pub use psbt::PsbtVer;
 pub use rand::RngCore;
 pub use rgb::{
-    stl::ContractTerms, AnyResolver, DescriptorRgb, GenesisSeal, GraphSeal, Identity, RgbDescr,
-    RgbKeychain, StoredStock, StoredWallet, TapretKey, TransferParams, WalletProvider,
+    invoice::Pay2Vout, stl::ContractTerms, AnyResolver, DescriptorRgb, GenesisSeal, GraphSeal,
+    Identity, RgbDescr, RgbKeychain, StoredStock, StoredWallet, TapretKey, TransferParams,
+    WalletProvider,
 };
 pub use rgbstd::{
     containers::{BuilderSeal, FileContent, Kit, Transfer, ValidKit},
