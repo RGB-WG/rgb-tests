@@ -47,13 +47,12 @@ use utils::*;
     TransferType::Witness,
     AssetSchema::Nia
 )]
-// TODO: wait for https://github.com/RGB-WG/rgb-std/issues/198 to be fixed
-/*#[case(
+#[case(
     DescriptorType::Tr,
     DescriptorType::Wpkh,
     TransferType::Witness,
     AssetSchema::Nia
-)]*/
+)]
 #[case(
     DescriptorType::Wpkh,
     DescriptorType::Wpkh,
@@ -96,13 +95,12 @@ use utils::*;
     TransferType::Witness,
     AssetSchema::Uda
 )]
-// TODO: wait for https://github.com/RGB-WG/rgb-std/issues/198 to be fixed
-/*#[case(
+#[case(
     DescriptorType::Tr,
     DescriptorType::Wpkh,
     TransferType::Witness,
     AssetSchema::Uda
-)]*/
+)]
 #[case(
     DescriptorType::Wpkh,
     DescriptorType::Wpkh,
@@ -145,13 +143,12 @@ use utils::*;
     TransferType::Witness,
     AssetSchema::Cfa
 )]
-// TODO: wait for https://github.com/RGB-WG/rgb-std/issues/198 to be fixed
-/*#[case(
+#[case(
     DescriptorType::Tr,
     DescriptorType::Wpkh,
     TransferType::Witness,
     AssetSchema::Cfa
-)]*/
+)]
 fn descriptors_transfer_type_and_asset_schema(
     #[case] wlt_1_desc: DescriptorType,
     #[case] wlt_2_desc: DescriptorType,
@@ -226,11 +223,7 @@ fn send_received(
     }
 
     let contract_iface = wlt_2.contract_iface(contract_id, &iface_type_name);
-    // TODO: remove once https://github.com/RGB-WG/rgb-std/issues/198 gets fixed
-    let expected_close_method = match transfer_type {
-        TransferType::Blinded => wlt_2.close_method(),
-        TransferType::Witness => wlt_1.close_method(),
-    };
+    let expected_close_method = wlt_2.close_method();
     match asset_schema {
         AssetSchema::Nia | AssetSchema::Cfa => {
             let allocations = wlt_2.contract_fungible_allocations(&contract_iface);
@@ -295,11 +288,7 @@ fn send_received(
     }
 
     let contract_iface = wlt_3.contract_iface(contract_id, &iface_type_name);
-    // TODO: remove once https://github.com/RGB-WG/rgb-std/issues/198 gets fixed
-    let expected_close_method = match transfer_type {
-        TransferType::Blinded => wlt_3.close_method(),
-        TransferType::Witness => wlt_2.close_method(),
-    };
+    let expected_close_method = wlt_3.close_method();
     match asset_schema {
         AssetSchema::Nia | AssetSchema::Cfa => {
             let allocations = wlt_3.contract_fungible_allocations(&contract_iface);
@@ -588,7 +577,7 @@ fn with_blank_transitions(
             let allocations = wlt_2.contract_fungible_allocations(&contract_iface_1);
             assert_eq!(allocations.len(), 1);
             let allocation = allocations[0];
-            assert_eq!(allocation.seal.method(), wlt_1.close_method());
+            assert_eq!(allocation.seal.method(), wlt_2.close_method());
             assert_eq!(allocation.state, Amount::from(amount));
         }
         AssetSchema::Uda => {
@@ -597,7 +586,7 @@ fn with_blank_transitions(
             let allocations = wlt_2.contract_data_allocations(&contract_iface_1);
             assert_eq!(allocations.len(), 1);
             let allocation = &allocations[0];
-            assert_eq!(allocation.seal.method(), wlt_1.close_method());
+            assert_eq!(allocation.seal.method(), wlt_2.close_method());
             assert_eq!(allocation.state.to_string(), "000000000100000000000000");
         }
     }

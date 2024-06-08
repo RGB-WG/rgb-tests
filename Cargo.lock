@@ -776,6 +776,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fast32"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27ea9bdb2356e5a92403cf23ac493f9b43bd71e4ffd0f800862b841dd723994c"
+
+[[package]]
 name = "fastrand"
 version = "2.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1685,6 +1691,7 @@ dependencies = [
  "baid64",
  "bp-core",
  "bp-invoice",
+ "fast32",
  "fluent-uri",
  "indexmap 2.2.6",
  "percent-encoding",
