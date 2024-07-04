@@ -205,13 +205,13 @@ fn _wait_indexer_sync() {
                 }
             }
             Indexer::Esplora => {
-                let esplora_client = EsploraClient::new(ESPLORA_URL).build_blocking().unwrap();
+                let esplora_client = EsploraClient::new_esplora(ESPLORA_URL).unwrap();
                 if esplora_client.block_hash(blockcount).is_ok() {
                     break;
                 }
             }
         }
-        if (OffsetDateTime::now_utc() - t_0).as_seconds_f32() > 15.0 {
+        if (OffsetDateTime::now_utc() - t_0).as_seconds_f32() > 25.0 {
             panic!("indexer not syncing with bitcoind");
         }
     }

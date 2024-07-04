@@ -37,9 +37,6 @@
 [submodule "rgb"]
 	path = rgb
 	url = https://github.com/RGB-WG/rgb
-[submodule "descriptor-wallet"]
-	path = descriptor-wallet
-	url = https://github.com/BP-WG/descriptor-wallet
 [submodule "bp-wallet"]
 	path = bp-wallet
 	url = https://github.com/BP-WG/bp-wallet
@@ -52,9 +49,6 @@
 [submodule "ascii-armor"]
 	path = ascii-armor
 	url = https://github.com/UBIDECO/ascii-armor.git
-[submodule "bitcoin_foundation"]
-	path = bitcoin_foundation
-	url = https://github.com/BP-WG/bitcoin_foundation.git
 [submodule "bp-esplora-client"]
 	path = bp-esplora-client
 	url = https://github.com/BP-WG/bp-esplora-client.git

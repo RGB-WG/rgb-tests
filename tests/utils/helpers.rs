@@ -1,8 +1,9 @@
 use super::*;
 
-pub struct Wallet {
-    stored_wallet: StoredWallet<BpWallet<XpubDerivable, RgbDescr>>,
-    account: MemorySigningAccount,
+pub struct TestWallet {
+    wallet: RgbWallet<Wallet<XpubDerivable, RgbDescr>>,
+    descriptor: RgbDescr,
+    signer: TestnetSigner,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -111,9 +112,9 @@ impl AssetSchema {
 
     fn iface(&self) -> Iface {
         match self {
-            Self::Nia => Rgb20::iface(rgb20::Features::FIXED),
-            Self::Uda => Rgb21::iface(rgb21::Features::NONE),
-            Self::Cfa => Rgb25::iface(rgb25::Features::NONE),
+            Self::Nia => Rgb20::iface(&Rgb20::FIXED),
+            Self::Uda => Rgb21::iface(&Rgb21::NONE),
+            Self::Cfa => Rgb25::iface(&Rgb25::NONE),
         }
     }
 
@@ -305,78 +306,62 @@ impl AssetInfo {
     }
 }
 
-pub fn get_wallet(descriptor_type: &DescriptorType) -> Wallet {
+pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
     let mut seed = vec![0u8; 128];
     rand::thread_rng().fill_bytes(&mut seed);
 
-    let secp = Secp256k1::new();
+    let xpriv = Xpriv::new_master(true, &seed);
 
-    let master_xpriv = ExtendedPrivKey::new_master(bitcoin::Network::Regtest, &seed).unwrap();
+    let xpub = xpriv.to_xpub();
 
-    let master_xpub = ExtendedPubKey::from_priv(&secp, &master_xpriv);
+    let master_fp = xpub.parent_fp();
+    let derivation = DerivationPath::<HardenedIndex>::from_str("86'/1'/0'").unwrap();
+    let origin = XkeyOrigin::new(master_fp, derivation);
 
-    let derivation: DerivationPath = vec![
-        ChildNumber::from_hardened_idx(86).unwrap(),
-        ChildNumber::from_hardened_idx(1).unwrap(),
-        ChildNumber::from_hardened_idx(0).unwrap(),
-    ]
-    .into();
+    let signer_account = XprivAccount::new(xpriv, origin.clone());
+    let signer = TestnetSigner::new(signer_account);
 
-    let account_xpriv = master_xpriv.derive_priv(&secp, &derivation).unwrap();
+    let rgb_dir = PathBuf::from("tests")
+        .join("tmp")
+        .join(xpub.fingerprint().to_string());
+    std::fs::create_dir_all(&rgb_dir).unwrap();
+    println!("wallet dir: {rgb_dir:?}");
 
-    let account =
-        MemorySigningAccount::with(&secp, master_xpub.identifier(), derivation, account_xpriv);
-
-    let derivation_account = account.to_account();
-    let derivation_account_rgb = derivation_account
-        .to_string()
-        .replace("/*/*", "/<0;1;9;10>/*");
-    let xpub_derivable = XpubDerivable::from_str(&derivation_account_rgb).unwrap();
-
+    let keychains = [
+        Keychain::with(0),
+        Keychain::with(1),
+        Keychain::with(9),
+        Keychain::with(10),
+    ];
+    let xpub_derivable = XpubDerivable::try_custom(xpub, origin, keychains).unwrap();
     let descriptor = match descriptor_type {
         DescriptorType::Wpkh => RgbDescr::Wpkh(Wpkh::from(xpub_derivable)),
         DescriptorType::Tr => RgbDescr::TapretKey(TapretKey::from(xpub_derivable)),
     };
 
-    let rgb_dir = PathBuf::from("tests")
-        .join("tmp")
-        .join(account.account_fingerprint().to_string());
-    std::fs::create_dir_all(&rgb_dir).unwrap();
-    println!("wallet dir: {rgb_dir:?}");
-
-    let mut bp_runtime: BpRuntime<RgbDescr> = BpRuntime::new_standard(descriptor, Network::Regtest);
-
-    if bp_runtime.warnings().is_empty() {
-        eprintln!("success");
-    } else {
-        eprintln!("complete with warnings:");
-        for warning in bp_runtime.warnings() {
-            eprintln!("- {warning}");
-        }
-        bp_runtime.reset_warnings();
-    }
-
+    let mut bp_wallet: Wallet<XpubDerivable, RgbDescr> =
+        Wallet::new_layer1(descriptor.clone(), Network::Regtest);
     let name = s!("wallet_name");
     let dir = rgb_dir.join(&name);
-    bp_runtime.set_name(name);
-    bp_runtime.store(&dir).unwrap();
-
-    let stock = Stock::default();
-    stock.store(&rgb_dir).unwrap();
-    let mut stored_stock = StoredStock::attach(rgb_dir.clone(), stock.clone());
-
-    let wallet_path = bp_runtime.path().clone();
-    let stored_wallet =
-        StoredWallet::attach(rgb_dir.clone(), wallet_path, stock, bp_runtime.detach());
+    bp_wallet.set_name(name);
+    bp_wallet
+        .set_fs_config(FsConfig {
+            path: dir,
+            autosave: true,
+        })
+        .unwrap();
+    let stock = Stock::new(rgb_dir.to_owned());
+    let mut wallet = RgbWallet::new(stock, bp_wallet);
 
     for asset_schema in AssetSchema::iter() {
         let valid_kit = asset_schema.get_valid_kit();
-        stored_stock.import_kit(valid_kit).unwrap();
+        wallet.stock_mut().import_kit(valid_kit).unwrap();
     }
 
-    let mut wallet = Wallet {
-        stored_wallet,
-        account,
+    let mut wallet = TestWallet {
+        wallet,
+        descriptor,
+        signer,
     };
 
     wallet.sync();
@@ -389,9 +374,9 @@ fn get_indexer() -> AnyIndexer {
         Indexer::Electrum => {
             AnyIndexer::Electrum(Box::new(ElectrumClient::new(ELECTRUM_URL).unwrap()))
         }
-        Indexer::Esplora => AnyIndexer::Esplora(Box::new(
-            EsploraClient::new(ESPLORA_URL).build_blocking().unwrap(),
-        )),
+        Indexer::Esplora => {
+            AnyIndexer::Esplora(Box::new(EsploraClient::new_esplora(ESPLORA_URL).unwrap()))
+        }
     }
 }
 
@@ -408,7 +393,7 @@ fn broadcast_tx(indexer: &AnyIndexer, tx: &Tx) {
             inner.transaction_broadcast(tx).unwrap();
         }
         AnyIndexer::Esplora(inner) => {
-            inner.broadcast(tx).unwrap();
+            inner.publish(tx).unwrap();
         }
         _ => unreachable!("unsupported indexer"),
     }
@@ -417,7 +402,7 @@ fn broadcast_tx(indexer: &AnyIndexer, tx: &Tx) {
 pub fn attachment_from_fpath(fpath: &str) -> Attachment {
     let file_bytes = std::fs::read(fpath).unwrap();
     let file_hash: sha256::Hash = Hash::hash(&file_bytes[..]);
-    let digest = file_hash.into_inner().into();
+    let digest = file_hash.to_byte_array().into();
     let mime = tree_magic_mini::from_filepath(fpath.as_ref())
         .unwrap()
         .to_string();
@@ -456,10 +441,10 @@ pub fn uda_token_data(
     token_data
 }
 
-impl Wallet {
+impl TestWallet {
     pub fn get_utxo(&mut self) -> Outpoint {
         let address = self
-            .stored_wallet
+            .wallet
             .wallet()
             .addresses(RgbKeychain::for_method(self.close_method()))
             .next()
@@ -469,8 +454,9 @@ impl Wallet {
         let txid = fund_wallet(address);
         self.sync();
         let mut vout = None;
-        let bp_runtime = self.stored_wallet.wallet();
-        for (_derived_addr, utxos) in bp_runtime.address_coins() {
+        let coins = self.wallet.wallet().address_coins();
+        assert!(!coins.is_empty());
+        for (_derived_addr, utxos) in coins {
             for utxo in utxos {
                 if utxo.outpoint.txid.to_string() == txid {
                     vout = Some(utxo.outpoint.vout_u32());
@@ -485,16 +471,15 @@ impl Wallet {
 
     pub fn sync(&mut self) {
         let indexer = get_indexer();
-        self.stored_wallet
+        self.wallet
             .wallet_mut()
             .update(&indexer)
             .into_result()
             .unwrap();
-        self.stored_wallet.store();
     }
 
     pub fn close_method(&self) -> CloseMethod {
-        self.stored_wallet.wallet().seal_close_method()
+        self.wallet.wallet().seal_close_method()
     }
 
     pub fn issue_with_info(
@@ -531,10 +516,10 @@ impl Wallet {
         builder = asset_info.add_asset_owner(builder, builder_seal);
 
         let contract = builder.issue_contract().expect("failure issuing contract");
-        let mut resolver = get_resolver();
-        self.stored_wallet
+        let resolver = get_resolver();
+        self.wallet
             .stock_mut()
-            .import_contract(contract.clone(), &mut resolver)
+            .import_contract(contract.clone(), resolver)
             .unwrap();
 
         (contract.contract_id(), asset_info.iface_type_name())
@@ -594,7 +579,7 @@ impl Wallet {
         close_method: CloseMethod,
         invoice_type: InvoiceType,
     ) -> RgbInvoice {
-        let network = self.stored_wallet.wallet().network();
+        let network = self.wallet.wallet().network();
         let beneficiary = match invoice_type {
             InvoiceType::Blinded(outpoint) => {
                 let outpoint = if let Some(outpoint) = outpoint {
@@ -607,15 +592,12 @@ impl Wallet {
                     outpoint.txid,
                     outpoint.vout,
                 ));
-                self.stored_wallet
-                    .stock_mut()
-                    .store_secret_seal(seal)
-                    .unwrap();
+                self.wallet.stock_mut().store_secret_seal(seal).unwrap();
                 Beneficiary::BlindedSeal(*seal.to_secret_seal().as_reduced_unsafe())
             }
             InvoiceType::Witness => {
                 let address = self
-                    .stored_wallet
+                    .wallet
                     .wallet()
                     .addresses(RgbKeychain::Rgb)
                     .next()
@@ -656,17 +638,12 @@ impl Wallet {
         let fee = Sats::from_sats(fee.unwrap_or(400));
         let sats = Sats::from_sats(sats.unwrap_or(2000));
         let params = TransferParams::with(fee, sats);
-        let (psbt, _psbt_meta, consignment) = self.stored_wallet.pay(&invoice, params).unwrap();
+        let (mut psbt, _psbt_meta, consignment) = self.wallet.pay(&invoice, params).unwrap();
 
-        let secp = Secp256k1::new();
-        let mut key_provider = MemoryKeyProvider::with(&secp, true);
-        key_provider.add_account(self.account.clone());
-        let mut psbt = DwPsbt::deserialize(&psbt.serialize(PsbtVer::V0)).unwrap();
-        let _sig_count = psbt.sign_all(&key_provider).unwrap();
-        let mut psbt = consensus::encode::deserialize::<BitcoinPsbt>(&psbt.serialize()).unwrap();
-        psbt.finalize_mut(&secp).unwrap();
+        let _sig_count = psbt.sign(&self.signer).unwrap();
+        psbt.finalize(&self.descriptor);
+        let tx = psbt.extract().unwrap();
 
-        let tx = Tx::consensus_deserialize(psbt.extract_tx().serialize()).unwrap();
         let indexer = get_indexer();
         broadcast_tx(&indexer, &tx);
 
@@ -678,16 +655,16 @@ impl Wallet {
 
     pub fn accept_transfer(&mut self, consignment: Transfer) {
         self.sync();
-        let mut resolver = get_resolver();
-        let validated_consignment = consignment.validate(&mut resolver, true).unwrap();
+        let resolver = get_resolver();
+        let validated_consignment = consignment.validate(&resolver, true).unwrap();
         let validation_status = validated_consignment.clone().into_validation_status();
         let validity = validation_status.validity();
         assert_eq!(validity, Validity::Valid);
         let mut attempts = 0;
         while let Err(e) = self
-            .stored_wallet
+            .wallet
             .stock_mut()
-            .accept_transfer(validated_consignment.clone(), &mut resolver)
+            .accept_transfer(validated_consignment.clone(), &resolver)
         {
             attempts += 1;
             if attempts > 3 {
@@ -701,26 +678,39 @@ impl Wallet {
         &self,
         contract_id: ContractId,
         iface_type_name: &TypeName,
-    ) -> ContractIface {
-        self.stored_wallet
+    ) -> ContractIface<MemContract<&MemContractState>> {
+        self.wallet
             .stock()
             .contract_iface(contract_id, iface_type_name.clone())
             .unwrap()
     }
 
-    pub fn contract_fungible_allocations(
+    pub fn contract_iface_class<C: IfaceClass>(
         &self,
-        contract_iface: &ContractIface,
+        contract_id: ContractId,
+    ) -> C::Wrapper<MemContract<&MemContractState>> {
+        self.wallet
+            .stock()
+            .contract_iface_class::<C>(contract_id)
+            .unwrap()
+    }
+
+    pub fn contract_fungible_allocations<S: ContractStateRead>(
+        &self,
+        contract_iface: &ContractIface<S>,
     ) -> Vec<FungibleAllocation> {
         contract_iface
-            .fungible(fname!("assetOwner"), &self.stored_wallet.wallet().filter())
+            .fungible(fname!("assetOwner"), &self.wallet.wallet().filter())
             .unwrap()
             .collect()
     }
 
-    pub fn contract_data_allocations(&self, contract_iface: &ContractIface) -> Vec<DataAllocation> {
+    pub fn contract_data_allocations<S: ContractStateRead>(
+        &self,
+        contract_iface: &ContractIface<S>,
+    ) -> Vec<DataAllocation> {
         contract_iface
-            .data(fname!("assetOwner"), &self.stored_wallet.wallet().filter())
+            .data(fname!("assetOwner"), &self.wallet.wallet().filter())
             .unwrap()
             .collect()
     }
@@ -741,29 +731,29 @@ impl Wallet {
         for owned in &contract.iface.assignments {
             println!("  {}:", owned.name);
             if let Ok(allocations) =
-                contract.fungible(owned.name.clone(), &self.stored_wallet.wallet().filter())
+                contract.fungible(owned.name.clone(), &self.wallet.wallet().filter())
             {
                 for allocation in allocations {
                     println!(
-                        "    amount={}, utxo={}, witness={} # owned by the wallet",
+                        "    amount={}, utxo={}, witness={:?} # owned by the wallet",
                         allocation.state, allocation.seal, allocation.witness
                     );
                 }
             }
             if let Ok(allocations) = contract.fungible(
                 owned.name.clone(),
-                &FilterExclude(&self.stored_wallet.wallet().filter()),
+                &FilterExclude(&self.wallet.wallet().filter()),
             ) {
                 for allocation in allocations {
                     println!(
-                        "    amount={}, utxo={}, witness={} # owner unknown",
+                        "    amount={}, utxo={}, witness={:?} # owner unknown",
                         allocation.state, allocation.seal, allocation.witness
                     );
                 }
             }
         }
 
-        let bp_runtime = self.stored_wallet.wallet();
+        let bp_runtime = self.wallet.wallet();
         println!("\nHeight\t{:>12}\t{:68}", "Amount, ṩ", "Outpoint");
         for (derived_addr, utxos) in bp_runtime.address_coins() {
             println!("{}\t{}", derived_addr.addr, derived_addr.terminal);
@@ -778,7 +768,7 @@ impl Wallet {
 
     pub fn send(
         &mut self,
-        recv_wlt: &mut Wallet,
+        recv_wlt: &mut TestWallet,
         transfer_type: TransferType,
         contract_id: ContractId,
         iface_type_name: &TypeName,

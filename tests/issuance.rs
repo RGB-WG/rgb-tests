@@ -19,6 +19,8 @@ fn descriptor_and_close_method(
 
 #[apply(descriptor_and_close_method)]
 fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
+    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+
     initialize();
 
     let mut wallet = get_wallet(&wallet_desc);
@@ -42,7 +44,7 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
 
     let contract_iface = wallet.contract_iface(contract_id, &iface_type_name);
-    let contract = Rgb20::from(contract_iface.clone());
+    let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
     let spec = contract.spec();
     assert_eq!(spec.ticker.to_string(), ticker.to_string());
     assert_eq!(spec.name.to_string(), name.to_string());
@@ -66,6 +68,8 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
 
 #[apply(descriptor_and_close_method)]
 fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
+    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+
     initialize();
 
     let mut wallet = get_wallet(&wallet_desc);
@@ -114,7 +118,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
 
     let contract_iface = wallet.contract_iface(contract_id, &iface_type_name);
-    let contract = Rgb21::from(contract_iface.clone());
+    let contract = wallet.contract_iface_class::<Rgb21>(contract_id);
     let spec = contract.spec();
     assert_eq!(spec.ticker.to_string(), ticker.to_string());
     assert_eq!(spec.name.to_string(), name.to_string());
@@ -134,7 +138,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
     assert_eq!(token_data.details.unwrap().to_string(), token_data_details);
     assert_eq!(token_data.preview.unwrap(), token_data_preview);
     assert_eq!(token_data.media.unwrap(), token_data_attachment);
-    assert_eq!(token_data.attachments.into_inner(), token_data_attachments);
+    assert_eq!(token_data.attachments.to_unconfined(), token_data_attachments);
     assert_eq!(token_data.reserves.unwrap(), token_data_reserves);
 
     let allocations = wallet.contract_data_allocations(&contract_iface);
@@ -146,6 +150,8 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
 
 #[apply(descriptor_and_close_method)]
 fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
+    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+
     initialize();
 
     let mut wallet = get_wallet(&wallet_desc);
@@ -167,7 +173,7 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
 
     let contract_iface = wallet.contract_iface(contract_id, &iface_type_name);
-    let contract = Rgb25::from(contract_iface.clone());
+    let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
     assert_eq!(contract.name().to_string(), name.to_string());
     assert_eq!(
         contract.details().map(|d| d.to_string()),

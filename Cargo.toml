@@ -14,8 +14,7 @@ license = "Apache-2.0"
 description = "RGB integration tests"
 
 [dependencies]
-bitcoin = "0.29.2"
-miniscript = "9.0.1"
+bitcoin_hashes = "0.14.0"
 once_cell = "1.19.0"
 rand = "0.8.5"
 rstest = "0.19.0"
@@ -33,7 +32,7 @@ bp-electrum = { path = "./bp-electrum-client" }
 ## bp-esplora
 bp-esplora = { path = "./bp-esplora-client" }
 ## bp-std
-bp-std = { path = "./bp-std" }
+bp-std = { path = "./bp-std", features = ["signers"] }
 descriptors = { path = "./bp-std/descriptors" }
 bp-invoice = { path = "./bp-std/invoice" }
 psbt = { path = "./bp-std/psbt" }
@@ -42,10 +41,6 @@ bp-wallet = { path = "./bp-wallet", features = [
     "electrum",
     "esplora",
     "fs",
-] }
-## descriptor-wallet
-dw_psbt = { path = "./descriptor-wallet/psbt", package = "psbt", features = [
-    "sign",
 ] }
 ## rgb
 rgb-runtime = { path = "./rgb", features = [
@@ -60,7 +55,7 @@ rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
 rgb-schemata = { path = "./rgb-schemata" }
 ## rgb-std
-rgb-std = { path = "./rgb-std" }
+rgb-std = { path = "./rgb-std", features = ["fs"] }
 ## rust-amplify
 amplify = { path = "./rust-amplify" }
 ## strict-encoding
@@ -80,9 +75,6 @@ amplify_num = { path = "./amplify-num/num" }
 ascii-armor = { path = "./ascii-armor" }
 ## baid64
 baid64 = { path = "./rust-baid64" }
-## bitcoin_foundation
-bitcoin_blockchain = { path = "./bitcoin_foundation/bitcoin_blockchain" }
-bitcoin_scripts = { path = "./bitcoin_foundation/bitcoin_scripts" }
 ## bp-core
 bp-core = { path = "./bp-core" }
 bp-consensus = { path = "./bp-core/consensus" }
@@ -104,11 +96,6 @@ bp-wallet = { path = "./bp-wallet" }
 commit_verify = { path = "./client_side_validation/commit_verify" }
 commit_encoding_derive = { path = "./client_side_validation/commit_verify/derive" }
 single_use_seals = { path = "./client_side_validation/single_use_seals" }
-## descriptor-wallet
-bitcoin_hd = { path = "./descriptor-wallet/hd" }
-bitcoin_onchain = { path = "./descriptor-wallet/onchain" }
-dw_psbt = { path = "./descriptor-wallet/psbt", package = "psbt" }
-slip132 = { path = "./descriptor-wallet/slip132" }
 ## rgb
 rgb-runtime = { path = "./rgb" }
 rgb-psbt = { path = "./rgb/psbt" }
