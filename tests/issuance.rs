@@ -23,7 +23,7 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
 
     initialize();
 
-    let mut wallet = get_wallet(&wallet_desc);
+    let mut wallet = get_wallet(wallet_desc);
 
     let issued_supply = 999;
     let ticker = "TCKR";
@@ -72,7 +72,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
 
     initialize();
 
-    let mut wallet = get_wallet(&wallet_desc);
+    let mut wallet = get_wallet(wallet_desc);
 
     let ticker = "TCKR";
     let name = "asset name";
@@ -154,7 +154,7 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
 
     initialize();
 
-    let mut wallet = get_wallet(&wallet_desc);
+    let mut wallet = get_wallet(wallet_desc);
 
     let issued_supply = 999;
     let name = "asset name";

@@ -6,7 +6,7 @@ pub struct TestWallet {
     signer: TestnetSigner,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DescriptorType {
     Wpkh,
     Tr,
@@ -306,7 +306,7 @@ impl AssetInfo {
     }
 }
 
-pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
+pub fn get_wallet(descriptor_type: DescriptorType) -> TestWallet {
     let mut seed = vec![0u8; 128];
     rand::thread_rng().fill_bytes(&mut seed);
 
@@ -327,13 +327,15 @@ pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
     std::fs::create_dir_all(&rgb_dir).unwrap();
     println!("wallet dir: {rgb_dir:?}");
 
-    let keychains = [
-        Keychain::with(0),
-        Keychain::with(1),
-        Keychain::with(9),
-        Keychain::with(10),
+    let mut keychains = vec![
+        RgbKeychain::Internal,
+        RgbKeychain::External,
+        RgbKeychain::Rgb,
     ];
-    let xpub_derivable = XpubDerivable::try_custom(xpub, origin, keychains).unwrap();
+    if descriptor_type == DescriptorType::Tr {
+        keychains.push(RgbKeychain::Tapret);
+    }
+    let xpub_derivable = XpubDerivable::try_custom(xpub, origin, keychains.into_iter().map(Keychain::from)).unwrap();
     let descriptor = match descriptor_type {
         DescriptorType::Wpkh => RgbDescr::Wpkh(Wpkh::from(xpub_derivable)),
         DescriptorType::Tr => RgbDescr::TapretKey(TapretKey::from(xpub_derivable)),

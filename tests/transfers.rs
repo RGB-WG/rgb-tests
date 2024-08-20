@@ -111,8 +111,8 @@ fn transfer_loop(
 
     initialize();
 
-    let mut wlt_1 = get_wallet(&wlt_1_desc);
-    let mut wlt_2 = get_wallet(&wlt_2_desc);
+    let mut wlt_1 = get_wallet(wlt_1_desc);
+    let mut wlt_2 = get_wallet(wlt_2_desc);
 
     let issued_supply_1 = 999;
     let issued_supply_2 = 666;
@@ -440,8 +440,8 @@ fn transfer_loop(
 fn same_transfer_twice() {
     initialize();
 
-    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
-    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_1 = get_wallet(DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(DescriptorType::Wpkh);
 
     let amount = 600;
 
