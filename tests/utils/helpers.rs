@@ -314,7 +314,7 @@ pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
 
     let xpub = xpriv.to_xpub();
 
-    let master_fp = xpub.parent_fp();
+    let master_fp = xpub.fingerprint();
     let derivation = DerivationPath::<HardenedIndex>::from_str("86'/1'/0'").unwrap();
     let origin = XkeyOrigin::new(master_fp, derivation);
 
@@ -323,7 +323,7 @@ pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
 
     let rgb_dir = PathBuf::from("tests")
         .join("tmp")
-        .join(xpub.fingerprint().to_string());
+        .join(master_fp.to_string());
     std::fs::create_dir_all(&rgb_dir).unwrap();
     println!("wallet dir: {rgb_dir:?}");
 
