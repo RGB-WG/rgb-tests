@@ -728,7 +728,6 @@ fn mainnet_wlt_receiving_test_asset() {
 }
 
 #[test]
-#[ignore = "this was working, fix needed"]
 fn tapret_wlt_receiving_opret() {
     initialize();
 
