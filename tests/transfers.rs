@@ -845,6 +845,17 @@ fn mainnet_wlt_receiving_test_asset() {
 }
 
 #[test]
+#[ignore = "fix needed"] // https://github.com/BP-WG/bp-wallet/issues/70
+fn sync_mainnet_wlt() {
+    initialize();
+
+    let mut wlt_1 = get_mainnet_wallet();
+
+    // sometimes this fails with a 'Too many requests' error when using esplora
+    wlt_1.sync();
+}
+
+#[test]
 fn tapret_wlt_receiving_opret() {
     initialize();
 
