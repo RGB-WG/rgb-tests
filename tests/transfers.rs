@@ -736,7 +736,6 @@ fn mainnet_wlt_receiving_test_asset() {
 }
 
 #[test]
-#[ignore = "this was working, fix needed"]
 fn tapret_wlt_receiving_opret() {
     initialize();
 
@@ -773,6 +772,28 @@ fn tapret_wlt_receiving_opret() {
         contract_id,
         &iface_type_name,
         290,
+        1000,
+        None,
+    );
+
+    println!("4th transfer");
+    wlt_2.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id,
+        &iface_type_name,
+        560,
+        1000,
+        None,
+    );
+
+    println!("5th transfer");
+    wlt_1.send(
+        &mut wlt_2,
+        TransferType::Blinded,
+        contract_id,
+        &iface_type_name,
+        570,
         1000,
         None,
     );
