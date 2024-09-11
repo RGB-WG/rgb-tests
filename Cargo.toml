@@ -1,0 +1,124 @@
+[package]
+name = "rgb-integration-tests"
+version = "0.1.0"
+authors = [
+    "Zoe Faltibà <zoefaltiba@gmail.com>",
+    "Dr Maxim Orlovsky <orlovsky@lnp-bp.org>",
+    "Nicola Busanello <nicola.busanello@gmail.com>",
+]
+edition = "2021"
+rust-version = "1.75.0"
+repository = "https://github.com/RGB-WG/rgb-integration-tests"
+homepage = "https://github.com/RGB-WG/rgb-integration-tests"
+license = "Apache-2.0"
+description = "RGB integration tests"
+
+[dependencies]
+bitcoin_hashes = "0.14.0"
+once_cell = "1.19.0"
+rand = "0.8.5"
+rstest = "0.19.0"
+rstest_reuse = "0.6.0"
+serde_yaml = "0.9"
+strum = { version = "0.26.2", features = ["derive"] }
+strum_macros = "0.26.2"
+time = "0.3.34"
+tree_magic_mini = "3.1.5"
+
+# RGB-related deps
+## bp-core
+bp-core = { path = "./bp-core" }
+## bp-electrum-client
+bp-electrum = { path = "./bp-electrum-client" }
+## bp-esplora
+bp-esplora = { path = "./bp-esplora-client" }
+## bp-std
+bp-std = { path = "./bp-std", features = ["signers"] }
+descriptors = { path = "./bp-std/descriptors" }
+bp-invoice = { path = "./bp-std/invoice" }
+psbt = { path = "./bp-std/psbt" }
+## bp-wallet
+bp-wallet = { path = "./bp-wallet", features = [
+    "electrum",
+    "esplora",
+    "fs",
+] }
+## rgb
+rgb-runtime = { path = "./rgb", features = [
+    "electrum_blocking",
+    "esplora_blocking",
+    "fs",
+    "serde",
+] }
+rgb-psbt = { path = "./rgb/psbt" }
+## rgb-interfaces
+rgb-interfaces = { path = "./rgb-interfaces" }
+## rgb-schemata
+rgb-schemata = { path = "./rgb-schemata" }
+## rgb-std
+rgb-std = { path = "./rgb-std", features = ["fs"] }
+## rust-amplify
+amplify = { path = "./rust-amplify" }
+## strict-encoding
+strict_encoding = { path = "./strict-encoding/rust" }
+## strict-types
+strict_types = { path = "./strict-types" }
+
+[patch.crates-io]
+# patching all RGB-related deps, to measure code coverage
+## amplify-derive
+amplify_derive = { path = "./amplify-derive" }
+amplify_syn = { path = "./amplify-derive/syn" }
+## amplify-nonasync
+nonasync = { path = "./amplify-nonasync" }
+## amplify-num
+amplify_apfloat = { path = "./amplify-num/apfloat" }
+amplify_num = { path = "./amplify-num/num" }
+## ascii-armor
+ascii-armor = { path = "./ascii-armor" }
+## baid64
+baid64 = { path = "./rust-baid64" }
+## bp-core
+bp-core = { path = "./bp-core" }
+bp-consensus = { path = "./bp-core/consensus" }
+bp-dbc = { path = "./bp-core/dbc" }
+bp-seals = { path = "./bp-core/seals" }
+## bp-electrum-client
+bp-electrum = { path = "./bp-electrum-client" }
+## bp-esplora-client
+bp-esplora = { path = "./bp-esplora-client" }
+## bp-std
+bp-derive = { path = "./bp-std/derive" }
+bp-std = { path = "./bp-std" }
+descriptors = { path = "./bp-std/descriptors" }
+bp-invoice = { path = "./bp-std/invoice" }
+psbt = { path = "./bp-std/psbt" }
+## bp-wallet
+bp-wallet = { path = "./bp-wallet" }
+## client_side_validation
+commit_verify = { path = "./client_side_validation/commit_verify" }
+commit_encoding_derive = { path = "./client_side_validation/commit_verify/derive" }
+single_use_seals = { path = "./client_side_validation/single_use_seals" }
+## rgb
+rgb-runtime = { path = "./rgb" }
+rgb-psbt = { path = "./rgb/psbt" }
+## rgb-core
+rgb-core = { path = "./rgb-core" }
+## rgb-interfaces
+rgb-interfaces = { path = "./rgb-interfaces" }
+## rgb-schemata
+rgb-schemata = { path = "./rgb-schemata" }
+## rgb-std
+rgb-std = { path = "./rgb-std" }
+rgb-invoice = { path = "./rgb-std/invoice" }
+## rust-aluvm
+aluvm = { path = "./rust-aluvm" }
+## rust-amplify
+amplify = { path = "./rust-amplify" }
+## strict-encoding
+strict_encoding = { path = "./strict-encoding/rust" }
+strict_encoding_derive = { path = "./strict-encoding/rust/derive" }
+## strict-types
+strict_types = { path = "./strict-types" }
+## vesper
+vesper-lang = { path = "./vesper" }
