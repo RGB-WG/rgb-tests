@@ -495,26 +495,43 @@ fn accept_0conf() {
         wlt_2.close_method(),
         InvoiceType::Witness,
     );
-    let (consignment, _) = wlt_1.transfer(invoice.clone(), None, None, true, None);
+    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, None, true, None);
+    let txid = tx.txid();
 
     wlt_2.accept_transfer(consignment.clone(), None);
 
-    // TODO: check if it's correct that sender sees 2 allocations
-    /*
-    wlt_1.sync();
-    wlt_1.check_allocations(
-        contract_id,
-        &iface_type_name,
-        AssetSchema::Nia,
-        vec![issue_supply - amt],
-        false,
-    );
-    */
+    // wlt_2 sees the allocation even if TX has not been mined
     wlt_2.check_allocations(
         contract_id,
         &iface_type_name,
         AssetSchema::Nia,
         vec![amt],
+        false,
+    );
+
+    wlt_1.sync();
+
+    let wlt_1_change_amt = issue_supply - amt;
+
+    // wlt_1 needs to get tentative allocations to see its change from the unmined TX
+    let allocations: Vec<FungibleAllocation> = wlt_1
+        .contract_fungible_allocations(contract_id, &iface_type_name, true)
+        .into_iter()
+        .filter(|fa| fa.seal.txid() == Some(txid))
+        .collect();
+    assert_eq!(allocations.len(), 1);
+    assert!(allocations
+        .iter()
+        .any(|fa| fa.state == Amount::from(wlt_1_change_amt)));
+
+    // after mining, wlt_1 doesn't need to get tentative allocations to see the change
+    mine(false);
+    wlt_1.sync();
+    wlt_1.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![wlt_1_change_amt],
         false,
     );
 }

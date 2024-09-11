@@ -43,7 +43,6 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
     );
     let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
 
-    let contract_iface = wallet.contract_iface(contract_id, &iface_type_name);
     let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
     let spec = contract.spec();
     assert_eq!(spec.ticker.to_string(), ticker.to_string());
@@ -59,7 +58,7 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
     );
     assert_eq!(contract.total_issued_supply().value(), issued_supply);
 
-    let allocations = wallet.contract_fungible_allocations(&contract_iface);
+    let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
     assert_eq!(allocations.len(), 1);
     let allocation = allocations[0];
     assert_eq!(allocation.seal.method(), close_method);
@@ -117,7 +116,6 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
     );
     let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
 
-    let contract_iface = wallet.contract_iface(contract_id, &iface_type_name);
     let contract = wallet.contract_iface_class::<Rgb21>(contract_id);
     let spec = contract.spec();
     assert_eq!(spec.ticker.to_string(), ticker.to_string());
@@ -144,7 +142,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
     );
     assert_eq!(token_data.reserves.unwrap(), token_data_reserves);
 
-    let allocations = wallet.contract_data_allocations(&contract_iface);
+    let allocations = wallet.contract_data_allocations(contract_id, &iface_type_name);
     assert_eq!(allocations.len(), 1);
     let allocation = &allocations[0];
     assert_eq!(allocation.seal.method(), close_method);
@@ -175,7 +173,6 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
     );
     let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
 
-    let contract_iface = wallet.contract_iface(contract_id, &iface_type_name);
     let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
     assert_eq!(contract.name().to_string(), name.to_string());
     assert_eq!(
@@ -193,7 +190,7 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
     );
     assert_eq!(contract.total_issued_supply().value(), issued_supply);
 
-    let allocations = wallet.contract_fungible_allocations(&contract_iface);
+    let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
     assert_eq!(allocations.len(), 1);
     let allocation = allocations[0];
     assert_eq!(allocation.seal.method(), close_method);

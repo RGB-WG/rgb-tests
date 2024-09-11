@@ -65,7 +65,7 @@ pub use rand::RngCore;
 pub use rgb::{
     interface::AssignmentsFilter,
     invoice::Pay2Vout,
-    persistence::{ContractStateRead, MemContract, MemContractState, Stock},
+    persistence::{MemContract, MemContractState, Stock},
     resolvers::AnyResolver,
     stl::ContractTerms,
     validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},

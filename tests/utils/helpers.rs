@@ -16,12 +16,14 @@ pub enum AllocationFilter {
     Stock,
     Wallet,
     WalletAll,
+    WalletTentative,
 }
 
 enum Filter<'w> {
     NoWallet,
     Wallet(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
     WalletAll(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
+    WalletTentative(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
 }
 
 impl<'w> AssignmentsFilter for Filter<'w> {
@@ -30,6 +32,10 @@ impl<'w> AssignmentsFilter for Filter<'w> {
             Filter::Wallet(wallet) => wallet
                 .wallet()
                 .filter_unspent()
+                .should_include(outpoint, id),
+            Filter::WalletTentative(wallet) => wallet
+                .wallet()
+                .filter_outpoints()
                 .should_include(outpoint, id),
             _ => true,
         }
@@ -43,8 +49,16 @@ impl<'w> Filter<'w> {
             .expect("liquid is not yet supported");
         match self {
             Filter::Wallet(rgb) if rgb.wallet().is_unspent(outpoint) => "",
-            Filter::WalletAll(rgb) if rgb.wallet().is_unspent(outpoint) => "-- unspent",
-            Filter::WalletAll(rgb) if rgb.wallet().has_outpoint(outpoint) => "-- spent",
+            Filter::WalletAll(rgb) | Filter::WalletTentative(rgb)
+                if rgb.wallet().is_unspent(outpoint) =>
+            {
+                "-- unspent"
+            }
+            Filter::WalletAll(rgb) | Filter::WalletTentative(rgb)
+                if rgb.wallet().has_outpoint(outpoint) =>
+            {
+                "-- spent"
+            }
             _ => "-- third-party",
         }
     }
@@ -957,21 +971,29 @@ impl TestWallet {
             .unwrap()
     }
 
-    pub fn contract_fungible_allocations<S: ContractStateRead>(
+    pub fn contract_fungible_allocations(
         &self,
-        contract_iface: &ContractIface<S>,
+        contract_id: ContractId,
+        iface_type_name: &TypeName,
+        show_tentative: bool,
     ) -> Vec<FungibleAllocation> {
-        contract_iface
-            .fungible(fname!("assetOwner"), Filter::Wallet(&self.wallet))
+        let filter = if show_tentative {
+            Filter::WalletTentative(&self.wallet)
+        } else {
+            Filter::Wallet(&self.wallet)
+        };
+        self.contract_iface(contract_id, iface_type_name)
+            .fungible(fname!("assetOwner"), filter)
             .unwrap()
             .collect()
     }
 
-    pub fn contract_data_allocations<S: ContractStateRead>(
+    pub fn contract_data_allocations(
         &self,
-        contract_iface: &ContractIface<S>,
+        contract_id: ContractId,
+        iface_type_name: &TypeName,
     ) -> Vec<DataAllocation> {
-        contract_iface
+        self.contract_iface(contract_id, iface_type_name)
             .data(fname!("assetOwner"), Filter::Wallet(&self.wallet))
             .unwrap()
             .collect()
@@ -985,6 +1007,7 @@ impl TestWallet {
     ) {
         let filter = match filter {
             AllocationFilter::WalletAll => Filter::WalletAll(&self.wallet),
+            AllocationFilter::WalletTentative => Filter::WalletTentative(&self.wallet),
             AllocationFilter::Wallet => Filter::Wallet(&self.wallet),
             AllocationFilter::Stock => Filter::NoWallet,
         };
@@ -1126,10 +1149,10 @@ impl TestWallet {
         expected_fungible_allocations: Vec<u64>,
         nonfungible_allocation: bool,
     ) {
-        let contract_iface = self.contract_iface(contract_id, iface_type_name);
         match asset_schema {
             AssetSchema::Nia | AssetSchema::Cfa => {
-                let allocations = self.contract_fungible_allocations(&contract_iface);
+                let allocations =
+                    self.contract_fungible_allocations(contract_id, iface_type_name, false);
                 assert_eq!(allocations.len(), expected_fungible_allocations.len());
                 assert!(allocations
                     .iter()
@@ -1145,7 +1168,7 @@ impl TestWallet {
                 }
             }
             AssetSchema::Uda => {
-                let allocations = self.contract_data_allocations(&contract_iface);
+                let allocations = self.contract_data_allocations(contract_id, iface_type_name);
                 let expected_allocations = if nonfungible_allocation {
                     assert_eq!(
                         allocations
