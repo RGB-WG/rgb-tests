@@ -1,6 +1,6 @@
-# RGB integration tests
+# RGB tests
 
-This repository contains integration tests for RGB.
+This repository contains tests for RGB.
 
 ## Requirements
 - Linux OS
@@ -11,7 +11,7 @@ This repository contains integration tests for RGB.
 Clone the project, including submodules:
 
 ```sh
-git clone https://github.com/RGB-WG/rgb-integration-tests --recurse-submodules
+git clone https://github.com/RGB-WG/rgb-tests --recurse-submodules
 ```
 
 Note: after checking out to another commit, remember to run:
@@ -19,7 +19,7 @@ Note: after checking out to another commit, remember to run:
 git submodule update
 ```
 
-Then, from the project root, run the integration tests by running:
+Then, from the project root, run the tests by running:
 ```sh
 cargo test
 ```
