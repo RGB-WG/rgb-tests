@@ -1625,38 +1625,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rgb-integration-tests"
-version = "0.1.0"
-dependencies = [
- "amplify 4.7.0",
- "bitcoin_hashes",
- "bp-core",
- "bp-electrum",
- "bp-esplora",
- "bp-invoice",
- "bp-std",
- "bp-wallet",
- "descriptors",
- "once_cell",
- "psbt",
- "rand",
- "rgb-interfaces",
- "rgb-psbt",
- "rgb-runtime",
- "rgb-schemata",
- "rgb-std",
- "rstest",
- "rstest_reuse",
- "serde_yaml",
- "strict_encoding",
- "strict_types",
- "strum",
- "strum_macros",
- "time",
- "tree_magic_mini",
-]
-
-[[package]]
 name = "rgb-interfaces"
 version = "0.11.0-beta.8"
 dependencies = [
@@ -1772,6 +1740,38 @@ dependencies = [
  "strict_encoding",
  "strict_types",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "rgb-tests"
+version = "0.1.0"
+dependencies = [
+ "amplify 4.7.0",
+ "bitcoin_hashes",
+ "bp-core",
+ "bp-electrum",
+ "bp-esplora",
+ "bp-invoice",
+ "bp-std",
+ "bp-wallet",
+ "descriptors",
+ "once_cell",
+ "psbt",
+ "rand",
+ "rgb-interfaces",
+ "rgb-psbt",
+ "rgb-runtime",
+ "rgb-schemata",
+ "rgb-std",
+ "rstest",
+ "rstest_reuse",
+ "serde_yaml",
+ "strict_encoding",
+ "strict_types",
+ "strum",
+ "strum_macros",
+ "time",
+ "tree_magic_mini",
 ]
 
 [[package]]

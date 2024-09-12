@@ -1,5 +1,5 @@
 [package]
-name = "rgb-integration-tests"
+name = "rgb-tests"
 version = "0.1.0"
 authors = [
     "Zoe Faltibà <zoefaltiba@gmail.com>",
@@ -8,10 +8,10 @@ authors = [
 ]
 edition = "2021"
 rust-version = "1.75.0"
-repository = "https://github.com/RGB-WG/rgb-integration-tests"
-homepage = "https://github.com/RGB-WG/rgb-integration-tests"
+repository = "https://github.com/RGB-WG/rgb-tests"
+homepage = "https://github.com/RGB-WG/rgb-tests"
 license = "Apache-2.0"
-description = "RGB integration tests"
+description = "RGB tests"
 
 [dependencies]
 bitcoin_hashes = "0.14.0"

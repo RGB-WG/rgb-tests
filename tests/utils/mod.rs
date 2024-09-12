@@ -58,8 +58,8 @@ pub use rgb::{
     persistence::{ContractStateRead, MemContract, MemContractState, Stock},
     resolvers::AnyResolver,
     stl::ContractTerms,
-    validation::{Failure, ResolveWitness, WitnessResolverError},
-    vm::{WitnessOrd, XWitnessTx},
+    validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
+    vm::{WitnessOrd, WitnessPos, XWitnessTx},
     BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, RgbDescr, RgbKeychain,
     RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
 };
@@ -75,7 +75,6 @@ pub use rgbstd::{
     stl::{
         AssetSpec, Attachment, Details, MediaType, Name, ProofOfReserves, RicardianContract, Ticker,
     },
-    validation::{Scripts, Validity},
     Allocation, Amount, ContractId, GlobalStateType, Layer1, Operation, OwnedFraction, Precision,
     Schema, TokenIndex, TxoSeal, XChain,
 };
