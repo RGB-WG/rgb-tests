@@ -1,6 +1,10 @@
 pub mod chain;
 pub mod helpers;
 
+pub const TEST_DATA_DIR: &str = "test-data";
+pub const INTEGRATION_DATA_DIR: &str = "integration";
+pub const STRESS_DATA_DIR: &str = "stress";
+
 pub const ELECTRUM_REGTEST_URL: &str = "127.0.0.1:50001";
 pub const ELECTRUM_MAINNET_URL: &str = "ssl://electrum.iriswallet.com:50003";
 pub const ESPLORA_REGTEST_URL: &str = "http://127.0.0.1:8094/regtest/api";
@@ -14,11 +18,13 @@ pub use std::{
     env::VarError,
     ffi::OsString,
     fmt::{self, Display},
+    fs::OpenOptions,
     io::Write,
     path::{PathBuf, MAIN_SEPARATOR},
     process::{Command, Stdio},
     str::FromStr,
     sync::{Mutex, Once, OnceLock, RwLock},
+    time::{Duration, Instant},
 };
 
 pub use amplify::{

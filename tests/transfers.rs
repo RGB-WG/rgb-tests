@@ -159,6 +159,7 @@ fn transfer_loop(
         &iface_type_name_1,
         amount_1,
         sats,
+        None,
     );
     wlt_1.check_allocations(
         contract_id_1,
@@ -192,6 +193,7 @@ fn transfer_loop(
             &iface_type_name_1,
             amount_2,
             sats,
+            None,
         );
         wlt_1.check_allocations(
             contract_id_1,
@@ -229,6 +231,7 @@ fn transfer_loop(
         &iface_type_name_2,
         amount_3,
         sats,
+        None,
     );
     wlt_1.check_allocations(
         contract_id_1,
@@ -273,6 +276,7 @@ fn transfer_loop(
         &iface_type_name_1,
         amount_4,
         sats,
+        None,
     );
     wlt_1.check_allocations(
         contract_id_1,
@@ -317,6 +321,7 @@ fn transfer_loop(
         &iface_type_name_2,
         amount_5,
         sats,
+        None,
     );
     wlt_1.check_allocations(
         contract_id_1,
@@ -361,6 +366,7 @@ fn transfer_loop(
         &iface_type_name_1,
         amount_6,
         sats,
+        None,
     );
     wlt_1.check_allocations(
         contract_id_1,
@@ -405,6 +411,7 @@ fn transfer_loop(
         &iface_type_name_2,
         amount_7,
         sats,
+        None,
     );
     wlt_1.check_allocations(
         contract_id_1,
@@ -457,13 +464,13 @@ fn same_transfer_twice() {
         wlt_2.close_method(),
         InvoiceType::Witness,
     );
-    let _ = wlt_1.transfer(invoice.clone(), None, Some(500));
+    let _ = wlt_1.transfer(invoice.clone(), None, Some(500), None);
 
     // retry with higher fees, TX hasn't been mined
     let mid_height = get_height();
     assert_eq!(initial_height, mid_height);
 
-    let _ = wlt_1.transfer(invoice, None, Some(1000));
+    let _ = wlt_1.transfer(invoice, None, Some(1000), None);
 
     let final_height = get_height();
     assert_eq!(initial_height, final_height);
@@ -488,9 +495,9 @@ fn accept_0conf() {
         wlt_2.close_method(),
         InvoiceType::Witness,
     );
-    let (consignment, _) = wlt_1.transfer(invoice.clone(), None, None);
+    let (consignment, _) = wlt_1.transfer(invoice.clone(), None, None, None);
 
-    wlt_2.accept_transfer(consignment.clone());
+    wlt_2.accept_transfer(consignment.clone(), None);
 
     // TODO: check if it's correct that sender sees 2 allocations
     /*
@@ -692,6 +699,7 @@ fn ln_transfers() {
         &iface_type_name,
         500,
         1000,
+        None,
     );
 }
 
@@ -714,7 +722,7 @@ fn mainnet_wlt_receiving_test_asset() {
         wlt_2.close_method(),
         InvoiceType::Blinded(Some(utxo)),
     );
-    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500));
+    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), None);
     wlt_1.mine_tx(&tx.txid(), false);
     match consignment.validate(&wlt_2.get_resolver(), wlt_2.testnet()) {
         Err((status, _invalid_consignment)) => {
@@ -745,6 +753,7 @@ fn tapret_wlt_receiving_opret() {
         &iface_type_name,
         400,
         5000,
+        None,
     );
 
     println!("2nd transfer");
@@ -755,7 +764,7 @@ fn tapret_wlt_receiving_opret() {
         CloseMethod::OpretFirst,
         InvoiceType::Witness,
     );
-    wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None);
+    wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
 
     println!("3rd transfer");
     wlt_1.send(
@@ -765,5 +774,6 @@ fn tapret_wlt_receiving_opret() {
         &iface_type_name,
         300,
         1000,
+        None,
     );
 }

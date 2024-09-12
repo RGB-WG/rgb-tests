@@ -14,7 +14,7 @@ fi
 COMPOSE_BASE="$COMPOSE_BASE -f tests/docker-compose.yml"
 PROFILE=${PROFILE:-"esplora"}
 COMPOSE="$COMPOSE_BASE --profile $PROFILE"
-TEST_DIR="./tests/tmp"
+TEST_DATA_DIR="./test-data"
 
 # see docker-compose.yml for the exposed ports
 if [ "$PROFILE" == "esplora" ]; then
@@ -29,7 +29,7 @@ fi
 
 # restart services (down + up) checking for ports availability
 $COMPOSE_BASE --profile '*' down -v --remove-orphans
-mkdir -p $TEST_DIR
+mkdir -p $TEST_DATA_DIR
 for port in "${EXPOSED_PORTS[@]}"; do
     if [ -n "$(ss -HOlnt "sport = :$port")" ];then
         _die "port $port is already bound, services can't be started"

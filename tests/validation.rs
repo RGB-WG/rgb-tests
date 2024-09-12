@@ -137,6 +137,7 @@ fn get_consignment(scenario: Scenario) -> (Transfer, Vec<Tx>) {
         &iface_type_name_1,
         66,
         sats,
+        None,
     );
     txes.push(tx);
 
@@ -148,6 +149,7 @@ fn get_consignment(scenario: Scenario) -> (Transfer, Vec<Tx>) {
         &iface_type_name_2,
         50,
         sats,
+        None,
     );
     txes.push(tx);
 
@@ -159,6 +161,7 @@ fn get_consignment(scenario: Scenario) -> (Transfer, Vec<Tx>) {
         &iface_type_name_2,
         77,
         sats,
+        None,
     );
     txes.push(tx);
 
