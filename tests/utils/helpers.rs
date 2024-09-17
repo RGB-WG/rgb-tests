@@ -748,6 +748,17 @@ impl TestWallet {
         let sats = Sats::from_sats(sats.unwrap_or(2000));
         let params = TransferParams::with(fee, sats);
         let (mut psbt, _psbt_meta, consignment) = self.wallet.pay(&invoice, params).unwrap();
+        let mut cs_path = self.wallet_dir.join("cs");
+        std::fs::create_dir_all(&cs_path).unwrap();
+        cs_path.push(&consignment.consignment_id().to_string());
+        cs_path.set_extension("yaml");
+        let mut file = std::fs::File::options()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(cs_path)
+            .unwrap();
+        serde_yaml::to_writer(&mut file, &consignment).unwrap();
 
         let tx = self.sign_finalize(&mut psbt);
 
