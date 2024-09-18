@@ -681,7 +681,7 @@ fn ln_transfers() {
     println!("\n7. broadcast old PSBT");
     let tx = wlt_1.sign_finalize(&mut old_psbt);
     wlt_1.broadcast_tx(&tx);
-    mine(false);
+    wlt_1.mine_tx(&tx.txid(), false);
     wlt_1.sync();
     wlt_1.update_witnesses(pre_funding_height);
     let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
@@ -714,8 +714,8 @@ fn mainnet_wlt_receiving_test_asset() {
         wlt_2.close_method(),
         InvoiceType::Blinded(Some(utxo)),
     );
-    let (consignment, _) = wlt_1.transfer(invoice.clone(), None, Some(500));
-    mine(false);
+    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500));
+    wlt_1.mine_tx(&tx.txid(), false);
     match consignment.validate(&wlt_2.get_resolver(), wlt_2.testnet()) {
         Err((status, _invalid_consignment)) => {
             assert_eq!(

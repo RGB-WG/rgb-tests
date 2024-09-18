@@ -579,6 +579,17 @@ impl TestWallet {
         }
     }
 
+    pub fn get_tx_height(&self, txid: &Txid) -> Option<u32> {
+        match self
+            .get_resolver()
+            .resolve_pub_witness_ord(XWitnessId::Bitcoin(*txid))
+            .unwrap()
+        {
+            WitnessOrd::Mined(witness_pos) => Some(witness_pos.height().get()),
+            _ => None,
+        }
+    }
+
     pub fn sync(&mut self) {
         let indexer = self.get_indexer();
         self.wallet
@@ -590,6 +601,20 @@ impl TestWallet {
 
     pub fn close_method(&self) -> CloseMethod {
         self.wallet.wallet().seal_close_method()
+    }
+
+    pub fn mine_tx(&self, txid: &Txid, resume: bool) {
+        let mut attempts = 10;
+        loop {
+            mine(resume);
+            if self.get_tx_height(txid).is_some() {
+                break;
+            }
+            attempts -= 1;
+            if attempts == 0 {
+                panic!("TX is not getting mined");
+            }
+        }
     }
 
     pub fn issue_with_info(
@@ -927,7 +952,7 @@ impl TestWallet {
         fee: Option<u64>,
     ) -> (Transfer, Tx) {
         let (consignment, tx) = self.transfer(invoice, sats, fee);
-        mine(false);
+        self.mine_tx(&tx.txid(), false);
         recv_wlt.accept_transfer(consignment.clone());
         self.sync();
         (consignment, tx)
