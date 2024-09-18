@@ -798,3 +798,133 @@ fn tapret_wlt_receiving_opret() {
         None,
     );
 }
+
+#[test]
+fn check_fungible_history() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    println!("Wallets created: wlt_1 and wlt_2");
+
+    let amount = 100000;
+    println!("Initial amount: {}", amount);
+
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(amount, wlt_1.close_method(), None);
+    println!(
+        "Contract issued - ID: {:?}, Interface type: {}",
+        contract_id, iface_type_name
+    );
+
+    let initial_height = get_height();
+    println!("Initial height: {}", initial_height);
+
+    let history = wlt_1.fungible_history(contract_id, iface_type_name.clone());
+    TestWallet::debug_fungible_history(&history);
+    assert_eq!(history.len(), 0);
+
+    let amount_transfer = 200;
+    println!("Transfer amount: {}", amount_transfer);
+
+    let invoice = wlt_2.invoice(
+        contract_id,
+        &iface_type_name,
+        amount_transfer,
+        wlt_2.close_method(),
+        InvoiceType::Witness,
+    );
+    println!("Invoice created: {:?}", invoice);
+
+    let (consignment, _) = wlt_1.transfer(invoice.clone(), None, Some(1234));
+
+    let height = get_height();
+    println!("Height: {}", height);
+
+    wlt_2.accept_transfer(consignment);
+
+    mine(false);
+    wlt_1.sync();
+    wlt_2.sync();
+
+    let height = get_height();
+    println!("Height: {}", height);
+
+    let history = wlt_1.fungible_history(contract_id, iface_type_name.clone());
+    println!("History 1:");
+    TestWallet::debug_fungible_history(&history);
+
+    assert_eq!(
+        history.values().next().unwrap().state_change,
+        AmountChange::Dec(Amount::from(200_u64))
+    );
+
+    println!("Balance 1:");
+    wlt_1.debug_logs(contract_id, &iface_type_name.clone());
+
+    let history = wlt_2.fungible_history(contract_id, iface_type_name.clone());
+    println!("History 2:");
+    TestWallet::debug_fungible_history(&history);
+    assert_eq!(
+        history.values().next().unwrap().state_change,
+        AmountChange::Inc(Amount::from(200_u64))
+    );
+
+    println!("Balance 2:");
+    wlt_2.debug_logs(contract_id, &iface_type_name.clone());
+}
+
+#[test]
+fn send_to_oneself() {
+    println!("Starting test: self_transfer_example");
+    initialize();
+
+    let mut wlt = get_wallet(&DescriptorType::Wpkh);
+    println!("Wallet created: wlt");
+
+    let initial_amount = 100000;
+    println!("Initial amount: {}", initial_amount);
+
+    let (contract_id, iface_type_name) = wlt.issue_nia(initial_amount, wlt.close_method(), None);
+    println!(
+        "Contract issued - ID: {:?}, Interface type: {}",
+        contract_id, iface_type_name
+    );
+
+    let history = wlt.fungible_history(contract_id, iface_type_name.clone());
+
+    TestWallet::debug_fungible_history(&history);
+
+    let amount_transfer = 300; // Amount to transfer to self
+    println!("Transfer amount: {}", amount_transfer);
+
+    let invoice = wlt.invoice(
+        contract_id,
+        &iface_type_name,
+        amount_transfer,
+        wlt.close_method(),
+        InvoiceType::Witness,
+    );
+    println!("Invoice created: {:?}", invoice);
+
+    let (consignment, _) = wlt.transfer(invoice.clone(), None, None);
+
+    let height = get_height();
+    println!("Height: {}", height);
+
+    wlt.accept_transfer(consignment); // Accepting transfer to self
+
+    mine(false);
+    wlt.sync();
+
+    let height = get_height();
+    println!("Height after sync: {}", height);
+
+    let history = wlt.fungible_history(contract_id, iface_type_name.clone());
+    println!("Final History:");
+    TestWallet::debug_fungible_history(&history);
+    assert!(!history.is_empty());
+
+    println!("Balance:");
+    wlt.debug_logs(contract_id, &iface_type_name.clone());
+}

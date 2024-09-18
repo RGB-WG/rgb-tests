@@ -959,6 +959,14 @@ impl TestWallet {
             .collect()
     }
 
+    pub fn fungible_history(
+        &self,
+        contract_id: ContractId,
+        iface: impl Into<IfaceRef>,
+    ) -> HashMap<XWitnessId, IfaceOp<AmountChange>> {
+        self.wallet.fungible_history(contract_id, iface).unwrap()
+    }
+
     pub fn debug_logs(
         &self,
         contract_id: ContractId,
@@ -1053,6 +1061,34 @@ impl TestWallet {
         }
 
         println!("\nWallet total balance: {} ṩ", bp_runtime.balance());
+    }
+
+    pub fn debug_fungible_history(history: &HashMap<XWitnessId, IfaceOp<AmountChange>>) {
+        println!("Amount\tCounterparty\tWitness Id");
+        for (id, op) in history {
+            let (amount, cparty, more) = match op.state_change {
+                AmountChange::Dec(amt) => (
+                    format!("-{}", amt.value()),
+                    op.beneficiaries.first(),
+                    op.beneficiaries.len().saturating_sub(1),
+                ),
+                AmountChange::Zero => continue,
+                AmountChange::Inc(amt) => (
+                    format!("{}", amt.value()),
+                    op.payers.first(),
+                    op.payers.len().saturating_sub(1),
+                ),
+            };
+            let more = if more > 0 {
+                format!(" (+{more})")
+            } else {
+                s!("")
+            };
+            let cparty = cparty
+                .map(XOutputSeal::to_string)
+                .unwrap_or_else(|| s!("none"));
+            println!("{},{}\t{}{}\t{}", amount, op.state_change, cparty, more, id);
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
