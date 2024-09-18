@@ -447,8 +447,9 @@ pub fn attachment_from_fpath(fpath: &str) -> Attachment {
     let file_bytes = std::fs::read(fpath).unwrap();
     let file_hash: sha256::Hash = Hash::hash(&file_bytes[..]);
     let digest = file_hash.to_byte_array().into();
-    let mime = tree_magic_mini::from_filepath(fpath.as_ref())
+    let mime = FileFormat::from_file(fpath)
         .unwrap()
+        .media_type()
         .to_string();
     let media_ty: &'static str = Box::leak(mime.clone().into_boxed_str());
     let media_type = MediaType::with(media_ty);

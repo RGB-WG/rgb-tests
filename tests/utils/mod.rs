@@ -42,6 +42,7 @@ pub use bpwallet::{
 };
 pub use descriptors::Wpkh;
 pub use electrum::{Client as ElectrumClient, ElectrumApi, Param};
+pub use file_format::FileFormat;
 pub use ifaces::{
     rgb20, rgb21,
     rgb21::{EmbeddedMedia, TokenData},
