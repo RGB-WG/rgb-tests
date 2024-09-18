@@ -54,6 +54,7 @@ pub use psbt::{
 pub use psrgbt::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 pub use rgb::{
+    interface::{AmountChange, IfaceOp, IfaceRef},
     invoice::Pay2Vout,
     persistence::{ContractStateRead, MemContract, MemContractState, Stock},
     resolvers::AnyResolver,
@@ -61,7 +62,8 @@ pub use rgb::{
     validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos, XWitnessTx},
     BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, RgbDescr, RgbKeychain,
-    RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
+    RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XOutputSeal,
+    XWitnessId,
 };
 pub use rgbstd::{
     containers::{BuilderSeal, ConsignmentExt, Fascia, FileContent, Kit, Transfer, ValidKit},
