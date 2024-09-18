@@ -1001,6 +1001,19 @@ impl TestWallet {
             .collect()
     }
 
+    pub fn history(&self, contract_id: ContractId, iface_type_name: &TypeName) -> Vec<ContractOp> {
+        self.wallet
+            .history(contract_id, iface_type_name.clone())
+            .unwrap()
+    }
+
+    pub fn debug_contracts(&self) {
+        println!("Contracts:");
+        for info in self.wallet.stock().contracts().unwrap() {
+            println!("{}", info.to_string().replace("\n", "\t"));
+        }
+    }
+
     pub fn debug_logs(
         &self,
         contract_id: ContractId,
@@ -1098,6 +1111,57 @@ impl TestWallet {
         println!("\nWallet total balance: {} ṩ", bp_runtime.balance());
     }
 
+    pub fn debug_history(
+        &self,
+        contract_id: ContractId,
+        iface_type_name: &TypeName,
+        details: bool,
+    ) {
+        let mut history = self.history(contract_id, iface_type_name);
+        history.sort_by_key(|op| op.witness.map(|w| w.ord).unwrap_or(WitnessOrd::Archived));
+        if details {
+            println!("Operation\tValue    \tState\t{:78}\tWitness", "Seal");
+        } else {
+            println!("Operation\tValue    \t{:78}\tWitness", "Seal");
+        }
+        for ContractOp {
+            direction,
+            ty,
+            opids,
+            state,
+            to,
+            witness,
+        } in history
+        {
+            print!("{:9}\t", direction.to_string());
+            if let AllocatedState::Amount(amount) = state {
+                print!("{: >9}", amount.value());
+            } else {
+                print!("{state:>9}");
+            }
+            if details {
+                print!("\t{ty}");
+            }
+            println!(
+                "\t{}\t{}",
+                to.first().expect("at least one receiver is always present"),
+                witness
+                    .map(|info| format!("{} ({})", info.id, info.ord))
+                    .unwrap_or_else(|| s!("~"))
+            );
+            if details {
+                println!(
+                    "\topid={}",
+                    opids
+                        .iter()
+                        .map(OpId::to_string)
+                        .collect::<Vec<_>>()
+                        .join("\n\topid=")
+                )
+            }
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn send(
         &mut self,
@@ -1186,6 +1250,27 @@ impl TestWallet {
                 assert_eq!(allocations.len(), expected_allocations);
             }
         }
+    }
+
+    pub fn check_history_operation(
+        &self,
+        contract_id: &ContractId,
+        iface_type_name: &TypeName,
+        txid: Option<&Txid>,
+        direction: OpDirection,
+        amount: u64,
+    ) {
+        let operation = self
+            .history(*contract_id, iface_type_name)
+            .into_iter()
+            .find(|co| {
+                co.direction == direction
+                    && co
+                        .witness
+                        .map_or(true, |w| Some(w.id.as_reduced_unsafe()) == txid)
+            })
+            .unwrap();
+        assert!(matches!(operation.state, AllocatedState::Amount(amt) if amt.value() == amount));
     }
 
     fn _construct_psbt_offchain(
