@@ -775,12 +775,24 @@ impl TestWallet {
         let params = TransferParams::with(fee, sats);
         let (mut psbt, _psbt_meta, consignment) = self.wallet.pay(&invoice, params).unwrap();
 
+        let mut cs_path = self.wallet_dir.join("consignments");
+        std::fs::create_dir_all(&cs_path).unwrap();
+        cs_path.push(consignment.consignment_id().to_string());
+        cs_path.set_extension("yaml");
+        let mut file = std::fs::File::options()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(cs_path)
+            .unwrap();
+        serde_yaml::to_writer(&mut file, &consignment).unwrap();
+
         let tx = self.sign_finalize(&mut psbt);
 
         let txid = tx.txid().to_string();
         println!("transfer txid: {txid}");
 
-        let mut tx_path = self.wallet_dir.join("tx");
+        let mut tx_path = self.wallet_dir.join("transactions");
         std::fs::create_dir_all(&tx_path).unwrap();
         tx_path.push(&txid);
         tx_path.set_extension("yaml");

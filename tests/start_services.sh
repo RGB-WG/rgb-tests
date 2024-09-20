@@ -29,7 +29,6 @@ fi
 
 # restart services (down + up) checking for ports availability
 $COMPOSE_BASE --profile '*' down -v --remove-orphans
-rm -rf $TEST_DIR
 mkdir -p $TEST_DIR
 for port in "${EXPOSED_PORTS[@]}"; do
     if [ -n "$(ss -HOlnt "sport = :$port")" ];then
