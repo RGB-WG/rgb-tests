@@ -63,7 +63,8 @@ pub use psbt::{
 pub use psrgbt::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 pub use rgb::{
-    interface::{AmountChange, IfaceOp, IfaceRef},
+    OpId,
+    interface::{AssignmentsFilter, IfaceRef, ContractOp},
     invoice::Pay2Vout,
     persistence::{ContractStateRead, MemContract, MemContractState, Stock},
     resolvers::AnyResolver,
