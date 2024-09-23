@@ -402,6 +402,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "bp-esplora"
+version = "0.11.0-beta.8"
+source = "git+https://github.com/BP-WG/bp-esplora-client?branch=master#4cdad88d83e660a06aae5457cd2c7eeed369baa5"
+dependencies = [
+ "amplify 4.7.0",
+ "bp-std",
+ "log",
+ "serde",
+ "serde_with",
+ "sha2",
+ "ureq",
+]
+
+[[package]]
 name = "bp-invoice"
 version = "0.11.0-beta.8"
 dependencies = [
@@ -449,7 +463,7 @@ version = "0.11.0-beta.8"
 dependencies = [
  "amplify 4.7.0",
  "bp-electrum",
- "bp-esplora",
+ "bp-esplora 0.11.0-beta.8",
  "bp-std",
  "descriptors",
  "log",
@@ -1684,7 +1698,7 @@ dependencies = [
  "baid64",
  "bp-core",
  "bp-electrum",
- "bp-esplora",
+ "bp-esplora 0.11.0-beta.8 (git+https://github.com/BP-WG/bp-esplora-client?branch=master)",
  "bp-std",
  "bp-wallet",
  "chrono",
@@ -1750,7 +1764,7 @@ dependencies = [
  "bitcoin_hashes",
  "bp-core",
  "bp-electrum",
- "bp-esplora",
+ "bp-esplora 0.11.0-beta.8",
  "bp-invoice",
  "bp-std",
  "bp-wallet",

@@ -1,3 +1,5 @@
+use rgb::{interface::ContractOp, OpId};
+
 use super::*;
 
 pub struct TestWallet {
@@ -835,12 +837,55 @@ impl TestWallet {
             .collect()
     }
 
-    pub fn fungible_history(
+    pub fn history(
         &self,
         contract_id: ContractId,
-        iface: impl Into<IfaceRef>,
-    ) -> HashMap<XWitnessId, IfaceOp<AmountChange>> {
-        self.wallet.fungible_history(contract_id, iface).unwrap()
+        iface: Option<String>,
+    ) -> Vec<ContractOp> {
+        let wallet = &self.wallet;
+        let iface: TypeName = match iface {
+            Some(iface) => tn!(iface.clone()),
+            None => {
+                let stock = wallet.stock();
+                let info = stock.contract_info(contract_id).unwrap();
+                let schema = stock.schema(info.schema_id).unwrap();
+                match schema.iimpls.len() {
+                    0 => {
+                        panic!(
+                            "contract doesn't implement any interface and thus can't be \
+                             read\n"
+                        );
+                    }
+                    1 => schema
+                        .iimpls
+                        .first_key_value()
+                        .expect("one interface is present")
+                        .0
+                        .clone(),
+                    _ => {
+                        eprintln!(
+                            "contract implements multiple interface, please select one of \
+                             them to read the contract:"
+                        );
+                        for iface in schema.iimpls.keys() {
+                            eprintln!("{iface}");
+                        }
+                        panic!();
+                    }
+                }
+            }
+        };
+        wallet.history(contract_id, iface).unwrap()
+        
+    }
+
+    pub fn debug_contracts(
+        &self,
+    ) {
+        let stock = self.wallet.stock();
+        for info in stock.contracts().unwrap() {
+            print!("{info}");
+        }
     }
 
     pub fn debug_logs(&self, contract_id: ContractId, iface_type_name: &TypeName) {
@@ -898,31 +943,44 @@ impl TestWallet {
         println!("\nWallet total balance: {} ṩ", bp_runtime.balance());
     }
 
-    pub fn debug_fungible_history(history: &HashMap<XWitnessId, IfaceOp<AmountChange>>) {
-        println!("Amount\tCounterparty\tWitness Id");
-        for (id, op) in history {
-            let (amount, cparty, more) = match op.state_change {
-                AmountChange::Dec(amt) => (
-                    format!("-{}", amt.value()),
-                    op.beneficiaries.first(),
-                    op.beneficiaries.len().saturating_sub(1),
-                ),
-                AmountChange::Zero => continue,
-                AmountChange::Inc(amt) => (
-                    format!("{}", amt.value()),
-                    op.payers.first(),
-                    op.payers.len().saturating_sub(1),
-                ),
-            };
-            let more = if more > 0 {
-                format!(" (+{more})")
+    pub fn debug_history(history: &Vec<ContractOp>, details: bool) {
+        if details {
+            println!("Operation\tValue\tState\tSeal\tWitness\tOpIds");
+        } else {
+            println!("Operation\tValue\tSeal\tWitness");
+        }
+        for ContractOp {
+            direction,
+            ty,
+            opids,
+            state,
+            to,
+            witness,
+        } in history
+        {
+            print!("{direction}\t{state}");
+            if details {
+                print!("\t{ty}");
+            }
+            print!(
+                "\t{}\t{}",
+                to.first().expect("at least one receiver is always present"),
+                witness
+                    .map(|info| format!("{} ({})", info.id, info.ord))
+                    .unwrap_or_else(|| s!("~"))
+            );
+            if details {
+                println!(
+                    "{}",
+                    opids
+                        .iter()
+                        .map(OpId::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
             } else {
-                s!("")
-            };
-            let cparty = cparty
-                .map(XOutputSeal::to_string)
-                .unwrap_or_else(|| s!("none"));
-            println!("{},{}\t{}{}\t{}", amount, op.state_change, cparty, more, id);
+                println!();
+            }
         }
     }
 
