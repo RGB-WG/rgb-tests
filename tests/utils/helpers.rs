@@ -579,6 +579,17 @@ impl TestWallet {
         }
     }
 
+    pub fn get_tx_height(&self, txid: &Txid) -> Option<u32> {
+        match self
+            .get_resolver()
+            .resolve_pub_witness_ord(XWitnessId::Bitcoin(*txid))
+            .unwrap()
+        {
+            WitnessOrd::Mined(witness_pos) => Some(witness_pos.height().get()),
+            _ => None,
+        }
+    }
+
     pub fn sync(&mut self) {
         let indexer = self.get_indexer();
         self.wallet
@@ -590,6 +601,20 @@ impl TestWallet {
 
     pub fn close_method(&self) -> CloseMethod {
         self.wallet.wallet().seal_close_method()
+    }
+
+    pub fn mine_tx(&self, txid: &Txid, resume: bool) {
+        let mut attempts = 10;
+        loop {
+            mine(resume);
+            if self.get_tx_height(txid).is_some() {
+                break;
+            }
+            attempts -= 1;
+            if attempts == 0 {
+                panic!("TX is not getting mined");
+            }
+        }
     }
 
     pub fn issue_with_info(
@@ -750,12 +775,24 @@ impl TestWallet {
         let params = TransferParams::with(fee, sats);
         let (mut psbt, _psbt_meta, consignment) = self.wallet.pay(&invoice, params).unwrap();
 
+        let mut cs_path = self.wallet_dir.join("consignments");
+        std::fs::create_dir_all(&cs_path).unwrap();
+        cs_path.push(consignment.consignment_id().to_string());
+        cs_path.set_extension("yaml");
+        let mut file = std::fs::File::options()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(cs_path)
+            .unwrap();
+        serde_yaml::to_writer(&mut file, &consignment).unwrap();
+
         let tx = self.sign_finalize(&mut psbt);
 
         let txid = tx.txid().to_string();
         println!("transfer txid: {txid}");
 
-        let mut tx_path = self.wallet_dir.join("tx");
+        let mut tx_path = self.wallet_dir.join("transactions");
         std::fs::create_dir_all(&tx_path).unwrap();
         tx_path.push(&txid);
         tx_path.set_extension("yaml");
@@ -927,7 +964,7 @@ impl TestWallet {
         fee: Option<u64>,
     ) -> (Transfer, Tx) {
         let (consignment, tx) = self.transfer(invoice, sats, fee);
-        mine(false);
+        self.mine_tx(&tx.txid(), false);
         recv_wlt.accept_transfer(consignment.clone());
         self.sync();
         (consignment, tx)
