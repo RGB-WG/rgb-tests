@@ -1,4 +1,3 @@
 **/target
-**/tests/tmp
-**/tests/mainnet
 /.vim
+/test-data

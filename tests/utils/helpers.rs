@@ -339,6 +339,40 @@ impl AssetInfo {
     }
 }
 
+pub struct Report {
+    pub report_path: PathBuf,
+}
+
+impl Report {
+    pub fn write_header(&self, fields: &[&str]) {
+        let mut file = std::fs::File::options()
+            .read(true)
+            .write(true)
+            .create_new(true)
+            .open(&self.report_path)
+            .unwrap();
+        file.write_all(format!("{}\n", fields.join(";")).as_bytes())
+            .unwrap();
+    }
+
+    pub fn write_duration(&self, duration: Duration) {
+        let mut file = OpenOptions::new()
+            .append(true)
+            .open(&self.report_path)
+            .unwrap();
+        file.write_all(format!("{};", duration.as_millis()).as_bytes())
+            .unwrap();
+    }
+
+    pub fn end_line(&self) {
+        let mut file = OpenOptions::new()
+            .append(true)
+            .open(&self.report_path)
+            .unwrap();
+        file.write_all("\n".as_bytes()).unwrap();
+    }
+}
+
 fn _get_wallet(
     descriptor_type: &DescriptorType,
     network: Network,
@@ -418,7 +452,9 @@ pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
     let xpriv_account = XprivAccount::with_seed(true, &seed).derive(h![86, 1, 0]);
 
     let fingerprint = xpriv_account.account_fp().to_string();
-    let wallet_dir = PathBuf::from("tests").join("tmp").join(fingerprint);
+    let wallet_dir = PathBuf::from(TEST_DATA_DIR)
+        .join(INTEGRATION_DATA_DIR)
+        .join(fingerprint);
 
     _get_wallet(
         descriptor_type,
@@ -433,7 +469,9 @@ pub fn get_mainnet_wallet() -> TestWallet {
         "[c32338a7/86h/0h/0h]xpub6CmiK1xc7YwL472qm4zxeURFX8yMCSasioXujBjVMMzA3AKZr6KLQEmkzDge1Ezn2p43ZUysyx6gfajFVVnhtQ1AwbXEHrioLioXXgj2xW5"
     ).unwrap();
 
-    let wallet_dir = PathBuf::from("tests").join("mainnet");
+    let wallet_dir = PathBuf::from(TEST_DATA_DIR)
+        .join(INTEGRATION_DATA_DIR)
+        .join("mainnet");
 
     _get_wallet(
         &DescriptorType::Wpkh,
@@ -767,13 +805,19 @@ impl TestWallet {
         invoice: RgbInvoice,
         sats: Option<u64>,
         fee: Option<u64>,
+        report: Option<&Report>,
     ) -> (Transfer, Tx) {
         self.sync();
 
         let fee = Sats::from_sats(fee.unwrap_or(400));
         let sats = Sats::from_sats(sats.unwrap_or(2000));
         let params = TransferParams::with(fee, sats);
+        let pay_start = Instant::now();
         let (mut psbt, _psbt_meta, consignment) = self.wallet.pay(&invoice, params).unwrap();
+        let pay_duration = pay_start.elapsed();
+        if let Some(report) = report {
+            report.write_duration(pay_duration);
+        }
 
         let mut cs_path = self.wallet_dir.join("consignments");
         std::fs::create_dir_all(&cs_path).unwrap();
@@ -811,24 +855,27 @@ impl TestWallet {
         (consignment, tx)
     }
 
-    pub fn accept_transfer(&mut self, consignment: Transfer) {
+    pub fn accept_transfer(&mut self, consignment: Transfer, report: Option<&Report>) {
         self.sync();
         let resolver = self.get_resolver();
+        let validate_start = Instant::now();
         let validated_consignment = consignment.validate(&resolver, self.testnet()).unwrap();
+        let validate_duration = validate_start.elapsed();
+        if let Some(report) = report {
+            report.write_duration(validate_duration);
+        }
+
         let validation_status = validated_consignment.clone().into_validation_status();
         let validity = validation_status.validity();
         assert_eq!(validity, Validity::Valid);
-        let mut attempts = 0;
-        while let Err(e) = self
-            .wallet
+        let accept_start = Instant::now();
+        self.wallet
             .stock_mut()
             .accept_transfer(validated_consignment.clone(), &resolver)
-        {
-            attempts += 1;
-            if attempts > 3 {
-                panic!("error accepting transfer: {e}");
-            }
-            std::thread::sleep(std::time::Duration::from_millis(100));
+            .unwrap();
+        let accept_duration = accept_start.elapsed();
+        if let Some(report) = report {
+            report.write_duration(accept_duration);
         }
     }
 
@@ -928,6 +975,7 @@ impl TestWallet {
         println!("\nWallet total balance: {} ṩ", bp_runtime.balance());
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn send(
         &mut self,
         recv_wlt: &mut TestWallet,
@@ -936,6 +984,7 @@ impl TestWallet {
         iface_type_name: &TypeName,
         amount: u64,
         sats: u64,
+        report: Option<&Report>,
     ) -> (Transfer, Tx) {
         let invoice = match transfer_type {
             TransferType::Blinded => recv_wlt.invoice(
@@ -953,7 +1002,7 @@ impl TestWallet {
                 InvoiceType::Witness,
             ),
         };
-        self.send_to_invoice(recv_wlt, invoice, Some(sats), None)
+        self.send_to_invoice(recv_wlt, invoice, Some(sats), None, report)
     }
 
     pub fn send_to_invoice(
@@ -962,10 +1011,11 @@ impl TestWallet {
         invoice: RgbInvoice,
         sats: Option<u64>,
         fee: Option<u64>,
+        report: Option<&Report>,
     ) -> (Transfer, Tx) {
-        let (consignment, tx) = self.transfer(invoice, sats, fee);
+        let (consignment, tx) = self.transfer(invoice, sats, fee, report);
         self.mine_tx(&tx.txid(), false);
-        recv_wlt.accept_transfer(consignment.clone());
+        recv_wlt.accept_transfer(consignment.clone(), report);
         self.sync();
         (consignment, tx)
     }

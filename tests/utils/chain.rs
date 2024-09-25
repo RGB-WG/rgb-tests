@@ -124,7 +124,7 @@ pub fn mine(resume: bool) {
         if mined {
             break;
         }
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::thread::sleep(Duration::from_millis(500));
     }
 }
 
@@ -141,7 +141,7 @@ pub fn mine_but_no_resume() {
             break;
         }
         drop(miner);
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::thread::sleep(Duration::from_millis(500));
     }
 }
 
@@ -162,7 +162,7 @@ pub fn stop_mining_when_alone() {
             break;
         }
         drop(miner);
-        std::thread::sleep(std::time::Duration::from_millis(500));
+        std::thread::sleep(Duration::from_millis(500));
     }
 }
 
@@ -195,7 +195,7 @@ fn _wait_indexer_sync() {
     let t_0 = OffsetDateTime::now_utc();
     let blockcount = get_height();
     loop {
-        std::thread::sleep(std::time::Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(100));
         match INDEXER.get().unwrap() {
             Indexer::Electrum => {
                 let electrum_client =
