@@ -73,3 +73,20 @@ The GitHub organizations of submodule repositories are:
 - https://github.com/strict-types
 - https://github.com/rust-amplify
 - https://github.com/UBIDECO
+
+## Contribute
+
+### Submodule revision change helper
+A helper to change the revision for all submodules is available in the form of
+the `sub-rev-change.sh` script.
+
+As an example, it can be used to update all submodules to the `master` branch
+with:
+```sh
+./sub-rev-change.sh --branch master
+```
+
+See the help for more details on its usage:
+```sh
+./sub-rev-change.sh --help
+```
