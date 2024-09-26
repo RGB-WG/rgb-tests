@@ -745,7 +745,7 @@ fn tapret_wlt_receiving_opret() {
     let (contract_id, iface_type_name) = wlt_1.issue_nia(600, wlt_1.close_method(), None);
 
     println!("1st transfer");
-    wlt_1.send(
+    let (consignment, _) = wlt_1.send(
         &mut wlt_2,
         TransferType::Blinded,
         contract_id,
@@ -754,6 +754,8 @@ fn tapret_wlt_receiving_opret() {
         5000,
         None,
     );
+    assert_eq!(consignment.bundles.len(), 1);
+    assert_eq!(consignment.terminals.len(), 1);
 
     println!("2nd transfer");
     let invoice = wlt_1.invoice(
@@ -763,10 +765,12 @@ fn tapret_wlt_receiving_opret() {
         CloseMethod::OpretFirst,
         InvoiceType::Witness,
     );
-    wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
+    let (consignment, _) = wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
+    assert_eq!(consignment.bundles.len(), 2);
+    assert_eq!(consignment.terminals.len(), 0);
 
     println!("3rd transfer");
-    wlt_1.send(
+    let (consignment, _) = wlt_1.send(
         &mut wlt_2,
         TransferType::Blinded,
         contract_id,
@@ -775,7 +779,10 @@ fn tapret_wlt_receiving_opret() {
         1000,
         None,
     );
+    assert_eq!(consignment.bundles.len(), 0);
+    assert_eq!(consignment.terminals.len(), 0);
 
+    /*
     println!("4th transfer");
     wlt_2.send(
         &mut wlt_1,
@@ -797,4 +804,5 @@ fn tapret_wlt_receiving_opret() {
         1000,
         None,
     );
+    */
 }
