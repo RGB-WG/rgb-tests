@@ -809,7 +809,7 @@ impl TestWallet {
     ) -> (Transfer, Tx) {
         self.sync();
 
-        let fee = Sats::from_sats(fee.unwrap_or(400));
+        let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
         let sats = Sats::from_sats(sats.unwrap_or(2000));
         let params = TransferParams::with(fee, sats);
         let pay_start = Instant::now();
@@ -1164,7 +1164,7 @@ impl TestWallet {
         beneficiaries: Vec<(Address, Option<u64>)>,
         fee: Option<u64>,
     ) -> (Psbt, PsbtMeta) {
-        let tx_params = TxParams::with(Sats::from_sats(fee.unwrap_or(400)));
+        let tx_params = TxParams::with(Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS)));
         let beneficiaries = self._construct_beneficiaries(beneficiaries);
         let beneficiaries: Vec<&PsbtBeneficiary> = beneficiaries.iter().collect();
 
@@ -1177,7 +1177,7 @@ impl TestWallet {
         beneficiaries: Vec<(Address, Option<u64>)>,
         fee: Option<u64>,
     ) -> (Psbt, PsbtMeta) {
-        let tx_params = TxParams::with(Sats::from_sats(fee.unwrap_or(400)));
+        let tx_params = TxParams::with(Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS)));
         let beneficiaries = self._construct_beneficiaries(beneficiaries);
         let beneficiaries: Vec<&PsbtBeneficiary> = beneficiaries.iter().collect();
 

@@ -57,9 +57,12 @@ fn back_and_forth(
         }
     };
 
+    let sats_base = 3000;
+    let mut sats_send = sats_base * loops as u64;
     let now = Instant::now();
     for i in 1..=loops {
         println!("loop {i}/{loops}");
+        sats_send -= DEFAULT_FEE_ABS * 2;
         let wlt_1_send_start = Instant::now();
         wlt_1.send(
             &mut wlt_2,
@@ -67,10 +70,11 @@ fn back_and_forth(
             contract_id,
             &iface_type_name,
             issued_supply - i as u64,
-            1000,
+            sats_send,
             Some(&report),
         );
         let wlt_1_send_duration = wlt_1_send_start.elapsed();
+        sats_send -= DEFAULT_FEE_ABS * 2;
         let wlt_2_send_start = Instant::now();
         wlt_2.send(
             &mut wlt_1,
@@ -78,7 +82,7 @@ fn back_and_forth(
             contract_id,
             &iface_type_name,
             issued_supply - i as u64 - 1,
-            1000,
+            sats_send,
             Some(&report),
         );
         let wlt_2_send_duration = wlt_2_send_start.elapsed();
