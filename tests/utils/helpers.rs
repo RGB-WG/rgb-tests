@@ -794,9 +794,13 @@ impl TestWallet {
         builder.finish()
     }
 
-    pub fn sign_finalize(&mut self, psbt: &mut Psbt) -> Tx {
+    pub fn sign_finalize(&mut self, psbt: &mut Psbt) {
         let _sig_count = psbt.sign(self.signer.as_ref().unwrap()).unwrap();
         psbt.finalize(&self.descriptor);
+    }
+
+    pub fn sign_finalize_extract(&mut self, psbt: &mut Psbt) -> Tx {
+        self.sign_finalize(psbt);
         psbt.extract().unwrap()
     }
 
@@ -831,7 +835,7 @@ impl TestWallet {
             .unwrap();
         serde_yaml::to_writer(&mut file, &consignment).unwrap();
 
-        let tx = self.sign_finalize(&mut psbt);
+        let tx = self.sign_finalize_extract(&mut psbt);
 
         let txid = tx.txid().to_string();
         println!("transfer txid: {txid}");
@@ -1187,12 +1191,38 @@ impl TestWallet {
             .unwrap()
     }
 
+    pub fn psbt_add_input(&mut self, psbt: &mut Psbt, utxo: Outpoint) {
+        for account in self.descriptor.xpubs() {
+            psbt.xpubs.insert(*account.xpub(), account.origin().clone());
+        }
+        let input = self.wallet.wallet().utxo(utxo).unwrap();
+        psbt.construct_input_expect(
+            input.to_prevout(),
+            self.wallet.wallet().descriptor(),
+            input.terminal,
+            SeqNo::ZERO,
+        );
+    }
+
     pub fn color_psbt(
         &mut self,
         psbt: &mut Psbt,
         coloring_info: ColoringInfo,
     ) -> (Fascia, AssetBeneficiariesMap) {
-        let _output = psbt.construct_output_expect(ScriptPubkey::op_return(&[]), Sats::ZERO);
+        let asset_beneficiaries = self.color_psbt_init(psbt, coloring_info);
+        psbt.complete_construction();
+        let fascia = psbt.rgb_commit().unwrap();
+        (fascia, asset_beneficiaries)
+    }
+
+    pub fn color_psbt_init(
+        &mut self,
+        psbt: &mut Psbt,
+        coloring_info: ColoringInfo,
+    ) -> AssetBeneficiariesMap {
+        if !psbt.outputs().any(|o| o.script.is_op_return()) {
+            let _output = psbt.construct_output_expect(ScriptPubkey::op_return(&[]), Sats::ZERO);
+        }
 
         let prev_outputs = psbt
             .to_unsigned_tx()
@@ -1220,7 +1250,18 @@ impl TestWallet {
             for (_, opout_state_map) in self
                 .wallet
                 .stock_mut()
-                .contract_assignments_for(contract_id, prev_outputs.iter().copied())
+                .contract_assignments_for(
+                    contract_id,
+                    prev_outputs
+                        .iter()
+                        // only retrieve assignments for owned prevouts using coloring_info
+                        .filter(|xop| {
+                            coloring_info.asset_info_map[&contract_id]
+                                .input_outpoints
+                                .contains(xop.as_reduced_unsafe())
+                        })
+                        .copied(),
+                )
                 .unwrap()
             {
                 for (opout, state) in opout_state_map {
@@ -1313,10 +1354,7 @@ impl TestWallet {
                 .unwrap();
         }
 
-        psbt.complete_construction();
-        let fascia = psbt.rgb_commit().unwrap();
-
-        (fascia, asset_beneficiaries)
+        asset_beneficiaries
     }
 
     pub fn consume_fascia(&mut self, fascia: Fascia, witness_txid: Txid) {
@@ -1355,5 +1393,32 @@ impl TestWallet {
             .stock_mut()
             .update_witnesses(resolver, after_height)
             .unwrap();
+    }
+
+    pub fn create_consignments(
+        &mut self,
+        asset_beneficiaries: AssetBeneficiariesMap,
+        witness_txid: Txid,
+    ) -> Vec<Transfer> {
+        let mut transfers = vec![];
+        let stock = self.wallet.stock_mut();
+
+        for (contract_id, beneficiaries) in asset_beneficiaries {
+            for beneficiary in beneficiaries {
+                match beneficiary {
+                    BuilderSeal::Revealed(seal) => {
+                        let explicit_seal = XChain::Bitcoin(ExplicitSeal::new(
+                            seal.method(),
+                            Outpoint::new(witness_txid, seal.as_reduced_unsafe().vout),
+                        ));
+                        transfers.push(stock.transfer(contract_id, [explicit_seal], None).unwrap());
+                    }
+                    BuilderSeal::Concealed(seal) => {
+                        transfers.push(stock.transfer(contract_id, vec![], Some(seal)).unwrap());
+                    }
+                }
+            }
+        }
+        transfers
     }
 }

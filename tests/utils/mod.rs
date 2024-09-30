@@ -36,12 +36,12 @@ pub use amplify::{
 use bitcoin_hashes::{sha256, Hash};
 pub use bp::{
     seals::txout::{BlindSeal, CloseMethod, ExplicitSeal},
-    ConsensusDecode, Outpoint, Sats, ScriptPubkey, Tx, Txid, Vout,
+    ConsensusDecode, Outpoint, Sats, ScriptPubkey, SeqNo, Tx, Txid, Vout,
 };
 pub use bpstd::{
-    h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, DerivedAddr, HardenedIndex,
-    Keychain, Network, Terminal, XkeyOrigin, Xpriv, XprivAccount, Xpub, XpubAccount, XpubDerivable,
-    XpubFp,
+    h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, DerivedAddr, Descriptor,
+    HardenedIndex, Keychain, Network, Terminal, XkeyOrigin, Xpriv, XprivAccount, Xpub, XpubAccount,
+    XpubDerivable, XpubFp,
 };
 pub use bpwallet::{
     fs::FsTextStore, indexers::esplora::Client as EsploraClient, AnyIndexer, Indexer as BpIndexer,

@@ -578,7 +578,7 @@ fn ln_transfers() {
         static_blinding: Some(666),
         nonce: Some(u64::MAX - 1),
     };
-    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
+    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
     wlt_1.debug_logs(contract_id, &iface_type_name);
 
@@ -686,7 +686,7 @@ fn ln_transfers() {
     wlt_1.debug_logs(contract_id, &iface_type_name);
 
     println!("\n7. broadcast old PSBT");
-    let tx = wlt_1.sign_finalize(&mut old_psbt);
+    let tx = wlt_1.sign_finalize_extract(&mut old_psbt);
     wlt_1.broadcast_tx(&tx);
     wlt_1.mine_tx(&tx.txid(), false);
     wlt_1.sync();
@@ -774,6 +774,104 @@ fn tapret_wlt_receiving_opret() {
         &iface_type_name,
         300,
         1000,
+        None,
+    );
+}
+
+#[test]
+fn collaborative_transfer() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
+
+    let sats = 30_000;
+
+    let utxo_0 = wlt_1.get_utxo(Some(sats));
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(600, wlt_1.close_method(), Some(&utxo_0));
+    let (_, tx) = wlt_1.send(
+        &mut wlt_2,
+        TransferType::Witness,
+        contract_id,
+        &iface_type_name,
+        200,
+        18_000,
+        None,
+    );
+    let utxo_1 = Outpoint::new(tx.txid(), 1); // change: 11_600 sat
+    let utxo_2 = Outpoint::new(tx.txid(), 0); // transfered: 18_000 sat
+
+    let mut psbt = Psbt::default();
+
+    wlt_1.psbt_add_input(&mut psbt, utxo_1);
+    wlt_2.psbt_add_input(&mut psbt, utxo_2);
+
+    psbt.construct_output_expect(
+        wlt_3.get_address().script_pubkey(),
+        Sats::from_sats(sats - 2 * DEFAULT_FEE_ABS),
+    );
+
+    let coloring_info_1 = ColoringInfo {
+        asset_info_map: HashMap::from([(
+            contract_id,
+            AssetColoringInfo {
+                iface: iface_type_name.clone(),
+                input_outpoints: vec![utxo_1],
+                output_map: HashMap::from([(0, 400)]),
+                static_blinding: None,
+            },
+        )]),
+        static_blinding: None,
+        nonce: None,
+    };
+    let coloring_info_2 = ColoringInfo {
+        asset_info_map: HashMap::from([(
+            contract_id,
+            AssetColoringInfo {
+                iface: iface_type_name.clone(),
+                input_outpoints: vec![utxo_2],
+                output_map: HashMap::from([(0, 200)]),
+                static_blinding: None,
+            },
+        )]),
+        static_blinding: None,
+        nonce: None,
+    };
+    let beneficiaries_1 = wlt_1.color_psbt_init(&mut psbt, coloring_info_1);
+
+    let (fascia, beneficiaries_2) = wlt_2.color_psbt(&mut psbt, coloring_info_2);
+
+    wlt_1.sign_finalize(&mut psbt);
+    let tx = wlt_2.sign_finalize_extract(&mut psbt);
+    wlt_1.broadcast_tx(&tx);
+
+    wlt_1.consume_fascia(fascia.clone(), tx.txid());
+    wlt_2.consume_fascia(fascia, tx.txid());
+
+    let consignments_1 = wlt_1.create_consignments(beneficiaries_1, tx.txid());
+    let consignments_2 = wlt_2.create_consignments(beneficiaries_2, tx.txid());
+
+    println!("Send the whole asset amount back to wlt_1 to check new allocations are spendable");
+    for consignment in vec![consignments_1, consignments_2].into_iter().flatten() {
+        wlt_3.accept_transfer(consignment, None);
+    }
+    wlt_3.send(
+        &mut wlt_1,
+        TransferType::Witness,
+        contract_id,
+        &iface_type_name,
+        600,
+        sats - 4 * DEFAULT_FEE_ABS,
+        None,
+    );
+    wlt_1.send(
+        &mut wlt_2,
+        TransferType::Witness,
+        contract_id,
+        &iface_type_name,
+        600,
+        sats - 6 * DEFAULT_FEE_ABS,
         None,
     );
 }
