@@ -771,7 +771,7 @@ fn tapret_wlt_receiving_opret() {
         TransferType::Blinded,
         contract_id,
         &iface_type_name,
-        300,
+        290,
         1000,
         None,
     );
@@ -793,7 +793,7 @@ fn tapret_wlt_receiving_opret() {
         TransferType::Blinded,
         contract_id,
         &iface_type_name,
-        600,
+        570,
         1000,
         None,
     );

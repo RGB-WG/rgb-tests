@@ -21,6 +21,7 @@ pub use std::{
     fmt::{self, Display},
     fs::OpenOptions,
     io::Write,
+    num::NonZeroU32,
     path::{PathBuf, MAIN_SEPARATOR},
     process::{Command, Stdio},
     str::FromStr,
