@@ -897,7 +897,7 @@ impl TestWallet {
         self.sync();
         let resolver = self.get_resolver();
         let validate_start = Instant::now();
-        let validated_consignment = consignment.validate(&resolver, self.testnet()).unwrap();
+        let validated_consignment = consignment.validate(&resolver, self.testnet()).map_err(|(status, _)| status).unwrap();
         let validate_duration = validate_start.elapsed();
         if let Some(report) = report {
             report.write_duration(validate_duration);
