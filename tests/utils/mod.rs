@@ -62,6 +62,7 @@ pub use psbt::{
 pub use psrgbt::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 pub use rgb::{
+    interface::AssignmentsFilter,
     invoice::Pay2Vout,
     persistence::{ContractStateRead, MemContract, MemContractState, Stock},
     resolvers::AnyResolver,
@@ -83,8 +84,8 @@ pub use rgbstd::{
     stl::{
         AssetSpec, Attachment, Details, MediaType, Name, ProofOfReserves, RicardianContract, Ticker,
     },
-    Allocation, Amount, ContractId, GlobalStateType, Layer1, Operation, OwnedFraction, Precision,
-    Schema, TokenIndex, TxoSeal, XChain,
+    Allocation, Amount, ContractId, GlobalStateType, KnownState, Layer1, Operation,
+    OutputAssignment, OwnedFraction, Precision, Schema, TokenIndex, TxoSeal, XChain,
 };
 pub use rstest::rstest;
 pub use schemata::{CollectibleFungibleAsset, NonInflatableAsset, UniqueDigitalAsset};

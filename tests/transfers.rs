@@ -551,7 +551,7 @@ fn ln_transfers() {
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
-    wlt_1.debug_logs(contract_id, &iface_type_name);
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     let htlc_vout = 2;
     let htlc_rgb_amt = 200;
@@ -580,7 +580,7 @@ fn ln_transfers() {
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
-    wlt_1.debug_logs(contract_id, &iface_type_name);
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     println!("\n3. fake HTLC TX");
     let witness_id = fascia.witness_id();
@@ -607,7 +607,7 @@ fn ln_transfers() {
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
-    wlt_1.debug_logs(contract_id, &iface_type_name);
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     println!("\n4. fake commitment TX (no HTLCs)");
     let beneficiaries = vec![
@@ -630,7 +630,7 @@ fn ln_transfers() {
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
-    wlt_1.debug_logs(contract_id, &iface_type_name);
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
     let mut old_psbt = psbt.clone();
 
     println!("\n5. fake commitment TX (1 HTLC)");
@@ -656,7 +656,7 @@ fn ln_transfers() {
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
-    wlt_1.debug_logs(contract_id, &iface_type_name);
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     println!("\n6. fake HTLC TX");
     let witness_id = fascia.witness_id();
@@ -683,7 +683,7 @@ fn ln_transfers() {
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
-    wlt_1.debug_logs(contract_id, &iface_type_name);
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     println!("\n7. broadcast old PSBT");
     let tx = wlt_1.sign_finalize(&mut old_psbt);
