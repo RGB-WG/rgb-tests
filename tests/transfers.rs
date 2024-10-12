@@ -499,8 +499,6 @@ fn accept_0conf() {
 
     wlt_2.accept_transfer(consignment.clone(), None);
 
-    // TODO: check if it's correct that sender sees 2 allocations
-    /*
     wlt_1.sync();
     wlt_1.check_allocations(
         contract_id,
@@ -509,7 +507,6 @@ fn accept_0conf() {
         vec![issue_supply - amt],
         false,
     );
-    */
     wlt_2.check_allocations(
         contract_id,
         &iface_type_name,
