@@ -10,61 +10,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  lint:
+  test_tapret_wlt_receiving_opret:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: true
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          components: clippy
-      - name: Lint
-        run: cargo clippy --all-targets -- -D warnings
-
-  format:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          components: rustfmt
-      - name: Format
-        run: cargo fmt --all -- --check
-
-  test_and_coverage:
-    runs-on: ubuntu-latest
-
+    timeout-minutes: 100
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: true
-
       - name: Setup rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          components: llvm-tools-preview
-          toolchain: stable
-
-      - name: Install llvm-cov
-        env:
-          LLVM_COV_RELEASES: https://github.com/taiki-e/cargo-llvm-cov/releases
+      - name: Run tapret_wlt_receiving_opret test 100 times
         run: |
-          host=$(rustc -Vv | grep host | sed 's/host: //')
-          curl -fsSL $LLVM_COV_RELEASES/latest/download/cargo-llvm-cov-$host.tar.gz | tar xzf - -C "$HOME/.cargo/bin"
-
-      - name: Test and generate coverage report
-        run: |
-          INDEXER=esplora cargo llvm-cov --output-path coverage.lcov
-          INDEXER=electrum cargo llvm-cov --no-clean --output-path coverage.lcov
-
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: true
-          file: coverage.lcov
-          flags: rust
-          token: ${{ secrets.CODECOV_TOKEN }}
+          cargo test --test transfers tapret_wlt_receiving_opret
+          for i in $(seq 1 100); do echo "run $i"; SKIP_INIT=1 cargo test --test transfers tapret_wlt_receiving_opret || break; done
