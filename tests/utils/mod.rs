@@ -74,7 +74,10 @@ pub use rgb::{
     RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
 };
 pub use rgbstd::{
-    containers::{BuilderSeal, ConsignmentExt, Fascia, FileContent, Kit, Transfer, ValidKit},
+    containers::{
+        BuilderSeal, ConsignmentExt, Fascia, FileContent, IndexedConsignment, Kit, Transfer,
+        ValidKit,
+    },
     interface::{
         ContractBuilder, ContractIface, DataAllocation, FilterExclude, FungibleAllocation, Iface,
         IfaceClass, IfaceId, IfaceImpl, NamedField,

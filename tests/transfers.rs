@@ -464,13 +464,13 @@ fn same_transfer_twice() {
         wlt_2.close_method(),
         InvoiceType::Witness,
     );
-    let _ = wlt_1.transfer(invoice.clone(), None, Some(500), None);
+    let _ = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
 
     // retry with higher fees, TX hasn't been mined
     let mid_height = get_height();
     assert_eq!(initial_height, mid_height);
 
-    let _ = wlt_1.transfer(invoice, None, Some(1000), None);
+    let _ = wlt_1.transfer(invoice, None, Some(1000), true, None);
 
     let final_height = get_height();
     assert_eq!(initial_height, final_height);
@@ -495,7 +495,7 @@ fn accept_0conf() {
         wlt_2.close_method(),
         InvoiceType::Witness,
     );
-    let (consignment, _) = wlt_1.transfer(invoice.clone(), None, None, None);
+    let (consignment, _) = wlt_1.transfer(invoice.clone(), None, None, true, None);
 
     wlt_2.accept_transfer(consignment.clone(), None);
 
@@ -722,7 +722,7 @@ fn mainnet_wlt_receiving_test_asset() {
         wlt_2.close_method(),
         InvoiceType::Blinded(Some(utxo)),
     );
-    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), None);
+    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
     wlt_1.mine_tx(&tx.txid(), false);
     match consignment.validate(&wlt_2.get_resolver(), wlt_2.testnet()) {
         Err((status, _invalid_consignment)) => {
@@ -895,4 +895,88 @@ fn collaborative_transfer() {
         sats - 6 * DEFAULT_FEE_ABS,
         None,
     );
+}
+
+#[test]
+fn receive_from_unbroadcasted_transfer_to_blinded() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
+
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(600, wlt_1.close_method(), None);
+
+    let utxo = wlt_2.get_utxo(None);
+    mine(false);
+    let invoice = wlt_2.invoice(
+        contract_id,
+        &iface_type_name,
+        100,
+        wlt_2.close_method(),
+        InvoiceType::Blinded(Some(utxo)),
+    );
+    // create transfer but do not broadcast its TX
+    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+    let txid = tx.txid();
+
+    struct OffchainResolver<'a, 'cons, const TRANSFER: bool> {
+        witness_id: XWitnessId,
+        consignment: &'cons IndexedConsignment<'cons, TRANSFER>,
+        fallback: &'a AnyResolver,
+    }
+    impl<'a, 'cons, const TRANSFER: bool> ResolveWitness for OffchainResolver<'a, 'cons, TRANSFER> {
+        fn resolve_pub_witness(
+            &self,
+            witness_id: XWitnessId,
+        ) -> Result<XWitnessTx, WitnessResolverError> {
+            self.consignment
+                .pub_witness(witness_id)
+                .and_then(|p| p.map_ref(|pw| pw.tx().cloned()).transpose())
+                .ok_or(WitnessResolverError::Unknown(witness_id))
+                .or_else(|_| self.fallback.resolve_pub_witness(witness_id))
+        }
+        fn resolve_pub_witness_ord(
+            &self,
+            witness_id: XWitnessId,
+        ) -> Result<WitnessOrd, WitnessResolverError> {
+            if witness_id != self.witness_id {
+                return self.fallback.resolve_pub_witness_ord(witness_id);
+            }
+            Ok(WitnessOrd::Tentative)
+        }
+    }
+
+    let resolver = OffchainResolver {
+        witness_id: XChain::Bitcoin(txid),
+        consignment: &IndexedConsignment::new(&consignment),
+        fallback: &wlt_2.get_resolver(),
+    };
+
+    // wlt_2 use custom resolver to be able to send the assets even if transfer TX sending to
+    // blinded UTXO has not been broadcasted
+    wlt_2.accept_transfer_custom_resolver(consignment.clone(), None, &resolver);
+
+    let invoice = wlt_3.invoice(
+        contract_id,
+        &iface_type_name,
+        50,
+        wlt_2.close_method(),
+        InvoiceType::Witness,
+    );
+    let (consignment, tx) = wlt_2.transfer(invoice, Some(2000), None, true, None);
+    wlt_2.mine_tx(&tx.txid(), false);
+
+    // consignemnt validation fails because it notices an unbroadcasted TX in the history
+    let res = consignment.validate(&wlt_3.get_resolver(), wlt_3.testnet());
+    assert!(res.is_err());
+    let validation_status = match res {
+        Ok(validated_consignment) => validated_consignment.validation_status().clone(),
+        Err((status, _consignment)) => status,
+    };
+    assert_eq!(validation_status.failures.len(), 1);
+    assert!(matches!(
+        validation_status.failures[0],
+        Failure::SealNoPubWitness(_, _, _)
+    ));
 }

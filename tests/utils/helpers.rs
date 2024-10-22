@@ -847,6 +847,7 @@ impl TestWallet {
         invoice: RgbInvoice,
         sats: Option<u64>,
         fee: Option<u64>,
+        broadcast: bool,
         report: Option<&Report>,
     ) -> (Transfer, Tx) {
         self.sync();
@@ -893,14 +894,24 @@ impl TestWallet {
         writeln!(file, "\n---\n").unwrap();
         serde_yaml::to_writer(&mut file, &psbt).unwrap();
 
-        self.broadcast_tx(&tx);
+        if broadcast {
+            self.broadcast_tx(&tx);
+        }
 
         (consignment, tx)
     }
 
     pub fn accept_transfer(&mut self, consignment: Transfer, report: Option<&Report>) {
+        self.accept_transfer_custom_resolver(consignment, report, &self.get_resolver());
+    }
+
+    pub fn accept_transfer_custom_resolver(
+        &mut self,
+        consignment: Transfer,
+        report: Option<&Report>,
+        resolver: &impl ResolveWitness,
+    ) {
         self.sync();
-        let resolver = self.get_resolver();
         let validate_start = Instant::now();
         let validated_consignment = consignment
             .validate(&resolver, self.testnet())
@@ -1100,7 +1111,7 @@ impl TestWallet {
         fee: Option<u64>,
         report: Option<&Report>,
     ) -> (Transfer, Tx) {
-        let (consignment, tx) = self.transfer(invoice, sats, fee, report);
+        let (consignment, tx) = self.transfer(invoice, sats, fee, true, report);
         self.mine_tx(&tx.txid(), false);
         recv_wlt.accept_transfer(consignment.clone(), report);
         self.sync();
