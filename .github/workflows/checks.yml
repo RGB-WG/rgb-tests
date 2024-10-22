@@ -57,9 +57,7 @@ jobs:
           curl -fsSL $LLVM_COV_RELEASES/latest/download/cargo-llvm-cov-$host.tar.gz | tar xzf - -C "$HOME/.cargo/bin"
 
       - name: Test and generate coverage report
-        run: |
-          INDEXER=esplora cargo llvm-cov --output-path coverage.lcov
-          INDEXER=electrum cargo llvm-cov --no-clean --output-path coverage.lcov
+        run: ./tests/coverage.sh --ci
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v4
