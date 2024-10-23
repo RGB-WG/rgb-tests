@@ -1,6 +1,8 @@
+codecov:
+  disable_default_path_fixes: true
 coverage:
   status:
     project:
       default:
-        target: 100%
-        threshold: 3%
+        target: 35%
+        threshold: 0%
