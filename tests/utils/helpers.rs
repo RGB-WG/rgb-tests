@@ -916,7 +916,9 @@ impl TestWallet {
     }
 
     pub fn accept_transfer(&mut self, consignment: Transfer, report: Option<&Report>) {
-        self.accept_transfer_custom_resolver(consignment, report, &self.get_resolver());
+        let mut resolver = self.get_resolver();
+        resolver.add_terminals(&consignment);
+        self.accept_transfer_custom_resolver(consignment, report, &resolver);
     }
 
     pub fn accept_transfer_custom_resolver(

@@ -444,7 +444,7 @@ fn transfer_loop(
 }
 
 #[test]
-fn same_transfer_twice() {
+fn rbf_transfer() {
     initialize();
 
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
@@ -475,6 +475,98 @@ fn same_transfer_twice() {
     let final_height = get_height();
     assert_eq!(initial_height, final_height);
     resume_mining();
+}
+
+#[test]
+#[ignore = "fix needed"]
+fn same_transfer_twice_no_update_witnesses() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(2000, wlt_1.close_method(), None);
+
+    let amount = 100;
+    let invoice = wlt_2.invoice(
+        contract_id,
+        &iface_type_name,
+        amount,
+        wlt_2.close_method(),
+        InvoiceType::Blinded(None),
+    );
+    let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+
+    let (consignment, _) = wlt_1.transfer(invoice, None, Some(1000), true, None);
+
+    wlt_2.accept_transfer(consignment, None);
+
+    // this shows duplicated allocations
+    wlt_2.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
+
+    // this fails because the wallet sees 2 allocations instead of 1
+    // comment it in order to see the inflation bug
+    wlt_2.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![amount],
+        false,
+    );
+
+    // this works but should fail
+    wlt_2.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id,
+        &iface_type_name,
+        200,
+        1000,
+        None,
+    );
+
+    // this shows 1900+200 as owned, but we issued 2000
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
+
+    let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
+
+    // this works but should fail
+    wlt_1.send(
+        &mut wlt_3,
+        TransferType::Blinded,
+        contract_id,
+        &iface_type_name,
+        2100,
+        1000,
+        None,
+    );
+    // this shows 2100 as owned, but we issued 2000
+    wlt_3.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
+}
+
+#[test]
+#[ignore = "fix needed"]
+fn same_transfer_twice_update_witnesses() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(2000, wlt_1.close_method(), None);
+
+    let invoice = wlt_2.invoice(
+        contract_id,
+        &iface_type_name,
+        100,
+        wlt_2.close_method(),
+        InvoiceType::Blinded(None),
+    );
+    let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+
+    wlt_1.update_witnesses(1);
+
+    // this fails with an AbsentValidWitness error
+    let _ = wlt_1.transfer(invoice, None, Some(1000), true, None);
 }
 
 #[test]
