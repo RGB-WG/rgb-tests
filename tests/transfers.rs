@@ -1188,3 +1188,52 @@ fn send_to_oneself() {
         true,
     );
 }
+
+#[rstest]
+#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
+#[case(CloseMethod::OpretFirst, CloseMethod::OpretFirst)]
+#[case(CloseMethod::TapretFirst, CloseMethod::TapretFirst)]
+#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
+#[case(CloseMethod::OpretFirst, CloseMethod::TapretFirst)]
+#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
+#[case(CloseMethod::TapretFirst, CloseMethod::OpretFirst)]
+fn blank_tapret_opret(#[case] close_method_0: CloseMethod, #[case] close_method_1: CloseMethod) {
+    println!("close_method_0 {close_method_0:?} close_method_1 {close_method_1:?}");
+
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Tr);
+    let mut wlt_2 = get_wallet(&DescriptorType::Tr);
+
+    let utxo = wlt_1.get_utxo(None);
+
+    let amt_0 = 200;
+    let (contract_id_0, iface_type_name_0) = wlt_1.issue_nia(amt_0, close_method_0, Some(&utxo));
+
+    // asset to be moved in blank
+    let amt_1 = 100;
+    let (contract_id_1, iface_type_name_1) = wlt_1.issue_nia(amt_1, close_method_1, Some(&utxo));
+
+    wlt_1.send(
+        &mut wlt_2,
+        TransferType::Blinded,
+        contract_id_0,
+        &iface_type_name_0,
+        amt_0,
+        1000,
+        None,
+    );
+
+    // send opret, blank opret: pay fails with Composition(Stock("the spent UTXOs contain too many seals which can't fit the state transition input limit."))
+    // send opret, blank tapret: pay fails with Composition(Stock("the spent UTXOs contain too many seals which can't fit the state transition input limit."))
+    // send tapret, blank opret: pay fails with Composition(Construction(NoInputs))
+    wlt_1.send(
+        &mut wlt_2,
+        TransferType::Blinded,
+        contract_id_1,
+        &iface_type_name_1,
+        amt_1,
+        1000,
+        None,
+    );
+}
