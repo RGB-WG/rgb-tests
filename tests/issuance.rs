@@ -132,7 +132,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
         "02d2cc5d7883885bb7472e4fe96a07344b1d7cf794cb06943e1cdb5c57754d8a"
     );
     let token_data = contract.token_data();
-    assert_eq!(token_data.index, TokenIndex::from_inner(0));
+    assert_eq!(token_data.index, TokenIndex::from(0));
     assert_eq!(token_data.ticker.unwrap().to_string(), token_data_ticker);
     assert_eq!(token_data.name.unwrap().to_string(), token_data_name);
     assert_eq!(token_data.details.unwrap().to_string(), token_data_details);

@@ -12,6 +12,44 @@ enum WalletAccount {
     Public(XpubAccount),
 }
 
+pub enum AllocationFilter {
+    Stock,
+    Wallet,
+    WalletAll,
+}
+
+enum Filter<'w> {
+    NoWallet,
+    Wallet(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
+    WalletAll(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
+}
+
+impl<'w> AssignmentsFilter for Filter<'w> {
+    fn should_include(&self, outpoint: impl Into<XOutpoint>, id: Option<XWitnessId>) -> bool {
+        match self {
+            Filter::Wallet(wallet) => wallet
+                .wallet()
+                .filter_unspent()
+                .should_include(outpoint, id),
+            _ => true,
+        }
+    }
+}
+impl<'w> Filter<'w> {
+    fn comment(&self, outpoint: XOutpoint) -> &'static str {
+        let outpoint = outpoint
+            .into_bp()
+            .into_bitcoin()
+            .expect("liquid is not yet supported");
+        match self {
+            Filter::Wallet(rgb) if rgb.wallet().is_unspent(outpoint) => "",
+            Filter::WalletAll(rgb) if rgb.wallet().is_unspent(outpoint) => "-- unspent",
+            Filter::WalletAll(rgb) if rgb.wallet().has_outpoint(outpoint) => "-- spent",
+            _ => "-- third-party",
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DescriptorType {
     Wpkh,
@@ -329,7 +367,7 @@ impl AssetInfo {
                 .add_fungible_state("assetOwner", builder_seal, *issued_supply)
                 .unwrap(),
             Self::Uda { token_data, .. } => {
-                let fraction = OwnedFraction::from_inner(1);
+                let fraction = OwnedFraction::from(1);
                 let allocation = Allocation::with(token_data.index, fraction);
                 builder
                     .add_data("assetOwner", builder_seal, allocation)
@@ -499,7 +537,7 @@ pub fn attachment_from_fpath(fpath: &str) -> Attachment {
 
 fn uda_token_data_minimal() -> TokenData {
     TokenData {
-        index: TokenIndex::from_inner(UDA_FIXED_INDEX),
+        index: TokenIndex::from(UDA_FIXED_INDEX),
         ..Default::default()
     }
 }
@@ -537,7 +575,7 @@ impl TestWallet {
         RgbKeychain::for_method(self.close_method())
     }
 
-    pub fn get_derived_address(&mut self) -> DerivedAddr {
+    pub fn get_derived_address(&self) -> DerivedAddr {
         self.wallet
             .wallet()
             .addresses(self.keychain())
@@ -545,7 +583,7 @@ impl TestWallet {
             .expect("no addresses left")
     }
 
-    pub fn get_address(&mut self) -> Address {
+    pub fn get_address(&self) -> Address {
         self.get_derived_address().addr
     }
 
@@ -794,12 +832,12 @@ impl TestWallet {
         builder.finish()
     }
 
-    pub fn sign_finalize(&mut self, psbt: &mut Psbt) {
+    pub fn sign_finalize(&self, psbt: &mut Psbt) {
         let _sig_count = psbt.sign(self.signer.as_ref().unwrap()).unwrap();
         psbt.finalize(&self.descriptor);
     }
 
-    pub fn sign_finalize_extract(&mut self, psbt: &mut Psbt) -> Tx {
+    pub fn sign_finalize_extract(&self, psbt: &mut Psbt) -> Tx {
         self.sign_finalize(psbt);
         psbt.extract().unwrap()
     }
@@ -825,7 +863,8 @@ impl TestWallet {
 
         let mut cs_path = self.wallet_dir.join("consignments");
         std::fs::create_dir_all(&cs_path).unwrap();
-        cs_path.push(consignment.consignment_id().to_string());
+        let consignment_id = consignment.consignment_id();
+        cs_path.push(consignment_id.to_string());
         cs_path.set_extension("yaml");
         let mut file = std::fs::File::options()
             .read(true)
@@ -838,7 +877,7 @@ impl TestWallet {
         let tx = self.sign_finalize_extract(&mut psbt);
 
         let txid = tx.txid().to_string();
-        println!("transfer txid: {txid}");
+        println!("transfer txid: {txid}, consignment: {consignment_id}");
 
         let mut tx_path = self.wallet_dir.join("transactions");
         std::fs::create_dir_all(&tx_path).unwrap();
@@ -863,7 +902,10 @@ impl TestWallet {
         self.sync();
         let resolver = self.get_resolver();
         let validate_start = Instant::now();
-        let validated_consignment = consignment.validate(&resolver, self.testnet()).unwrap();
+        let validated_consignment = consignment
+            .validate(&resolver, self.testnet())
+            .map_err(|(status, _)| status)
+            .unwrap();
         let validate_duration = validate_start.elapsed();
         if let Some(report) = report {
             report.write_duration(validate_duration);
@@ -909,7 +951,7 @@ impl TestWallet {
         contract_iface: &ContractIface<S>,
     ) -> Vec<FungibleAllocation> {
         contract_iface
-            .fungible(fname!("assetOwner"), &self.wallet.wallet().filter())
+            .fungible(fname!("assetOwner"), Filter::Wallet(&self.wallet))
             .unwrap()
             .collect()
     }
@@ -919,12 +961,23 @@ impl TestWallet {
         contract_iface: &ContractIface<S>,
     ) -> Vec<DataAllocation> {
         contract_iface
-            .data(fname!("assetOwner"), &self.wallet.wallet().filter())
+            .data(fname!("assetOwner"), Filter::Wallet(&self.wallet))
             .unwrap()
             .collect()
     }
 
-    pub fn debug_logs(&self, contract_id: ContractId, iface_type_name: &TypeName) {
+    pub fn debug_logs(
+        &self,
+        contract_id: ContractId,
+        iface_type_name: &TypeName,
+        filter: AllocationFilter,
+    ) {
+        let filter = match filter {
+            AllocationFilter::WalletAll => Filter::WalletAll(&self.wallet),
+            AllocationFilter::Wallet => Filter::Wallet(&self.wallet),
+            AllocationFilter::Stock => Filter::NoWallet,
+        };
+
         let contract = self.contract_iface(contract_id, iface_type_name);
 
         println!("Global:");
@@ -937,30 +990,60 @@ impl TestWallet {
         }
 
         println!("\nOwned:");
+        fn witness<S: KnownState>(
+            allocation: &OutputAssignment<S>,
+            contract: &ContractIface<MemContract<&MemContractState>>,
+        ) -> String {
+            allocation
+                .witness
+                .and_then(|w| contract.witness_info(w))
+                .map(|info| format!("{} ({})", info.id, info.ord))
+                .unwrap_or_else(|| s!("~"))
+        }
         for owned in &contract.iface.assignments {
+            println!("  State      \t{:78}\tWitness", "Seal");
             println!("  {}:", owned.name);
-            if let Ok(allocations) =
-                contract.fungible(owned.name.clone(), &self.wallet.wallet().filter())
-            {
+            if let Ok(allocations) = contract.fungible(owned.name.clone(), &filter) {
                 for allocation in allocations {
                     println!(
-                        "    amount={}, utxo={}, witness={:?} # owned by the wallet",
+                        "    {: >9}\t{}\t{} {}",
                         allocation.state.value(),
                         allocation.seal,
-                        allocation.witness
+                        witness(&allocation, &contract),
+                        filter.comment(allocation.seal.to_outpoint())
                     );
                 }
             }
-            if let Ok(allocations) = contract.fungible(
-                owned.name.clone(),
-                &FilterExclude(&self.wallet.wallet().filter()),
-            ) {
+            if let Ok(allocations) = contract.data(owned.name.clone(), &filter) {
                 for allocation in allocations {
                     println!(
-                        "    amount={}, utxo={}, witness={:?} # owner unknown",
-                        allocation.state.value(),
+                        "    {: >9}\t{}\t{} {}",
+                        allocation.state,
                         allocation.seal,
-                        allocation.witness
+                        witness(&allocation, &contract),
+                        filter.comment(allocation.seal.to_outpoint())
+                    );
+                }
+            }
+            if let Ok(allocations) = contract.attachments(owned.name.clone(), &filter) {
+                for allocation in allocations {
+                    println!(
+                        "    {: >9}\t{}\t{} {}",
+                        allocation.state,
+                        allocation.seal,
+                        witness(&allocation, &contract),
+                        filter.comment(allocation.seal.to_outpoint())
+                    );
+                }
+            }
+            if let Ok(allocations) = contract.rights(owned.name.clone(), &filter) {
+                for allocation in allocations {
+                    println!(
+                        "    {: >9}\t{}\t{} {}",
+                        "right",
+                        allocation.seal,
+                        witness(&allocation, &contract),
+                        filter.comment(allocation.seal.to_outpoint())
                     );
                 }
             }
@@ -1191,7 +1274,7 @@ impl TestWallet {
             .unwrap()
     }
 
-    pub fn psbt_add_input(&mut self, psbt: &mut Psbt, utxo: Outpoint) {
+    pub fn psbt_add_input(&self, psbt: &mut Psbt, utxo: Outpoint) {
         for account in self.descriptor.xpubs() {
             psbt.xpubs.insert(*account.xpub(), account.origin().clone());
         }
@@ -1205,7 +1288,7 @@ impl TestWallet {
     }
 
     pub fn color_psbt(
-        &mut self,
+        &self,
         psbt: &mut Psbt,
         coloring_info: ColoringInfo,
     ) -> (Fascia, AssetBeneficiariesMap) {
@@ -1216,7 +1299,7 @@ impl TestWallet {
     }
 
     pub fn color_psbt_init(
-        &mut self,
+        &self,
         psbt: &mut Psbt,
         coloring_info: ColoringInfo,
     ) -> AssetBeneficiariesMap {
@@ -1239,7 +1322,7 @@ impl TestWallet {
         for (contract_id, asset_coloring_info) in coloring_info.asset_info_map.clone() {
             let mut asset_transition_builder = self
                 .wallet
-                .stock_mut()
+                .stock()
                 .transition_builder(contract_id, asset_coloring_info.iface, None::<&str>)
                 .unwrap();
             let assignment_id = asset_transition_builder
@@ -1249,7 +1332,7 @@ impl TestWallet {
             let mut asset_available_amt = 0;
             for (_, opout_state_map) in self
                 .wallet
-                .stock_mut()
+                .stock()
                 .contract_assignments_for(
                     contract_id,
                     prev_outputs
@@ -1396,12 +1479,12 @@ impl TestWallet {
     }
 
     pub fn create_consignments(
-        &mut self,
+        &self,
         asset_beneficiaries: AssetBeneficiariesMap,
         witness_txid: Txid,
     ) -> Vec<Transfer> {
         let mut transfers = vec![];
-        let stock = self.wallet.stock_mut();
+        let stock = self.wallet.stock();
 
         for (contract_id, beneficiaries) in asset_beneficiaries {
             for beneficiary in beneficiaries {

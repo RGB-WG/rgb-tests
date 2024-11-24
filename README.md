@@ -120,3 +120,10 @@ See the help for more details on its usage:
 ```sh
 ./sub-rev-change.sh --help
 ```
+
+### PRs showing bugs
+
+If a PR introduces tests showing bugs it will be merged if the failing tests
+have the `#[ignore]` attribute. When the project is updated to a new RGB
+release, maintainers will check if the ignored tests are passing and if so the
+attribute will be dropped.

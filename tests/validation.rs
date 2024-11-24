@@ -64,11 +64,11 @@ impl Scenario {
         match self {
             Self::A => {
                 let (tx_1, witness_id_1) =
-                    get_tx("bc:97b4c906fafad952e7b68784d38f56dec505a719c2564743b1bebe0289c7d893");
+                    get_tx("bc:a5c3085efe8dfdba0fa0e11d81bf90cdcac27c0af496c4de1a2fd9659948ffce");
                 let (tx_2, witness_id_2) =
-                    get_tx("bc:f93edffa684d53146d5bc11122eb129960f2ca86bbdbca338df3b3c7234544dc");
+                    get_tx("bc:d077ea7e3a55a215893a18e82cb03fda0f50619893e4aee0ba70b014e6d63248");
                 let (tx_3, witness_id_3) =
-                    get_tx("bc:3b9c8836e09cdf08d225b8e9f7862e23a6ede1276c12ccd426c530cd531e4cfa");
+                    get_tx("bc:3652d9fea802cb051f671455cbd7472e3bce2c440a4e54fa4321107037dfaff0");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -76,19 +76,19 @@ impl Scenario {
                         witness_id_3 => MockResolvePubWitness::Success(tx_3),
                     ],
                     pub_witness_ords: map![
-                        witness_id_1 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::new(106, 1726062111).unwrap())),
-                        witness_id_2 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::new(108, 1726062111).unwrap())),
-                        witness_id_3 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::new(110, 1726062112).unwrap())),
+                        witness_id_1 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::bitcoin(NonZeroU32::new(106).unwrap(), 1726062111).unwrap())),
+                        witness_id_2 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::bitcoin(NonZeroU32::new(108).unwrap(), 1726062111).unwrap())),
+                        witness_id_3 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::bitcoin(NonZeroU32::new(110).unwrap(), 1726062112).unwrap())),
                     ],
                 }
             }
             Self::B => {
                 let (tx_1, witness_id_1) =
-                    get_tx("bc:b9703e716d01de771d443c5cbf06cbba1f132c67a2b6d8c6c88bbcc0f83afe1b");
+                    get_tx("bc:c269055b7750a234087c11acd7a408172cb84d8fc6af0ded42d8a8cbea6712e9");
                 let (tx_2, witness_id_2) =
-                    get_tx("bc:5abbca66698ef17ab5e5794adc5a73e5988a96235b84e943a0c4e0fd05a8ca66");
+                    get_tx("bc:d84c37b6c6616184c454c815d970505bed9b3a3723a4445dd1289dc708bc80b3");
                 let (tx_3, witness_id_3) =
-                    get_tx("bc:222f1a35bb96a02831930dcdd02e46f46daca1fdd7199dd043e04c7841b2ff40");
+                    get_tx("bc:0bc3024ce6404cd7aea387debde687d9e8731228e16b04b4eefda7283069f1c3");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -96,9 +96,9 @@ impl Scenario {
                         witness_id_3 => MockResolvePubWitness::Success(tx_3),
                     ],
                     pub_witness_ords: map![
-                        witness_id_1 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::new(105, 1726062423).unwrap())),
-                        witness_id_2 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::new(106, 1726062423).unwrap())),
-                        witness_id_3 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::new(106, 1726062423).unwrap())),
+                        witness_id_1 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::bitcoin(NonZeroU32::new(105).unwrap(), 1726062423).unwrap())),
+                        witness_id_2 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::bitcoin(NonZeroU32::new(106).unwrap(), 1726062423).unwrap())),
+                        witness_id_3 => MockResolvePubWitnessOrd::Success(WitnessOrd::Mined(WitnessPos::bitcoin(NonZeroU32::new(106).unwrap(), 1726062423).unwrap())),
                     ],
                 }
             }
@@ -270,19 +270,19 @@ fn validate_consignment_genesis_fail() {
     assert_eq!(validation_status.failures.len(), 5);
     assert!(matches!(
         validation_status.failures[0],
-        Failure::MpcInvalid(_, _, _)
-    ));
-    assert!(matches!(
-        validation_status.failures[1],
         Failure::OperationAbsent(_)
     ));
     assert!(matches!(
-        validation_status.failures[2],
+        validation_status.failures[1],
         Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
-        validation_status.failures[3],
+        validation_status.failures[2],
         Failure::BundleExtraTransition(_, _)
+    ));
+    assert!(matches!(
+        validation_status.failures[3],
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
         validation_status.failures[4],
@@ -326,7 +326,7 @@ fn validate_consignment_bundles_fail() {
         Err((status, _consignment)) => status,
     };
     dbg!(&validation_status);
-    assert_eq!(validation_status.failures.len(), 2);
+    assert_eq!(validation_status.failures.len(), 3);
     assert!(matches!(
         validation_status.failures[0],
         Failure::SealsInvalid(_, _, _)
@@ -334,6 +334,10 @@ fn validate_consignment_bundles_fail() {
     assert!(matches!(
         validation_status.failures[1],
         Failure::BundleInvalidCommitment(_, _, _, _)
+    ));
+    assert!(matches!(
+        validation_status.failures[2],
+        Failure::SealNoPubWitness(_, _, _)
     ));
     assert!(validation_status.warnings.is_empty());
     assert!(validation_status.info.is_empty());
@@ -346,7 +350,7 @@ fn validate_consignment_resolver_error() {
     let scenario = Scenario::A;
     let mut resolver = scenario.resolver();
     let txid =
-        Txid::from_str("f93edffa684d53146d5bc11122eb129960f2ca86bbdbca338df3b3c7234544dc").unwrap();
+        Txid::from_str("d077ea7e3a55a215893a18e82cb03fda0f50619893e4aee0ba70b014e6d63248").unwrap();
     let xwitness_id = XChain::Bitcoin(txid);
 
     // resolve_pub_witness error
