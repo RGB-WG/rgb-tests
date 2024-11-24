@@ -1089,3 +1089,102 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
         Failure::SealNoPubWitness(_, _, _)
     ));
 }
+
+#[test]
+fn check_fungible_history() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let issue_supply = 600;
+
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(issue_supply, wlt_1.close_method(), None);
+
+    wlt_1.debug_contracts();
+    wlt_1.debug_history(contract_id, &iface_type_name, false);
+
+    wlt_1.check_history_operation(
+        &contract_id,
+        &iface_type_name,
+        None,
+        OpDirection::Issued,
+        issue_supply,
+    );
+
+    let amt = 200;
+
+    let (_, tx) = wlt_1.send(
+        &mut wlt_2,
+        TransferType::Witness,
+        contract_id,
+        &iface_type_name,
+        amt,
+        1000,
+        None,
+    );
+    let txid = tx.txid();
+
+    wlt_1.debug_history(contract_id, &iface_type_name, false);
+    wlt_2.debug_history(contract_id, &iface_type_name, false);
+
+    wlt_1.check_history_operation(
+        &contract_id,
+        &iface_type_name,
+        Some(&txid),
+        OpDirection::Sent,
+        amt,
+    );
+
+    wlt_2.check_history_operation(
+        &contract_id,
+        &iface_type_name,
+        Some(&txid),
+        OpDirection::Received,
+        amt,
+    );
+}
+
+#[test]
+fn send_to_oneself() {
+    initialize();
+
+    let mut wlt = get_wallet(&DescriptorType::Wpkh);
+
+    let issue_supply = 600;
+
+    let (contract_id, iface_type_name) = wlt.issue_nia(issue_supply, wlt.close_method(), None);
+
+    let amt = 200;
+
+    let invoice = wlt.invoice(
+        contract_id,
+        &iface_type_name,
+        amt,
+        wlt.close_method(),
+        InvoiceType::Witness,
+    );
+
+    let (consignment, tx) = wlt.transfer(invoice.clone(), None, None, true, None);
+    wlt.mine_tx(&tx.txid(), false);
+    wlt.accept_transfer(consignment, None);
+    wlt.sync();
+
+    wlt.debug_history(contract_id, &iface_type_name, false);
+    let history = wlt.history(contract_id, &iface_type_name);
+    // only issue operation is found, because self-transfers should not appear in history
+    assert_eq!(history.len(), 1);
+
+    wlt.debug_logs(
+        contract_id,
+        &iface_type_name.clone(),
+        AllocationFilter::WalletAll,
+    );
+    wlt.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![amt, issue_supply - amt],
+        true,
+    );
+}

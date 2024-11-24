@@ -63,14 +63,14 @@ pub use psbt::{
 pub use psrgbt::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 pub use rgb::{
-    interface::AssignmentsFilter,
+    interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
     persistence::{MemContract, MemContractState, Stock},
     resolvers::AnyResolver,
     stl::ContractTerms,
     validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos, XWitnessTx},
-    BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, RgbDescr, RgbKeychain,
+    BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
     RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
 };
 pub use rgbstd::{
