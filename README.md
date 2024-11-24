@@ -110,15 +110,20 @@ The GitHub organizations of submodule repositories are:
 A helper to change the revision for all submodules is available in the form of
 the `sub-rev-change.sh` script.
 
-As an example, it can be used to update all submodules to the `master` branch
+As an example, it can be used to point all submodules to the `master` branch
 with:
 ```sh
-./sub-rev-change.sh --branch master
+./submodules-rev.sh change --branch master
 ```
 
 See the help for more details on its usage:
 ```sh
-./sub-rev-change.sh --help
+./submodules-rev.sh help
+```
+
+To check which revision is checked-out for each submodule run:
+```sh
+./submodules-rev.sh status
 ```
 
 ### PRs showing bugs
