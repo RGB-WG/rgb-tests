@@ -25,6 +25,7 @@ jobs:
           - name: macos
             os: macos-latest
     steps:
+      - uses: ilammy/setup-nasm@v1
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
