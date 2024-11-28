@@ -39,9 +39,9 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
         details,
         terms_text,
         terms_media_fpath,
-        issued_supply,
+        vec![issued_supply],
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
     let spec = contract.spec();
@@ -114,7 +114,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
         terms_media_fpath,
         token_data,
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb21>(contract_id);
     let spec = contract.spec();
@@ -169,9 +169,9 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
         details,
         terms_text,
         terms_media_fpath,
-        issued_supply,
+        vec![issued_supply],
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, None);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
     assert_eq!(contract.name().to_string(), name.to_string());
@@ -195,4 +195,74 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let allocation = allocations[0];
     assert_eq!(allocation.seal.method(), close_method);
     assert_eq!(allocation.state, Amount::from(issued_supply));
+}
+
+#[apply(descriptor_and_close_method)]
+fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMethod) {
+    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+
+    initialize();
+
+    let mut wallet = get_wallet(&wallet_desc);
+
+    let amounts = vec![222, 444, 333];
+    let outpoints: Vec<_> = (0..amounts.len())
+        .map(|_| Some(wallet.get_utxo(None)))
+        .collect();
+    let asset_info = AssetInfo::default_nia(amounts.clone());
+    let (contract_id, iface_type_name) =
+        wallet.issue_with_info(asset_info, close_method, outpoints.clone());
+
+    let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
+    assert_eq!(
+        contract.total_issued_supply().value(),
+        amounts.iter().sum::<u64>()
+    );
+
+    let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
+    assert_eq!(allocations.len(), amounts.len());
+    for (amt, outpoint) in amounts.iter().zip(outpoints.into_iter()) {
+        assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
+            && a.seal
+                == XChain::Bitcoin(ExplicitSeal {
+                    method: close_method,
+                    txid: outpoint.unwrap().txid,
+                    vout: outpoint.unwrap().vout
+                })))
+    }
+}
+
+#[apply(descriptor_and_close_method)]
+fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMethod) {
+    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+
+    initialize();
+
+    let mut wallet = get_wallet(&wallet_desc);
+
+    let amounts = vec![222, 444, 333];
+    let outpoints: Vec<_> = (0..amounts.len())
+        .map(|_| Some(wallet.get_utxo(None)))
+        .collect();
+    let asset_info = AssetInfo::default_cfa(amounts.clone());
+    let (contract_id, iface_type_name) =
+        wallet.issue_with_info(asset_info, close_method, outpoints.clone());
+
+    let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
+    assert_eq!(
+        contract.total_issued_supply().value(),
+        amounts.iter().sum::<u64>()
+    );
+
+    let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
+    assert_eq!(allocations.len(), amounts.len());
+    for (amt, outpoint) in amounts.iter().zip(outpoints.into_iter()) {
+        assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
+            && a.seal
+                == XChain::Bitcoin(ExplicitSeal {
+                    method: close_method,
+                    txid: outpoint.unwrap().txid,
+                    vout: outpoint.unwrap().vout
+                })))
+    }
 }

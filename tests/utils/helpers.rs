@@ -133,27 +133,6 @@ impl fmt::Display for AssetSchema {
     }
 }
 
-#[derive(Debug)]
-pub enum AssetInfo {
-    Nia {
-        spec: AssetSpec,
-        terms: ContractTerms,
-        issued_supply: u64,
-    },
-    Uda {
-        spec: AssetSpec,
-        terms: ContractTerms,
-        token_data: TokenData,
-    },
-    Cfa {
-        name: Name,
-        precision: Precision,
-        details: Option<Details>,
-        terms: ContractTerms,
-        issued_supply: u64,
-    },
-}
-
 impl AssetSchema {
     fn iface_type_name(&self) -> TypeName {
         tn!(match self {
@@ -214,6 +193,27 @@ impl AssetSchema {
     }
 }
 
+#[derive(Debug)]
+pub enum AssetInfo {
+    Nia {
+        spec: AssetSpec,
+        terms: ContractTerms,
+        issue_amounts: Vec<u64>,
+    },
+    Uda {
+        spec: AssetSpec,
+        terms: ContractTerms,
+        token_data: TokenData,
+    },
+    Cfa {
+        name: Name,
+        precision: Precision,
+        details: Option<Details>,
+        terms: ContractTerms,
+        issue_amounts: Vec<u64>,
+    },
+}
+
 impl AssetInfo {
     fn asset_schema(&self) -> AssetSchema {
         match self {
@@ -247,6 +247,33 @@ impl AssetInfo {
         self.asset_schema().iface()
     }
 
+    pub fn default_cfa(issue_amounts: Vec<u64>) -> Self {
+        AssetInfo::cfa("CFA asset name", 0, None, "CFA terms", None, issue_amounts)
+    }
+
+    pub fn default_nia(issue_amounts: Vec<u64>) -> Self {
+        AssetInfo::nia(
+            "NIATCKR",
+            "NIA asset name",
+            2,
+            None,
+            "NIA terms",
+            None,
+            issue_amounts,
+        )
+    }
+
+    pub fn default_uda() -> Self {
+        AssetInfo::uda(
+            "UDATCKR",
+            "UDA asset name",
+            None,
+            "NIA terms",
+            None,
+            uda_token_data_minimal(),
+        )
+    }
+
     pub fn nia(
         ticker: &str,
         name: &str,
@@ -254,7 +281,7 @@ impl AssetInfo {
         details: Option<&str>,
         terms_text: &str,
         terms_media_fpath: Option<&str>,
-        issued_supply: u64,
+        issue_amounts: Vec<u64>,
     ) -> Self {
         let spec = AssetSpec::with(
             ticker,
@@ -272,7 +299,7 @@ impl AssetInfo {
         Self::Nia {
             spec,
             terms,
-            issued_supply,
+            issue_amounts,
         }
     }
 
@@ -304,7 +331,7 @@ impl AssetInfo {
         details: Option<&str>,
         terms_text: &str,
         terms_media_fpath: Option<&str>,
-        issued_supply: u64,
+        issue_amounts: Vec<u64>,
     ) -> AssetInfo {
         let text = RicardianContract::from_str(terms_text).unwrap();
         let attachment = terms_media_fpath.map(attachment_from_fpath);
@@ -317,7 +344,7 @@ impl AssetInfo {
             precision: Precision::try_from(precision).unwrap(),
             details: details.map(|d| Details::try_from(d.to_owned()).unwrap()),
             terms,
-            issued_supply,
+            issue_amounts,
         }
     }
 
@@ -326,13 +353,16 @@ impl AssetInfo {
             Self::Nia {
                 spec,
                 terms,
-                issued_supply,
+                issue_amounts,
             } => builder
                 .add_global_state("spec", spec.clone())
                 .unwrap()
                 .add_global_state("terms", terms.clone())
                 .unwrap()
-                .add_global_state("issuedSupply", Amount::from(*issued_supply))
+                .add_global_state(
+                    "issuedSupply",
+                    Amount::from(issue_amounts.iter().sum::<u64>()),
+                )
                 .unwrap(),
             Self::Uda {
                 spec,
@@ -350,7 +380,7 @@ impl AssetInfo {
                 precision,
                 details,
                 terms,
-                issued_supply,
+                issue_amounts: issued_supply,
             } => {
                 builder = builder
                     .add_global_state("name", name.clone())
@@ -359,7 +389,10 @@ impl AssetInfo {
                     .unwrap()
                     .add_global_state("terms", terms.clone())
                     .unwrap()
-                    .add_global_state("issuedSupply", Amount::from(*issued_supply))
+                    .add_global_state(
+                        "issuedSupply",
+                        Amount::from(issued_supply.iter().sum::<u64>()),
+                    )
                     .unwrap();
                 if let Some(details) = details {
                     builder = builder
@@ -373,18 +406,49 @@ impl AssetInfo {
 
     fn add_asset_owner(
         &self,
-        builder: ContractBuilder,
-        builder_seal: BuilderSeal<BlindSeal<Txid>>,
+        mut builder: ContractBuilder,
+        close_method: CloseMethod,
+        outpoints: Vec<Outpoint>,
     ) -> ContractBuilder {
+        fn get_genesis_seal(
+            close_method: CloseMethod,
+            outpoint: Outpoint,
+        ) -> BuilderSeal<BlindSeal<Txid>> {
+            let blind_seal = match close_method {
+                CloseMethod::TapretFirst => {
+                    BlindSeal::tapret_first_rand(outpoint.txid, outpoint.vout)
+                }
+                CloseMethod::OpretFirst => {
+                    BlindSeal::opret_first_rand(outpoint.txid, outpoint.vout)
+                }
+            };
+            let genesis_seal = GenesisSeal::from(blind_seal);
+            let seal: XChain<BlindSeal<Txid>> = XChain::with(Layer1::Bitcoin, genesis_seal);
+            BuilderSeal::from(seal)
+        }
+
         match self {
-            Self::Nia { issued_supply, .. } | Self::Cfa { issued_supply, .. } => builder
-                .add_fungible_state("assetOwner", builder_seal, *issued_supply)
-                .unwrap(),
+            Self::Nia { issue_amounts, .. } | Self::Cfa { issue_amounts, .. } => {
+                for (amt, outpoint) in issue_amounts.iter().zip(outpoints.iter().cycle()) {
+                    builder = builder
+                        .add_fungible_state(
+                            "assetOwner",
+                            get_genesis_seal(close_method, *outpoint),
+                            *amt,
+                        )
+                        .unwrap();
+                }
+                builder
+            }
             Self::Uda { token_data, .. } => {
                 let fraction = OwnedFraction::from(1);
                 let allocation = Allocation::with(token_data.index, fraction);
                 builder
-                    .add_data("assetOwner", builder_seal, allocation)
+                    .add_data(
+                        "assetOwner",
+                        get_genesis_seal(close_method, outpoints[0]),
+                        allocation,
+                    )
                     .unwrap()
             }
         }
@@ -711,21 +775,16 @@ impl TestWallet {
         &mut self,
         asset_info: AssetInfo,
         close_method: CloseMethod,
-        outpoint: Option<&Outpoint>,
+        outpoints: Vec<Option<Outpoint>>,
     ) -> (ContractId, TypeName) {
-        let outpoint = if let Some(outpoint) = outpoint {
-            *outpoint
+        let outpoints = if outpoints.is_empty() {
+            vec![self.get_utxo(None)]
         } else {
-            self.get_utxo(None)
+            outpoints
+                .into_iter()
+                .map(|o| o.unwrap_or_else(|| self.get_utxo(None)))
+                .collect()
         };
-
-        let blind_seal = match close_method {
-            CloseMethod::TapretFirst => BlindSeal::tapret_first_rand(outpoint.txid, outpoint.vout),
-            CloseMethod::OpretFirst => BlindSeal::opret_first_rand(outpoint.txid, outpoint.vout),
-        };
-        let genesis_seal = GenesisSeal::from(blind_seal);
-        let seal: XChain<BlindSeal<Txid>> = XChain::with(Layer1::Bitcoin, genesis_seal);
-        let builder_seal = BuilderSeal::from(seal);
 
         let mut builder = ContractBuilder::with(
             Identity::default(),
@@ -738,7 +797,7 @@ impl TestWallet {
 
         builder = asset_info.add_global_state(builder);
 
-        builder = asset_info.add_asset_owner(builder, builder_seal);
+        builder = asset_info.add_asset_owner(builder, close_method, outpoints);
 
         let contract = builder.issue_contract().expect("failure issuing contract");
         let resolver = self.get_resolver();
@@ -756,16 +815,8 @@ impl TestWallet {
         close_method: CloseMethod,
         outpoint: Option<&Outpoint>,
     ) -> (ContractId, TypeName) {
-        let asset_info = AssetInfo::nia(
-            "NIATCKR",
-            "NIA asset name",
-            2,
-            None,
-            "NIA terms",
-            None,
-            issued_supply,
-        );
-        self.issue_with_info(asset_info, close_method, outpoint)
+        let asset_info = AssetInfo::default_nia(vec![issued_supply]);
+        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
     }
 
     pub fn issue_uda(
@@ -773,16 +824,8 @@ impl TestWallet {
         close_method: CloseMethod,
         outpoint: Option<&Outpoint>,
     ) -> (ContractId, TypeName) {
-        let token_data = uda_token_data_minimal();
-        let asset_info = AssetInfo::uda(
-            "UDATCKR",
-            "UDA asset name",
-            None,
-            "NIA terms",
-            None,
-            token_data,
-        );
-        self.issue_with_info(asset_info, close_method, outpoint)
+        let asset_info = AssetInfo::default_uda();
+        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
     }
 
     pub fn issue_cfa(
@@ -791,9 +834,8 @@ impl TestWallet {
         close_method: CloseMethod,
         outpoint: Option<&Outpoint>,
     ) -> (ContractId, TypeName) {
-        let asset_info =
-            AssetInfo::cfa("CFA asset name", 0, None, "CFA terms", None, issued_supply);
-        self.issue_with_info(asset_info, close_method, outpoint)
+        let asset_info = AssetInfo::default_cfa(vec![issued_supply]);
+        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
     }
 
     pub fn invoice(
