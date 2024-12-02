@@ -478,7 +478,7 @@ fn rbf_transfer() {
 }
 
 #[test]
-#[ignore = "fix needed"]
+#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
 fn same_transfer_twice_no_update_witnesses() {
     initialize();
 
@@ -545,7 +545,7 @@ fn same_transfer_twice_no_update_witnesses() {
 }
 
 #[test]
-#[ignore = "fix needed"]
+#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
 fn same_transfer_twice_update_witnesses() {
     initialize();
 

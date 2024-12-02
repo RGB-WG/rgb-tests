@@ -499,8 +499,8 @@ fn _get_wallet(
     println!("wallet dir: {wallet_dir:?}");
 
     let xpub_account = match wallet_account {
-        WalletAccount::Private(ref xpriv_account) => &xpriv_account.to_xpub_account(),
-        WalletAccount::Public(ref xpub_account) => xpub_account,
+        WalletAccount::Private(ref xpriv_account) => xpriv_account.to_xpub_account(),
+        WalletAccount::Public(ref xpub_account) => xpub_account.clone(),
     };
     const OPRET_KEYCHAINS: [Keychain; 3] = [
         Keychain::INNER,

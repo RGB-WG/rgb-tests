@@ -208,7 +208,8 @@ fn get_consignment_from_yaml(fname: &str) -> Transfer {
 }
 
 fn get_tx(witness_id: &str) -> (Tx, XWitnessId) {
-    let yaml_path = format!("tests/fixtures/{witness_id}.yaml");
+    let normalized_witness_id = witness_id.replace(":", "_");
+    let yaml_path = format!("tests/fixtures/{normalized_witness_id}.yaml");
     let file = std::fs::File::open(yaml_path).unwrap();
     let tx: Tx = serde_yaml::from_reader(file).unwrap();
     let xwitness_id = XWitnessId::from_str(witness_id).unwrap();

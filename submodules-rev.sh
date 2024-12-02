@@ -42,22 +42,58 @@ _war() {
 
 # CLI handling
 help() {
-    echo "$0 [-h] [-f] [-r <remote>] (-b) <branch>"
+    echo "$0 <command>"
+    echo ""
+    echo "commands:"
+    echo "    status         show all submodule revs"
+    echo "    change         change submodule revs"
+    echo "    help           show this help message"
+}
+
+change_help() {
+    echo "$0 change [-h] [-f] [-r <remote>] (-b) <branch>"
     echo ""
     echo "options:"
-    echo "    -h --help      show this help message"
     echo "    -b --branch    change to the specified branch"
     echo "    -f --fetch     fetch provided remote (or all if none specified)"
     echo "    -r --remote    remote to be used"
     echo "    -t --tag       change to the specified tag"
 }
 
+status() {
+    git submodule foreach --quiet \
+        'echo "" $(git rev-list -n1 HEAD) $sm_path $(git describe --all | sed "s,^\(tags\|remotes\|heads\)/,(,;s/$/)/")'
+}
+
+if [ -z "$1" ]; then
+    help
+    _die "please provide a command"
+fi
+
+case $1 in
+    help)
+        help
+        exit 0
+        ;;
+    status)
+        status
+        exit 0
+        ;;
+    change)
+        shift
+        ;;
+    *)
+        help
+        _die "unsupported command \"$1\""
+        ;;
+esac
+
 while [ -n "$1" ]; do
     case $1 in
         -h | --help)
-            help
-            exit 0
-            ;;
+             change_help
+             exit 0
+             ;;
         -b | --branch)
             BRANCH="$2"
             shift
@@ -74,8 +110,8 @@ while [ -n "$1" ]; do
             shift
             ;;
         *)
-            help
-            _die "unsupported argument \"$1\""
+            change_help
+            _die "unsupported option \"$1\""
             ;;
     esac
     shift
@@ -83,6 +119,7 @@ done
 
 # check a branch or tag have been specified
 if [ -z "$BRANCH" ] && [ -z "$TAG" ]; then
+    change_help
     _die "please specify a branch or a tag to switch to"
 fi
 if [ -n "$BRANCH" ] && [ -n "$TAG" ]; then
