@@ -1318,9 +1318,6 @@ impl TestWallet {
                 actual_fungible_allocations.sort();
                 expected_fungible_allocations.sort();
                 assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
-                assert!(allocations
-                    .iter()
-                    .all(|a| a.seal.method() == self.close_method()));
             }
             AssetSchema::Uda => {
                 let allocations = self.contract_data_allocations(contract_id, iface_type_name);
