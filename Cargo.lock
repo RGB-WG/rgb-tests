@@ -346,7 +346,7 @@ dependencies = [
 
 [[package]]
 name = "bp-derive"
-version = "0.11.0-beta.9"
+version = "0.11.0-beta.9.1"
 dependencies = [
  "amplify",
  "bp-consensus",
@@ -360,7 +360,7 @@ dependencies = [
 
 [[package]]
 name = "bp-electrum"
-version = "0.11.0-beta.9.2"
+version = "0.11.0-beta.9.3"
 dependencies = [
  "amplify",
  "bp-std",
@@ -391,7 +391,7 @@ dependencies = [
 
 [[package]]
 name = "bp-invoice"
-version = "0.11.0-beta.9"
+version = "0.11.0-beta.9.1"
 dependencies = [
  "amplify",
  "bech32",
@@ -417,7 +417,7 @@ dependencies = [
 
 [[package]]
 name = "bp-std"
-version = "0.11.0-beta.9"
+version = "0.11.0-beta.9.1"
 dependencies = [
  "amplify",
  "bp-consensus",
@@ -434,7 +434,7 @@ dependencies = [
 
 [[package]]
 name = "bp-wallet"
-version = "0.11.0-beta.9"
+version = "0.11.0-beta.9.1"
 dependencies = [
  "amplify",
  "bp-electrum",
@@ -660,7 +660,7 @@ dependencies = [
 
 [[package]]
 name = "descriptors"
-version = "0.11.0-beta.9"
+version = "0.11.0-beta.9.1"
 dependencies = [
  "amplify",
  "bp-derive",
@@ -1197,7 +1197,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.6",
 ]
 
 [[package]]
@@ -1455,7 +1455,7 @@ dependencies = [
 
 [[package]]
 name = "psbt"
-version = "0.11.0-beta.9"
+version = "0.11.0-beta.9.1"
 dependencies = [
  "amplify",
  "base64",
@@ -1622,7 +1622,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-invoice"
-version = "0.11.0-beta.9"
+version = "0.11.0-beta.9.1"
 dependencies = [
  "amplify",
  "baid64",
@@ -1697,7 +1697,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-std"
-version = "0.11.0-beta.9"
+version = "0.11.0-beta.9.1"
 dependencies = [
  "aluvm",
  "amplify",
