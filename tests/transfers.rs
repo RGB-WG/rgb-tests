@@ -989,12 +989,24 @@ fn sync_mainnet_wlt() {
     wlt_1.sync();
 }
 
-#[test]
-fn tapret_wlt_receiving_opret() {
+#[rstest]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh)]
+#[case(TT::Witness, DT::Tr, DT::Wpkh)]
+#[ignore = "fix needed"] // 2nd transfer shouldn't happen
+#[case(TT::Blinded, DT::Wpkh, DT::Tr)]
+#[ignore = "fix needed"] // 2nd transfer shouldn't happen
+#[case(TT::Witness, DT::Wpkh, DT::Tr)]
+fn wlt_receiving_from_different_close_method(
+    #[case] transfer_type: TransferType,
+    #[case] wlt_1_desc: DescriptorType,
+    #[case] wlt_2_desc: DescriptorType,
+) {
+    println!("transfer_type {transfer_type:?} wlt_1_desc {wlt_1_desc:?} wlt_2_desc {wlt_2_desc:?}");
+
     initialize();
 
-    let mut wlt_1 = get_wallet(&DescriptorType::Tr);
-    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_1 = get_wallet(&wlt_1_desc);
+    let mut wlt_2 = get_wallet(&wlt_2_desc);
 
     let (contract_id, iface_type_name) = wlt_1.issue_nia(600, wlt_1.close_method(), None);
 
@@ -1010,14 +1022,25 @@ fn tapret_wlt_receiving_opret() {
     );
 
     println!("2nd transfer");
+    let close_method = match wlt_1_desc {
+        DescriptorType::Tr => CloseMethod::OpretFirst,
+        DescriptorType::Wpkh => CloseMethod::TapretFirst,
+    };
     let invoice = wlt_1.invoice(
         contract_id,
         &iface_type_name,
         100,
-        CloseMethod::OpretFirst,
-        InvoiceType::Witness,
+        close_method,
+        transfer_type.into(),
     );
     wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
+    wlt_1.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![100, 200],
+        false,
+    );
 
     println!("3rd transfer");
     wlt_1.send(
