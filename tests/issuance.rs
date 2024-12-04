@@ -61,7 +61,6 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
     assert_eq!(allocations.len(), 1);
     let allocation = allocations[0];
-    assert_eq!(allocation.seal.method(), close_method);
     assert_eq!(allocation.state, Amount::from(issued_supply));
 }
 
@@ -145,7 +144,6 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let allocations = wallet.contract_data_allocations(contract_id, &iface_type_name);
     assert_eq!(allocations.len(), 1);
     let allocation = &allocations[0];
-    assert_eq!(allocation.seal.method(), close_method);
     assert_eq!(allocation.state.to_string(), "000000000100000000000000");
 }
 
@@ -193,7 +191,6 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
     assert_eq!(allocations.len(), 1);
     let allocation = allocations[0];
-    assert_eq!(allocation.seal.method(), close_method);
     assert_eq!(allocation.state, Amount::from(issued_supply));
 }
 
@@ -225,7 +222,6 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
         assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
             && a.seal
                 == XChain::Bitcoin(ExplicitSeal {
-                    method: close_method,
                     txid: outpoint.unwrap().txid,
                     vout: outpoint.unwrap().vout
                 })))
@@ -260,7 +256,6 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
         assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
             && a.seal
                 == XChain::Bitcoin(ExplicitSeal {
-                    method: close_method,
                     txid: outpoint.unwrap().txid,
                     vout: outpoint.unwrap().vout
                 })))
@@ -278,6 +273,7 @@ fn issue_on_different_layers() {
     let amounts = vec![200, 100];
     let asset_info = AssetInfo::default_nia(amounts.clone());
     let mut builder = ContractBuilder::with(
+        close_method,
         Identity::default(),
         asset_info.iface(),
         asset_info.schema(),
@@ -293,7 +289,7 @@ fn issue_on_different_layers() {
     builder
         .add_fungible_state(
             "assetOwner",
-            get_genesis_seal(close_method, outpoint, Layer1::Liquid),
+            get_genesis_seal(outpoint, Layer1::Liquid),
             100u64,
         )
         .unwrap();

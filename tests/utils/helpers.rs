@@ -430,7 +430,6 @@ impl AssetInfo {
     pub fn add_asset_owner(
         &self,
         mut builder: ContractBuilder,
-        close_method: CloseMethod,
         outpoints: Vec<Outpoint>,
         layer_1: Layer1,
     ) -> ContractBuilder {
@@ -440,7 +439,7 @@ impl AssetInfo {
                     builder = builder
                         .add_fungible_state(
                             "assetOwner",
-                            get_genesis_seal(close_method, *outpoint, layer_1),
+                            get_genesis_seal(*outpoint, layer_1),
                             *amt,
                         )
                         .unwrap();
@@ -453,7 +452,7 @@ impl AssetInfo {
                 builder
                     .add_data(
                         "assetOwner",
-                        get_genesis_seal(close_method, outpoints[0], layer_1),
+                        get_genesis_seal(outpoints[0], layer_1),
                         allocation,
                     )
                     .unwrap()
@@ -496,15 +495,8 @@ impl Report {
     }
 }
 
-pub fn get_genesis_seal(
-    close_method: CloseMethod,
-    outpoint: Outpoint,
-    layer_1: Layer1,
-) -> BuilderSeal<BlindSeal<Txid>> {
-    let blind_seal = match close_method {
-        CloseMethod::TapretFirst => BlindSeal::tapret_first_rand(outpoint.txid, outpoint.vout),
-        CloseMethod::OpretFirst => BlindSeal::opret_first_rand(outpoint.txid, outpoint.vout),
-    };
+pub fn get_genesis_seal(outpoint: Outpoint, layer_1: Layer1) -> BuilderSeal<BlindSeal<Txid>> {
+    let blind_seal = BlindSeal::rand(outpoint.txid, outpoint.vout);
     let genesis_seal = GenesisSeal::from(blind_seal);
     let seal: XChain<BlindSeal<Txid>> = XChain::with(layer_1, genesis_seal);
     BuilderSeal::from(seal)
@@ -802,7 +794,7 @@ impl TestWallet {
     }
 
     pub fn close_method(&self) -> CloseMethod {
-        self.wallet.wallet().seal_close_method()
+        self.wallet.wallet().close_method()
     }
 
     pub fn mine_tx(&self, txid: &Txid, resume: bool) {
@@ -837,6 +829,7 @@ impl TestWallet {
         let layer_1 = Layer1::Bitcoin;
 
         let mut builder = ContractBuilder::with(
+            close_method,
             Identity::default(),
             asset_info.iface(),
             asset_info.schema(),
@@ -848,7 +841,7 @@ impl TestWallet {
 
         builder = asset_info.add_global_state(builder);
 
-        builder = asset_info.add_asset_owner(builder, close_method, outpoints, layer_1);
+        builder = asset_info.add_asset_owner(builder, outpoints, layer_1);
 
         let contract = builder.issue_contract().expect("failure issuing contract");
         let resolver = self.get_resolver();
@@ -894,7 +887,6 @@ impl TestWallet {
         contract_id: ContractId,
         iface_type_name: &TypeName,
         amount: u64,
-        close_method: CloseMethod,
         invoice_type: InvoiceType,
     ) -> RgbInvoice {
         let network = self.wallet.wallet().network();
@@ -905,26 +897,22 @@ impl TestWallet {
                 } else {
                     self.get_utxo(None)
                 };
-                let seal = XChain::Bitcoin(GraphSeal::new_random(
-                    close_method,
-                    outpoint.txid,
-                    outpoint.vout,
-                ));
+                let seal = XChain::Bitcoin(GraphSeal::new_random(outpoint.txid, outpoint.vout));
                 self.wallet.stock_mut().store_secret_seal(seal).unwrap();
                 Beneficiary::BlindedSeal(*seal.to_secret_seal().as_reduced_unsafe())
             }
             InvoiceType::Witness => {
                 let address = self.get_address();
-                Beneficiary::WitnessVout(Pay2Vout {
-                    address: address.payload,
-                    method: close_method,
-                })
+                Beneficiary::WitnessVout(address.payload)
             }
         };
 
         let mut builder = RgbInvoiceBuilder::new(XChainNet::bitcoin(network, beneficiary))
             .set_contract(contract_id)
             .set_interface(iface_type_name.clone());
+        if self.close_method() == CloseMethod::OpretFirst {
+            builder = builder.set_close_methods(vec![CloseMethod::OpretFirst]);
+        }
         if *iface_type_name == AssetSchema::Uda.iface_type_name() {
             if amount != 1 {
                 panic!("UDA amount must be 1");
@@ -1274,13 +1262,7 @@ impl TestWallet {
         sats: u64,
         report: Option<&Report>,
     ) -> (Transfer, Tx) {
-        let invoice = recv_wlt.invoice(
-            contract_id,
-            iface_type_name,
-            amount,
-            recv_wlt.close_method(),
-            transfer_type.into(),
-        );
+        let invoice = recv_wlt.invoice(contract_id, iface_type_name, amount, transfer_type.into());
         self.send_to_invoice(recv_wlt, invoice, Some(sats), None, report)
     }
 
@@ -1575,9 +1557,9 @@ impl TestWallet {
                     panic!("invalid vout in output_map, does not exist in the given PSBT");
                 }
                 let graph_seal = if let Some(blinding) = asset_coloring_info.static_blinding {
-                    GraphSeal::with_blinded_vout(CloseMethod::OpretFirst, vout, blinding)
+                    GraphSeal::with_blinded_vout(vout, blinding)
                 } else {
-                    GraphSeal::new_random_vout(CloseMethod::OpretFirst, vout)
+                    GraphSeal::new_random_vout(vout)
                 };
                 let seal = BuilderSeal::Revealed(XChain::with(Layer1::Bitcoin, graph_seal));
                 beneficiaries.push(seal);
@@ -1698,10 +1680,10 @@ impl TestWallet {
             for beneficiary in beneficiaries {
                 match beneficiary {
                     BuilderSeal::Revealed(seal) => {
-                        let explicit_seal = XChain::Bitcoin(ExplicitSeal::new(
-                            seal.method(),
-                            Outpoint::new(witness_txid, seal.as_reduced_unsafe().vout),
-                        ));
+                        let explicit_seal = XChain::Bitcoin(ExplicitSeal::new(Outpoint::new(
+                            witness_txid,
+                            seal.as_reduced_unsafe().vout,
+                        )));
                         transfers.push(stock.transfer(contract_id, [explicit_seal], None).unwrap());
                     }
                     BuilderSeal::Concealed(seal) => {

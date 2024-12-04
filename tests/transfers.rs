@@ -119,17 +119,23 @@ fn transfer_loop(
 
     let mut sats = 9000;
 
+    let issue_close_method = if wlt_2.close_method() == CloseMethod::OpretFirst {
+        CloseMethod::OpretFirst
+    } else {
+        wlt_1.close_method()
+    };
+
     // wlt_1 issues 2 assets on the same UTXO
     let utxo = wlt_1.get_utxo(None);
     let (contract_id_1, iface_type_name_1) = match asset_schema_1 {
-        AssetSchema::Nia => wlt_1.issue_nia(issued_supply_1, wlt_1.close_method(), Some(&utxo)),
-        AssetSchema::Uda => wlt_1.issue_uda(wlt_1.close_method(), Some(&utxo)),
-        AssetSchema::Cfa => wlt_1.issue_cfa(issued_supply_1, wlt_1.close_method(), Some(&utxo)),
+        AssetSchema::Nia => wlt_1.issue_nia(issued_supply_1, issue_close_method, Some(&utxo)),
+        AssetSchema::Uda => wlt_1.issue_uda(issue_close_method, Some(&utxo)),
+        AssetSchema::Cfa => wlt_1.issue_cfa(issued_supply_1, issue_close_method, Some(&utxo)),
     };
     let (contract_id_2, iface_type_name_2) = match asset_schema_2 {
-        AssetSchema::Nia => wlt_1.issue_nia(issued_supply_2, wlt_1.close_method(), Some(&utxo)),
-        AssetSchema::Uda => wlt_1.issue_uda(wlt_1.close_method(), Some(&utxo)),
-        AssetSchema::Cfa => wlt_1.issue_cfa(issued_supply_2, wlt_1.close_method(), Some(&utxo)),
+        AssetSchema::Nia => wlt_1.issue_nia(issued_supply_2, issue_close_method, Some(&utxo)),
+        AssetSchema::Uda => wlt_1.issue_uda(issue_close_method, Some(&utxo)),
+        AssetSchema::Cfa => wlt_1.issue_cfa(issued_supply_2, issue_close_method, Some(&utxo)),
     };
     wlt_1.check_allocations(
         contract_id_1,
@@ -457,13 +463,7 @@ fn rbf_transfer() {
     let initial_height = get_height();
 
     let amount = 400;
-    let invoice = wlt_2.invoice(
-        contract_id,
-        &iface_type_name,
-        amount,
-        wlt_2.close_method(),
-        InvoiceType::Witness,
-    );
+    let invoice = wlt_2.invoice(contract_id, &iface_type_name, amount, InvoiceType::Witness);
     let (consignment, _) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
 
     wlt_2.accept_transfer(consignment.clone(), None);
@@ -525,13 +525,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     let (contract_id, iface_type_name) = wlt_1.issue_nia(issue_supply, wlt_1.close_method(), None);
 
     let amount = 100;
-    let invoice = wlt_2.invoice(
-        contract_id,
-        &iface_type_name,
-        amount,
-        wlt_2.close_method(),
-        transfer_type.into(),
-    );
+    let invoice = wlt_2.invoice(contract_id, &iface_type_name, amount, transfer_type.into());
     let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
 
     let (consignment, _) = wlt_1.transfer(invoice, None, Some(1000), true, None);
@@ -597,13 +591,7 @@ fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
     let (contract_id, iface_type_name) = wlt_1.issue_nia(issue_supply, wlt_1.close_method(), None);
 
     let amount = 100;
-    let invoice = wlt_2.invoice(
-        contract_id,
-        &iface_type_name,
-        amount,
-        wlt_2.close_method(),
-        transfer_type.into(),
-    );
+    let invoice = wlt_2.invoice(contract_id, &iface_type_name, amount, transfer_type.into());
     let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
 
     wlt_1.sync_and_update_witnesses(None);
@@ -658,13 +646,7 @@ fn invoice_reuse(#[case] transfer_type: TransferType) {
         wlt_1.issue_with_info(asset_info, wlt_1.close_method(), vec![None, None]);
 
     let amount = 300;
-    let invoice = wlt_2.invoice(
-        contract_id,
-        &iface_type_name,
-        amount,
-        wlt_2.close_method(),
-        transfer_type.into(),
-    );
+    let invoice = wlt_2.invoice(contract_id, &iface_type_name, amount, transfer_type.into());
     wlt_1.send_to_invoice(&mut wlt_2, invoice.clone(), Some(500), None, None);
     let (consignment, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(600), None, None);
 
@@ -698,13 +680,7 @@ fn accept_0conf() {
     let (contract_id, iface_type_name) = wlt_1.issue_nia(issue_supply, wlt_1.close_method(), None);
 
     let amt = 200;
-    let invoice = wlt_2.invoice(
-        contract_id,
-        &iface_type_name,
-        amt,
-        wlt_2.close_method(),
-        InvoiceType::Witness,
-    );
+    let invoice = wlt_2.invoice(contract_id, &iface_type_name, amt, InvoiceType::Witness);
     let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, None, true, None);
     let txid = tx.txid();
 
@@ -962,7 +938,6 @@ fn mainnet_wlt_receiving_test_asset() {
         contract_id,
         &iface_type_name,
         150,
-        wlt_2.close_method(),
         InvoiceType::Blinded(Some(utxo)),
     );
     let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
@@ -990,56 +965,71 @@ fn sync_mainnet_wlt() {
 }
 
 #[rstest]
-#[case(TT::Blinded, DT::Tr, DT::Wpkh)]
-#[case(TT::Witness, DT::Tr, DT::Wpkh)]
-#[ignore = "fix needed"] // 2nd transfer shouldn't happen
-#[case(TT::Blinded, DT::Wpkh, DT::Tr)]
-#[ignore = "fix needed"] // 2nd transfer shouldn't happen
-#[case(TT::Witness, DT::Wpkh, DT::Tr)]
+// close_method_in_invoice=true
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, CloseMethod::OpretFirst, true)]
+#[case(TT::Witness, DT::Tr, DT::Wpkh, CloseMethod::OpretFirst, true)]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, CloseMethod::OpretFirst, true)]
+#[case(TT::Witness, DT::Wpkh, DT::Tr, CloseMethod::OpretFirst, true)]
+#[should_panic(expected = "InvoiceUnsupportsCloseMethod(TapretFirst)")]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, CloseMethod::TapretFirst, true)]
+#[should_panic(expected = "InvoiceUnsupportsCloseMethod(TapretFirst)")]
+#[case(TT::Witness, DT::Tr, DT::Wpkh, CloseMethod::TapretFirst, true)]
+#[should_panic(expected = "WalletUnsupportsCloseMethod(TapretFirst)")]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, CloseMethod::TapretFirst, true)]
+#[should_panic(expected = "WalletUnsupportsCloseMethod(TapretFirst)")]
+#[case(TT::Witness, DT::Wpkh, DT::Tr, CloseMethod::TapretFirst, true)]
+// close_method_in_invoice=false
+#[should_panic(expected = "WalletUnsupportsCloseMethod(TapretFirst)")]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, CloseMethod::TapretFirst, false)]
+#[should_panic(expected = "WalletUnsupportsCloseMethod(TapretFirst)")]
+#[case(TT::Witness, DT::Tr, DT::Wpkh, CloseMethod::TapretFirst, false)]
+#[should_panic(expected = "WalletUnsupportsCloseMethod(TapretFirst)")]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, CloseMethod::TapretFirst, false)]
+#[should_panic(expected = "WalletUnsupportsCloseMethod(TapretFirst)")]
+#[case(TT::Witness, DT::Wpkh, DT::Tr, CloseMethod::TapretFirst, false)]
 fn wlt_receiving_from_different_close_method(
     #[case] transfer_type: TransferType,
     #[case] wlt_1_desc: DescriptorType,
     #[case] wlt_2_desc: DescriptorType,
+    #[case] contract_close_method: CloseMethod,
+    #[case] close_method_in_invoice: bool,
 ) {
-    println!("transfer_type {transfer_type:?} wlt_1_desc {wlt_1_desc:?} wlt_2_desc {wlt_2_desc:?}");
+    println!(
+        "transfer_type {transfer_type:?} wlt_1_desc {wlt_1_desc:?} wlt_2_desc {wlt_2_desc:?} \
+        contract_close_method {contract_close_method:?} \
+        close_method_in_invoice {close_method_in_invoice:?}"
+    );
 
     initialize();
 
     let mut wlt_1 = get_wallet(&wlt_1_desc);
     let mut wlt_2 = get_wallet(&wlt_2_desc);
 
-    let (contract_id, iface_type_name) = wlt_1.issue_nia(600, wlt_1.close_method(), None);
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(600, contract_close_method, None);
 
     println!("1st transfer");
-    wlt_1.send(
-        &mut wlt_2,
-        TransferType::Blinded,
-        contract_id,
-        &iface_type_name,
-        400,
-        5000,
-        None,
-    );
-
-    println!("2nd transfer");
-    let close_method = match wlt_1_desc {
-        DescriptorType::Tr => CloseMethod::OpretFirst,
-        DescriptorType::Wpkh => CloseMethod::TapretFirst,
-    };
-    let invoice = wlt_1.invoice(
-        contract_id,
-        &iface_type_name,
-        100,
-        close_method,
-        transfer_type.into(),
-    );
-    wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
-    wlt_1.check_allocations(
+    let mut invoice = wlt_2.invoice(contract_id, &iface_type_name, 100, transfer_type.into());
+    if !close_method_in_invoice {
+        invoice.close_methods = vec![];
+    }
+    wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
+    wlt_2.check_allocations(
         contract_id,
         &iface_type_name,
         AssetSchema::Nia,
-        vec![100, 200],
+        vec![100],
         false,
+    );
+
+    println!("2nd transfer");
+    wlt_2.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id,
+        &iface_type_name,
+        90,
+        1000,
+        None,
     );
 
     println!("3rd transfer");
@@ -1059,7 +1049,7 @@ fn wlt_receiving_from_different_close_method(
         TransferType::Blinded,
         contract_id,
         &iface_type_name,
-        560,
+        280,
         1000,
         None,
     );
@@ -1070,7 +1060,7 @@ fn wlt_receiving_from_different_close_method(
         TransferType::Blinded,
         contract_id,
         &iface_type_name,
-        570,
+        295,
         1000,
         None,
     );
@@ -1190,7 +1180,6 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
         contract_id,
         &iface_type_name,
         100,
-        wlt_2.close_method(),
         InvoiceType::Blinded(Some(utxo)),
     );
     // create transfer but do not broadcast its TX
@@ -1234,13 +1223,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     // blinded UTXO has not been broadcasted
     wlt_2.accept_transfer_custom_resolver(consignment.clone(), None, &resolver);
 
-    let invoice = wlt_3.invoice(
-        contract_id,
-        &iface_type_name,
-        50,
-        wlt_2.close_method(),
-        InvoiceType::Witness,
-    );
+    let invoice = wlt_3.invoice(contract_id, &iface_type_name, 50, InvoiceType::Witness);
     let (consignment, tx) = wlt_2.transfer(invoice, Some(2000), None, true, None);
     wlt_2.mine_tx(&tx.txid(), false);
 
@@ -1325,13 +1308,7 @@ fn send_to_oneself() {
 
     let amt = 200;
 
-    let invoice = wlt.invoice(
-        contract_id,
-        &iface_type_name,
-        amt,
-        wlt.close_method(),
-        InvoiceType::Witness,
-    );
+    let invoice = wlt.invoice(contract_id, &iface_type_name, amt, InvoiceType::Witness);
 
     let (consignment, tx) = wlt.transfer(invoice.clone(), None, None, true, None);
     wlt.mine_tx(&tx.txid(), false);
@@ -1358,12 +1335,9 @@ fn send_to_oneself() {
 }
 
 #[rstest]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
 #[case(CloseMethod::OpretFirst, CloseMethod::OpretFirst)]
 #[case(CloseMethod::TapretFirst, CloseMethod::TapretFirst)]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
 #[case(CloseMethod::OpretFirst, CloseMethod::TapretFirst)]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
 #[case(CloseMethod::TapretFirst, CloseMethod::OpretFirst)]
 fn blank_tapret_opret(#[case] close_method_0: CloseMethod, #[case] close_method_1: CloseMethod) {
     println!("close_method_0 {close_method_0:?} close_method_1 {close_method_1:?}");
@@ -1392,9 +1366,6 @@ fn blank_tapret_opret(#[case] close_method_0: CloseMethod, #[case] close_method_
         None,
     );
 
-    // send opret, blank opret: pay fails with Composition(Stock("the spent UTXOs contain too many seals which can't fit the state transition input limit."))
-    // send opret, blank tapret: pay fails with Composition(Stock("the spent UTXOs contain too many seals which can't fit the state transition input limit."))
-    // send tapret, blank opret: pay fails with Composition(Construction(NoInputs))
     wlt_1.send(
         &mut wlt_2,
         TransferType::Blinded,
@@ -1450,7 +1421,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_0,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_2_1)),
             );
             let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
@@ -1460,7 +1430,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_1,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_1_1)),
             );
             let (_, tx_1) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
@@ -1470,7 +1439,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_2,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_2_2)),
             );
             let (_, tx_2) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
@@ -1483,7 +1451,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_0,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_2_1)),
             );
             let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
@@ -1493,7 +1460,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_1,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_1_1)),
             );
             let (_, tx_1) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
@@ -1503,7 +1469,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_2,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_1_2)),
             );
             let (_, tx_2) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
@@ -1516,7 +1481,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_0,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_2_1)),
             );
             let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
@@ -1526,7 +1490,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_1,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_2_2)),
             );
             let (_, tx_1) = wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
@@ -1536,7 +1499,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 &iface_type_name,
                 amt_2,
-                CloseMethod::OpretFirst,
                 InvoiceType::Blinded(Some(utxo_wlt_1_1)),
             );
             let (_, tx_2) = wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
