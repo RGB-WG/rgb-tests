@@ -26,7 +26,7 @@ enum Filter<'w> {
     WalletTentative(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
 }
 
-impl<'w> AssignmentsFilter for Filter<'w> {
+impl AssignmentsFilter for Filter<'_> {
     fn should_include(&self, outpoint: impl Into<XOutpoint>, id: Option<XWitnessId>) -> bool {
         match self {
             Filter::Wallet(wallet) => wallet
@@ -41,7 +41,7 @@ impl<'w> AssignmentsFilter for Filter<'w> {
         }
     }
 }
-impl<'w> Filter<'w> {
+impl Filter<'_> {
     fn comment(&self, outpoint: XOutpoint) -> &'static str {
         let outpoint = outpoint
             .into_bp()

@@ -1045,7 +1045,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
         consignment: &'cons IndexedConsignment<'cons, TRANSFER>,
         fallback: &'a AnyResolver,
     }
-    impl<'a, 'cons, const TRANSFER: bool> ResolveWitness for OffchainResolver<'a, 'cons, TRANSFER> {
+    impl<const TRANSFER: bool> ResolveWitness for OffchainResolver<'_, '_, TRANSFER> {
         fn resolve_pub_witness(
             &self,
             witness_id: XWitnessId,
