@@ -246,27 +246,27 @@ impl AssetInfo {
         }
     }
 
-    fn iface_type_name(&self) -> TypeName {
+    pub fn iface_type_name(&self) -> TypeName {
         self.asset_schema().iface_type_name()
     }
 
-    fn schema(&self) -> Schema {
+    pub fn schema(&self) -> Schema {
         self.asset_schema().schema()
     }
 
-    fn issue_impl(&self) -> IfaceImpl {
+    pub fn issue_impl(&self) -> IfaceImpl {
         self.asset_schema().issue_impl()
     }
 
-    fn scripts(&self) -> Scripts {
+    pub fn scripts(&self) -> Scripts {
         self.asset_schema().scripts()
     }
 
-    fn types(&self) -> TypeSystem {
+    pub fn types(&self) -> TypeSystem {
         self.asset_schema().types()
     }
 
-    fn iface(&self) -> Iface {
+    pub fn iface(&self) -> Iface {
         self.asset_schema().iface()
     }
 
@@ -371,7 +371,7 @@ impl AssetInfo {
         }
     }
 
-    fn add_global_state(&self, mut builder: ContractBuilder) -> ContractBuilder {
+    pub fn add_global_state(&self, mut builder: ContractBuilder) -> ContractBuilder {
         match self {
             Self::Nia {
                 spec,
@@ -427,36 +427,20 @@ impl AssetInfo {
         }
     }
 
-    fn add_asset_owner(
+    pub fn add_asset_owner(
         &self,
         mut builder: ContractBuilder,
         close_method: CloseMethod,
         outpoints: Vec<Outpoint>,
+        layer_1: Layer1,
     ) -> ContractBuilder {
-        fn get_genesis_seal(
-            close_method: CloseMethod,
-            outpoint: Outpoint,
-        ) -> BuilderSeal<BlindSeal<Txid>> {
-            let blind_seal = match close_method {
-                CloseMethod::TapretFirst => {
-                    BlindSeal::tapret_first_rand(outpoint.txid, outpoint.vout)
-                }
-                CloseMethod::OpretFirst => {
-                    BlindSeal::opret_first_rand(outpoint.txid, outpoint.vout)
-                }
-            };
-            let genesis_seal = GenesisSeal::from(blind_seal);
-            let seal: XChain<BlindSeal<Txid>> = XChain::with(Layer1::Bitcoin, genesis_seal);
-            BuilderSeal::from(seal)
-        }
-
         match self {
             Self::Nia { issue_amounts, .. } | Self::Cfa { issue_amounts, .. } => {
                 for (amt, outpoint) in issue_amounts.iter().zip(outpoints.iter().cycle()) {
                     builder = builder
                         .add_fungible_state(
                             "assetOwner",
-                            get_genesis_seal(close_method, *outpoint),
+                            get_genesis_seal(close_method, *outpoint, layer_1),
                             *amt,
                         )
                         .unwrap();
@@ -469,7 +453,7 @@ impl AssetInfo {
                 builder
                     .add_data(
                         "assetOwner",
-                        get_genesis_seal(close_method, outpoints[0]),
+                        get_genesis_seal(close_method, outpoints[0], layer_1),
                         allocation,
                     )
                     .unwrap()
@@ -510,6 +494,20 @@ impl Report {
             .unwrap();
         file.write_all("\n".as_bytes()).unwrap();
     }
+}
+
+pub fn get_genesis_seal(
+    close_method: CloseMethod,
+    outpoint: Outpoint,
+    layer_1: Layer1,
+) -> BuilderSeal<BlindSeal<Txid>> {
+    let blind_seal = match close_method {
+        CloseMethod::TapretFirst => BlindSeal::tapret_first_rand(outpoint.txid, outpoint.vout),
+        CloseMethod::OpretFirst => BlindSeal::opret_first_rand(outpoint.txid, outpoint.vout),
+    };
+    let genesis_seal = GenesisSeal::from(blind_seal);
+    let seal: XChain<BlindSeal<Txid>> = XChain::with(layer_1, genesis_seal);
+    BuilderSeal::from(seal)
 }
 
 fn _get_wallet(
@@ -836,6 +834,8 @@ impl TestWallet {
                 .collect()
         };
 
+        let layer_1 = Layer1::Bitcoin;
+
         let mut builder = ContractBuilder::with(
             Identity::default(),
             asset_info.iface(),
@@ -843,11 +843,12 @@ impl TestWallet {
             asset_info.issue_impl(),
             asset_info.types(),
             asset_info.scripts(),
+            layer_1,
         );
 
         builder = asset_info.add_global_state(builder);
 
-        builder = asset_info.add_asset_owner(builder, close_method, outpoints);
+        builder = asset_info.add_asset_owner(builder, close_method, outpoints, layer_1);
 
         let contract = builder.issue_contract().expect("failure issuing contract");
         let resolver = self.get_resolver();

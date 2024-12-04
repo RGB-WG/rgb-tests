@@ -1,0 +1,14 @@
+version: 2
+inputs:
+- prevOutput: ffcc1f2876b4d22ffc13c87514a4eeb8e07106bcddbd458a7fb556de8f338da7:0
+  sigScript: ''
+  sequence: 0
+  witness:
+  - 3045022100b9678515b5e58eaecdeffcf0e682e47ca85f913991035cda9e0e6303ed6a66cd02201535020c65e7b8af22e97d6145c4001048520f8fbf906163c7d531addef4d5ca01
+  - 0212415046b17fe16f6ff776d054503a3f688e338d0519f1c80a65cb9e81ad096b
+outputs:
+- value: 99998800
+  scriptPubkey: 0014715619dce4f20752a1b045903b9e4959ea45af65
+- value: 0
+  scriptPubkey: 6a20e5fc3ad582811e55a1d7fc8ac5484430aa4ba706357078d78a865ddfac3caf2b
+lockTime: 0

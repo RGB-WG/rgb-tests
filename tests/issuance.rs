@@ -266,3 +266,35 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
                 })))
     }
 }
+
+#[test]
+#[should_panic(expected = "Layer1Mismatch(Liquid, Bitcoin)")]
+fn issue_on_different_layers() {
+    initialize();
+
+    let mut wallet = get_wallet(&DescriptorType::Wpkh);
+
+    let close_method = wallet.close_method();
+    let amounts = vec![200, 100];
+    let asset_info = AssetInfo::default_nia(amounts.clone());
+    let mut builder = ContractBuilder::with(
+        Identity::default(),
+        asset_info.iface(),
+        asset_info.schema(),
+        asset_info.issue_impl(),
+        asset_info.types(),
+        asset_info.scripts(),
+        Layer1::Bitcoin,
+    );
+
+    builder = asset_info.add_global_state(builder);
+
+    let outpoint = wallet.get_utxo(None);
+    builder
+        .add_fungible_state(
+            "assetOwner",
+            get_genesis_seal(close_method, outpoint, Layer1::Liquid),
+            100u64,
+        )
+        .unwrap();
+}
