@@ -192,8 +192,9 @@ fn validate_consignment_generate() {
     for tx in txes {
         let txid = tx.txid().to_string();
         let witness_id = XWitnessId::from_str(&txid).unwrap();
+        let normalized_witness_id = witness_id.to_string().replace(":", "_");
         let yaml = serde_yaml::to_string(&tx).unwrap();
-        let yaml_path = format!("tests/fixtures/{witness_id}.yaml");
+        let yaml_path = format!("tests/fixtures/{normalized_witness_id}.yaml");
         std::fs::write(&yaml_path, yaml).unwrap();
         println!("written tx: {witness_id}");
     }
