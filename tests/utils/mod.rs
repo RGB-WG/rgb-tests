@@ -73,7 +73,6 @@ pub use rand::RngCore;
 pub use rgb::{
     info::ContractInfo,
     interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
-    invoice::Pay2Vout,
     persistence::{MemContract, MemContractState, Stock},
     resolvers::AnyResolver,
     stl::ContractTerms,
