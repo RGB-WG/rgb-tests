@@ -450,13 +450,13 @@ fn rbf_transfer() {
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
     let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
 
-    let amount = 600;
-
-    let (contract_id, iface_type_name) = wlt_1.issue_nia(amount, wlt_1.close_method(), None);
+    let issue_supply = 600;
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(issue_supply, wlt_1.close_method(), None);
 
     stop_mining();
     let initial_height = get_height();
 
+    let amount = 400;
     let invoice = wlt_2.invoice(
         contract_id,
         &iface_type_name,
@@ -464,17 +464,48 @@ fn rbf_transfer() {
         wlt_2.close_method(),
         InvoiceType::Witness,
     );
-    let _ = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
+    let (consignment, _) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
+
+    wlt_2.accept_transfer(consignment.clone(), None);
 
     // retry with higher fees, TX hasn't been mined
     let mid_height = get_height();
     assert_eq!(initial_height, mid_height);
 
-    let _ = wlt_1.transfer(invoice, None, Some(1000), true, None);
+    let (consignment, tx) = wlt_1.transfer(invoice, None, Some(1000), true, None);
 
     let final_height = get_height();
     assert_eq!(initial_height, final_height);
-    resume_mining();
+
+    wlt_1.mine_tx(&tx.txid(), true);
+    wlt_2.accept_transfer(consignment.clone(), None);
+    wlt_1.sync_and_update_witnesses(None);
+    wlt_2.sync_and_update_witnesses(None);
+
+    wlt_1.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![issue_supply - amount],
+        false,
+    );
+    wlt_2.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![amount],
+        false,
+    );
+
+    wlt_2.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id,
+        &iface_type_name,
+        amount,
+        1000,
+        None,
+    );
 }
 
 #[test]
@@ -844,8 +875,7 @@ fn ln_transfers() {
     let tx = wlt_1.sign_finalize_extract(&mut old_psbt);
     wlt_1.broadcast_tx(&tx);
     wlt_1.mine_tx(&tx.txid(), false);
-    wlt_1.sync();
-    wlt_1.update_witnesses(pre_funding_height);
+    wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
     let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
     wlt_1.send(
         &mut wlt_3,

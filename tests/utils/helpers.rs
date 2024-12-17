@@ -755,10 +755,14 @@ impl TestWallet {
         self.instance = instance;
     }
 
+    pub fn sync_and_update_witnesses(&mut self, after_height: Option<u32>) {
+        self.sync();
+        self.update_witnesses(after_height.unwrap_or(1));
+    }
+
     pub fn switch_to_instance(&mut self, instance: u8) {
         self.change_instance(instance);
-        self.sync();
-        self.update_witnesses(1);
+        self.sync_and_update_witnesses(None);
     }
 
     pub fn indexer_url(&self) -> String {
