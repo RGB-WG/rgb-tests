@@ -508,15 +508,23 @@ fn rbf_transfer() {
     );
 }
 
-#[test]
+#[rstest]
 #[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
-fn same_transfer_twice_no_update_witnesses() {
+#[case(TransferType::Blinded)]
+#[should_panic(
+    expected = "the invoice requirements can't be fulfilled using available assets or smart contract state."
+)]
+#[case(TransferType::Witness)]
+fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) {
+    println!("transfer_type {transfer_type:?}");
+
     initialize();
 
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
     let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
 
-    let (contract_id, iface_type_name) = wlt_1.issue_nia(2000, wlt_1.close_method(), None);
+    let issue_supply = 2000;
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(issue_supply, wlt_1.close_method(), None);
 
     let amount = 100;
     let invoice = wlt_2.invoice(
@@ -524,7 +532,7 @@ fn same_transfer_twice_no_update_witnesses() {
         &iface_type_name,
         amount,
         wlt_2.close_method(),
-        InvoiceType::Blinded(None),
+        transfer_type.into(),
     );
     let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
 
@@ -532,10 +540,10 @@ fn same_transfer_twice_no_update_witnesses() {
 
     wlt_2.accept_transfer(consignment, None);
 
-    // this shows duplicated allocations
+    // with TransferType::Blinded this shows duplicated allocations
     wlt_2.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
-    // this fails because the wallet sees 2 allocations instead of 1
+    // with TransferType::Blinded this fails because the wallet sees 2 allocations instead of 1
     // comment it in order to see the inflation bug
     wlt_2.check_allocations(
         contract_id,
@@ -545,59 +553,94 @@ fn same_transfer_twice_no_update_witnesses() {
         false,
     );
 
-    // this works but should fail
+    // with TransferType::Blinded this works but should fail
     wlt_2.send(
         &mut wlt_1,
         TransferType::Blinded,
         contract_id,
         &iface_type_name,
-        200,
+        amount * 2,
         1000,
         None,
     );
 
-    // this shows 1900+200 as owned, but we issued 2000
+    // with TransferType::Blinded this shows 1900+200 as owned, but we issued 2000
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
 
-    // this works but should fail
+    // with TransferType::Blinded this works but should fail
     wlt_1.send(
         &mut wlt_3,
         TransferType::Blinded,
         contract_id,
         &iface_type_name,
-        2100,
+        issue_supply + amount,
         1000,
         None,
     );
-    // this shows 2100 as owned, but we issued 2000
+    // with TransferType::Blinded this shows 2100 as owned, but we issued 2000
     wlt_3.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 }
 
-#[test]
+#[rstest]
 #[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
-fn same_transfer_twice_update_witnesses() {
+#[case(TransferType::Blinded)]
+#[case(TransferType::Witness)]
+fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
+    println!("transfer_type {transfer_type:?}");
+
     initialize();
 
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
     let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
 
-    let (contract_id, iface_type_name) = wlt_1.issue_nia(2000, wlt_1.close_method(), None);
+    let issue_supply = 2000;
+    let (contract_id, iface_type_name) = wlt_1.issue_nia(issue_supply, wlt_1.close_method(), None);
 
+    let amount = 100;
     let invoice = wlt_2.invoice(
         contract_id,
         &iface_type_name,
-        100,
+        amount,
         wlt_2.close_method(),
-        InvoiceType::Blinded(None),
+        transfer_type.into(),
     );
     let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
 
-    wlt_1.update_witnesses(1);
+    wlt_1.sync_and_update_witnesses(None);
 
-    // this fails with an AbsentValidWitness error
-    let _ = wlt_1.transfer(invoice, None, Some(1000), true, None);
+    // with TransferType::Blinded this fails with an AbsentValidWitness error
+    let (consignment, tx) = wlt_1.transfer(invoice, None, Some(1000), true, None);
+
+    wlt_1.mine_tx(&tx.txid(), false);
+    wlt_2.accept_transfer(consignment, None);
+    wlt_1.sync();
+
+    wlt_1.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![issue_supply - amount],
+        false,
+    );
+    wlt_2.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![amount],
+        false,
+    );
+
+    wlt_2.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id,
+        &iface_type_name,
+        amount,
+        1000,
+        None,
+    );
 }
 
 #[rstest]
