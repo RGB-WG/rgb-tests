@@ -5,6 +5,7 @@ pub struct TestWallet {
     descriptor: RgbDescr,
     signer: Option<TestnetSigner>,
     wallet_dir: PathBuf,
+    instance: u8,
 }
 
 enum WalletAccount {
@@ -74,6 +75,19 @@ impl fmt::Display for DescriptorType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", format!("{:?}", self).to_lowercase())
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum HistoryType {
+    Linear,
+    Branching,
+    Merging,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum ReorgType {
+    ChangeOrder,
+    Revert,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -494,6 +508,7 @@ fn _get_wallet(
     network: Network,
     wallet_dir: PathBuf,
     wallet_account: WalletAccount,
+    instance: u8,
 ) -> TestWallet {
     std::fs::create_dir_all(&wallet_dir).unwrap();
     println!("wallet dir: {wallet_dir:?}");
@@ -551,6 +566,7 @@ fn _get_wallet(
         descriptor,
         signer,
         wallet_dir,
+        instance,
     };
 
     // TODO: remove if once found solution for esplora 'Too many requests' error
@@ -562,6 +578,10 @@ fn _get_wallet(
 }
 
 pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
+    get_wallet_custom(descriptor_type, INSTANCE_1)
+}
+
+pub fn get_wallet_custom(descriptor_type: &DescriptorType, instance: u8) -> TestWallet {
     let mut seed = vec![0u8; 128];
     rand::thread_rng().fill_bytes(&mut seed);
 
@@ -577,6 +597,7 @@ pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
         Network::Regtest,
         wallet_dir,
         WalletAccount::Private(xpriv_account),
+        instance,
     )
 }
 
@@ -594,7 +615,43 @@ pub fn get_mainnet_wallet() -> TestWallet {
         Network::Mainnet,
         wallet_dir,
         WalletAccount::Public(xpub_account),
+        INSTANCE_1,
     )
+}
+
+fn get_indexer(indexer_url: &str) -> AnyIndexer {
+    match INDEXER.get().unwrap() {
+        Indexer::Electrum => {
+            AnyIndexer::Electrum(Box::new(ElectrumClient::new(indexer_url).unwrap()))
+        }
+        Indexer::Esplora => {
+            AnyIndexer::Esplora(Box::new(EsploraClient::new_esplora(indexer_url).unwrap()))
+        }
+    }
+}
+
+fn get_resolver(indexer_url: &str) -> AnyResolver {
+    match INDEXER.get().unwrap() {
+        Indexer::Electrum => AnyResolver::electrum_blocking(indexer_url, None).unwrap(),
+        Indexer::Esplora => AnyResolver::esplora_blocking(indexer_url, None).unwrap(),
+    }
+}
+
+fn broadcast_tx(tx: &Tx, indexer_url: &str) {
+    match get_indexer(indexer_url) {
+        AnyIndexer::Electrum(inner) => {
+            inner.transaction_broadcast(tx).unwrap();
+        }
+        AnyIndexer::Esplora(inner) => {
+            inner.publish(tx).unwrap();
+        }
+        _ => unreachable!("unsupported indexer"),
+    }
+}
+
+pub fn broadcast_tx_and_mine(tx: &Tx, instance: u8) {
+    broadcast_tx(tx, &indexer_url(instance, Network::Regtest));
+    mine_custom(false, instance, 1);
 }
 
 pub fn attachment_from_fpath(fpath: &str) -> Attachment {
@@ -667,7 +724,7 @@ impl TestWallet {
 
     pub fn get_utxo(&mut self, sats: Option<u64>) -> Outpoint {
         let address = self.get_address();
-        let txid = Txid::from_str(&fund_wallet(address.to_string(), sats)).unwrap();
+        let txid = Txid::from_str(&fund_wallet(address.to_string(), sats, self.instance)).unwrap();
         self.sync();
         let mut vout = None;
         let coins = self.wallet.wallet().address_coins();
@@ -685,60 +742,40 @@ impl TestWallet {
         }
     }
 
-    fn get_indexer_url(&self) -> String {
-        match INDEXER.get().unwrap() {
-            Indexer::Electrum => match self.network() {
-                Network::Regtest => ELECTRUM_REGTEST_URL,
-                Network::Mainnet => ELECTRUM_MAINNET_URL,
-                _ => unimplemented!("network not yet supported"),
-            },
-            Indexer::Esplora => match self.network() {
-                Network::Regtest => ESPLORA_REGTEST_URL,
-                Network::Mainnet => ESPLORA_MAINNET_URL,
-                _ => unimplemented!("network not yet supported"),
-            },
-        }
-        .to_string()
+    pub fn change_instance(&mut self, instance: u8) {
+        self.instance = instance;
+    }
+
+    pub fn switch_to_instance(&mut self, instance: u8) {
+        self.change_instance(instance);
+        self.sync();
+        self.update_witnesses(1);
+    }
+
+    pub fn indexer_url(&self) -> String {
+        indexer_url(self.instance, self.network())
     }
 
     fn get_indexer(&self) -> AnyIndexer {
-        let indexer_url = self.get_indexer_url();
-        match INDEXER.get().unwrap() {
-            Indexer::Electrum => {
-                AnyIndexer::Electrum(Box::new(ElectrumClient::new(&indexer_url).unwrap()))
-            }
-            Indexer::Esplora => {
-                AnyIndexer::Esplora(Box::new(EsploraClient::new_esplora(&indexer_url).unwrap()))
-            }
-        }
+        get_indexer(&self.indexer_url())
     }
 
     pub fn get_resolver(&self) -> AnyResolver {
-        let indexer_url = self.get_indexer_url();
-        match INDEXER.get().unwrap() {
-            Indexer::Electrum => AnyResolver::electrum_blocking(&indexer_url, None).unwrap(),
-            Indexer::Esplora => AnyResolver::esplora_blocking(&indexer_url, None).unwrap(),
-        }
+        get_resolver(&self.indexer_url())
     }
 
     pub fn broadcast_tx(&self, tx: &Tx) {
-        match self.get_indexer() {
-            AnyIndexer::Electrum(inner) => {
-                inner.transaction_broadcast(tx).unwrap();
-            }
-            AnyIndexer::Esplora(inner) => {
-                inner.publish(tx).unwrap();
-            }
-            _ => unreachable!("unsupported indexer"),
-        }
+        broadcast_tx(tx, &self.indexer_url());
+    }
+
+    pub fn get_witness_ord(&self, txid: &Txid) -> WitnessOrd {
+        self.get_resolver()
+            .resolve_pub_witness_ord(XWitnessId::Bitcoin(*txid))
+            .unwrap()
     }
 
     pub fn get_tx_height(&self, txid: &Txid) -> Option<u32> {
-        match self
-            .get_resolver()
-            .resolve_pub_witness_ord(XWitnessId::Bitcoin(*txid))
-            .unwrap()
-        {
+        match self.get_witness_ord(txid) {
             WitnessOrd::Mined(witness_pos) => Some(witness_pos.height().get()),
             _ => None,
         }
@@ -760,7 +797,7 @@ impl TestWallet {
     pub fn mine_tx(&self, txid: &Txid, resume: bool) {
         let mut attempts = 10;
         loop {
-            mine(resume);
+            mine_custom(resume, self.instance, 1);
             if self.get_tx_height(txid).is_some() {
                 break;
             }
@@ -1049,9 +1086,13 @@ impl TestWallet {
             .unwrap()
     }
 
+    pub fn list_contracts(&self) -> Vec<ContractInfo> {
+        self.wallet.stock().contracts().unwrap().collect()
+    }
+
     pub fn debug_contracts(&self) {
         println!("Contracts:");
-        for info in self.wallet.stock().contracts().unwrap() {
+        for info in self.list_contracts() {
             println!("{}", info.to_string().replace("\n", "\t"));
         }
     }
@@ -1261,7 +1302,10 @@ impl TestWallet {
             AssetSchema::Nia | AssetSchema::Cfa => {
                 let allocations =
                     self.contract_fungible_allocations(contract_id, iface_type_name, false);
-                assert_eq!(allocations.len(), expected_fungible_allocations.len());
+                if allocations.len() != expected_fungible_allocations.len() {
+                    println!("allocations: {allocations:?}");
+                    assert_eq!(allocations.len(), expected_fungible_allocations.len());
+                }
                 assert!(allocations
                     .iter()
                     .all(|a| a.seal.method() == self.close_method()));

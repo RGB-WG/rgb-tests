@@ -5,13 +5,21 @@ pub const TEST_DATA_DIR: &str = "test-data";
 pub const INTEGRATION_DATA_DIR: &str = "integration";
 pub const STRESS_DATA_DIR: &str = "stress";
 
-pub const ELECTRUM_REGTEST_URL: &str = "127.0.0.1:50001";
+pub const ELECTRUM_1_REGTEST_URL: &str = "127.0.0.1:50001";
+pub const ELECTRUM_2_REGTEST_URL: &str = "127.0.0.1:50002";
+pub const ELECTRUM_3_REGTEST_URL: &str = "127.0.0.1:50003";
 pub const ELECTRUM_MAINNET_URL: &str = "ssl://electrum.iriswallet.com:50003";
-pub const ESPLORA_REGTEST_URL: &str = "http://127.0.0.1:8094/regtest/api";
+pub const ESPLORA_1_REGTEST_URL: &str = "http://127.0.0.1:8094/regtest/api";
+pub const ESPLORA_2_REGTEST_URL: &str = "http://127.0.0.1:8095/regtest/api";
+pub const ESPLORA_3_REGTEST_URL: &str = "http://127.0.0.1:8096/regtest/api";
 pub const ESPLORA_MAINNET_URL: &str = "https://blockstream.info/api";
 pub const FAKE_TXID: &str = "e5a3e577309df31bd606f48049049d2e1e02b048206ba232944fcc053a176ccb:0";
 pub const UDA_FIXED_INDEX: u32 = 0;
 pub const DEFAULT_FEE_ABS: u64 = 400;
+
+pub const INSTANCE_1: u8 = 1;
+pub const INSTANCE_2: u8 = 2;
+pub const INSTANCE_3: u8 = 3;
 
 pub use std::{
     cell::OnceCell,
@@ -63,6 +71,7 @@ pub use psbt::{
 pub use psrgbt::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 pub use rgb::{
+    info::ContractInfo,
     interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
     persistence::{MemContract, MemContractState, Stock},
@@ -93,6 +102,7 @@ pub use rgbstd::{
 };
 pub use rstest::rstest;
 pub use schemata::{CollectibleFungibleAsset, NonInflatableAsset, UniqueDigitalAsset};
+pub use serial_test::serial;
 pub use strict_encoding::{fname, tn, FieldName, StrictSerialize, TypeName};
 pub use strict_types::{StrictVal, TypeSystem};
 pub use strum::IntoEnumIterator;
