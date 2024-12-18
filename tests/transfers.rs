@@ -569,6 +569,52 @@ fn same_transfer_twice_update_witnesses() {
     let _ = wlt_1.transfer(invoice, None, Some(1000), true, None);
 }
 
+#[rstest]
+#[ignore = "probably not a bug, but still unexpected"]
+#[case(TT::Blinded)]
+#[case(TT::Witness)]
+fn invoice_reuse(#[case] transfer_type: TransferType) {
+    println!("transfer_type {transfer_type:?}");
+
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let asset_info = AssetInfo::default_nia(vec![500, 400]);
+    let (contract_id, iface_type_name) =
+        wlt_1.issue_with_info(asset_info, wlt_1.close_method(), vec![None, None]);
+
+    let amount = 300;
+    let invoice = wlt_2.invoice(
+        contract_id,
+        &iface_type_name,
+        amount,
+        wlt_2.close_method(),
+        transfer_type.into(),
+    );
+    wlt_1.send_to_invoice(&mut wlt_2, invoice.clone(), Some(500), None, None);
+    let (consignment, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(600), None, None);
+
+    wlt_1.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![200, 100],
+        false,
+    );
+    wlt_2.check_allocations(
+        contract_id,
+        &iface_type_name,
+        AssetSchema::Nia,
+        vec![amount, amount],
+        false,
+    );
+
+    // with TransferType::Blinded this fails: bundle for 1st transfer is also included
+    assert_eq!(consignment.bundles.len(), 1);
+}
+
 #[test]
 fn accept_0conf() {
     initialize();

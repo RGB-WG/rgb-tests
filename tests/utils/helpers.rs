@@ -107,6 +107,15 @@ pub enum InvoiceType {
     Witness,
 }
 
+impl From<TransferType> for InvoiceType {
+    fn from(transfer_type: TransferType) -> Self {
+        match transfer_type {
+            TransferType::Blinded => InvoiceType::Blinded(None),
+            TransferType::Witness => InvoiceType::Witness,
+        }
+    }
+}
+
 /// RGB asset-specific information to color a transaction
 #[derive(Clone, Debug)]
 pub struct AssetColoringInfo {
@@ -1256,22 +1265,13 @@ impl TestWallet {
         sats: u64,
         report: Option<&Report>,
     ) -> (Transfer, Tx) {
-        let invoice = match transfer_type {
-            TransferType::Blinded => recv_wlt.invoice(
-                contract_id,
-                iface_type_name,
-                amount,
-                recv_wlt.close_method(),
-                InvoiceType::Blinded(None),
-            ),
-            TransferType::Witness => recv_wlt.invoice(
-                contract_id,
-                iface_type_name,
-                amount,
-                recv_wlt.close_method(),
-                InvoiceType::Witness,
-            ),
-        };
+        let invoice = recv_wlt.invoice(
+            contract_id,
+            iface_type_name,
+            amount,
+            recv_wlt.close_method(),
+            transfer_type.into(),
+        );
         self.send_to_invoice(recv_wlt, invoice, Some(sats), None, report)
     }
 
@@ -1302,22 +1302,17 @@ impl TestWallet {
             AssetSchema::Nia | AssetSchema::Cfa => {
                 let allocations =
                     self.contract_fungible_allocations(contract_id, iface_type_name, false);
-                if allocations.len() != expected_fungible_allocations.len() {
-                    println!("allocations: {allocations:?}");
-                    assert_eq!(allocations.len(), expected_fungible_allocations.len());
-                }
+                let mut actual_fungible_allocations = allocations
+                    .iter()
+                    .map(|a| a.state.value())
+                    .collect::<Vec<_>>();
+                let mut expected_fungible_allocations = expected_fungible_allocations.clone();
+                actual_fungible_allocations.sort();
+                expected_fungible_allocations.sort();
+                assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
                 assert!(allocations
                     .iter()
                     .all(|a| a.seal.method() == self.close_method()));
-                for amount in expected_fungible_allocations {
-                    assert_eq!(
-                        allocations
-                            .iter()
-                            .filter(|a| a.state == Amount::from(amount))
-                            .count(),
-                        1
-                    );
-                }
             }
             AssetSchema::Uda => {
                 let allocations = self.contract_data_allocations(contract_id, iface_type_name);
