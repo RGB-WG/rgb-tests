@@ -61,3 +61,12 @@
 [submodule "amplify-nonasync"]
 	path = amplify-nonasync
 	url = https://github.com/rust-amplify/amplify-nonasync.git
+[submodule "zk-aluvm"]
+	path = zk-aluvm
+	url = https://github.com/AluVM/zk-aluvm
+[submodule "ultrasonic"]
+	path = ultrasonic
+	url = https://github.com/AluVM/ultrasonic
+[submodule "sonic"]
+	path = sonic
+	url = https://github.com/AluVM/sonic
