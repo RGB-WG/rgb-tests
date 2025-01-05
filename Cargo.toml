@@ -14,7 +14,6 @@ license = "Apache-2.0"
 description = "RGB tests"
 
 [dependencies]
-bitcoin_hashes = "0.14.0"
 file-format = { version = "0.25.0", features = ["reader"] }
 once_cell = "1.19.0"
 rand = "0.8.5"
@@ -46,16 +45,12 @@ bp-wallet = { path = "./bp-wallet", features = [
 ] }
 ## rgb
 rgb-runtime = { path = "./rgb", features = [
-    "electrum_blocking",
-    "esplora_blocking",
+    # "electrum_blocking",
+    # "esplora_blocking",
     "fs",
     "serde",
 ] }
-rgb-psbt = { path = "./rgb/psbt" }
-## rgb-interfaces
-rgb-interfaces = { path = "./rgb-interfaces" }
-## rgb-schemata
-rgb-schemata = { path = "./rgb-schemata" }
+rgb-psbt = { path = "./rgb/psbt", features = ["bp"] }
 ## rgb-std
 rgb-std = { path = "./rgb-std", features = ["fs"] }
 ## rust-amplify
@@ -67,16 +62,15 @@ strict_types = { path = "./strict-types" }
 
 [patch.crates-io]
 # patching all RGB-related deps, to measure code coverage
+## rust-amplify
+amplify = { path = "./rust-amplify" }
 ## amplify-derive
 amplify_derive = { path = "./amplify-derive" }
 amplify_syn = { path = "./amplify-derive/syn" }
 ## amplify-nonasync
 nonasync = { path = "./amplify-nonasync" }
 ## amplify-num
-amplify_apfloat = { path = "./amplify-num/apfloat" }
 amplify_num = { path = "./amplify-num/num" }
-## ascii-armor
-ascii-armor = { path = "./ascii-armor" }
 ## baid64
 baid64 = { path = "./rust-baid64" }
 ## bp-core
@@ -105,21 +99,19 @@ rgb-runtime = { path = "./rgb" }
 rgb-psbt = { path = "./rgb/psbt" }
 ## rgb-core
 rgb-core = { path = "./rgb-core" }
-## rgb-interfaces
-rgb-interfaces = { path = "./rgb-interfaces" }
-## rgb-schemata
-rgb-schemata = { path = "./rgb-schemata" }
 ## rgb-std
 rgb-std = { path = "./rgb-std" }
 rgb-invoice = { path = "./rgb-std/invoice" }
 ## rust-aluvm
-aluvm = { path = "./rust-aluvm" }
-## rust-amplify
-amplify = { path = "./rust-amplify" }
+aluvm = { path = "./aluvm" }
+zk-aluvm = { path = "./zk-aluvm" }
+## SONIC
+ultrasonic = { path = "./ultrasonic" }
+hypersonic = { path = "./sonic" }
+sonic-api = { path = "./sonic/api" }
+sonic-callreq = { path = "./sonic/callreq" }
 ## strict-encoding
 strict_encoding = { path = "./strict-encoding/rust" }
 strict_encoding_derive = { path = "./strict-encoding/rust/derive" }
 ## strict-types
 strict_types = { path = "./strict-types" }
-## vesper
-vesper-lang = { path = "./vesper" }
