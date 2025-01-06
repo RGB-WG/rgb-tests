@@ -1103,6 +1103,10 @@ impl TestWallet {
         self.wallet.stock().contracts().unwrap().collect()
     }
 
+    pub fn utxos(&self) -> Vec<WalletUtxo> {
+        self.wallet.wallet().utxos().collect()
+    }
+
     pub fn debug_contracts(&self) {
         println!("Contracts:");
         for info in self.list_contracts() {

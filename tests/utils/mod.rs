@@ -54,7 +54,7 @@ pub use bpstd::{
 };
 pub use bpwallet::{
     fs::FsTextStore, indexers::esplora::Client as EsploraClient, AnyIndexer, Indexer as BpIndexer,
-    Wallet,
+    Wallet, WalletUtxo,
 };
 pub use descriptors::Wpkh;
 pub use electrum::{Client as ElectrumClient, ElectrumApi, Param};
