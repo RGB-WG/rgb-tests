@@ -1320,12 +1320,9 @@ fn send_to_oneself() {
 }
 
 #[rstest]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
 #[case(CloseMethod::OpretFirst, CloseMethod::OpretFirst)]
 #[case(CloseMethod::TapretFirst, CloseMethod::TapretFirst)]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
 #[case(CloseMethod::OpretFirst, CloseMethod::TapretFirst)]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/284
 #[case(CloseMethod::TapretFirst, CloseMethod::OpretFirst)]
 fn blank_tapret_opret(#[case] close_method_0: CloseMethod, #[case] close_method_1: CloseMethod) {
     println!("close_method_0 {close_method_0:?} close_method_1 {close_method_1:?}");
@@ -1354,9 +1351,6 @@ fn blank_tapret_opret(#[case] close_method_0: CloseMethod, #[case] close_method_
         None,
     );
 
-    // send opret, blank opret: pay fails with Composition(Stock("the spent UTXOs contain too many seals which can't fit the state transition input limit."))
-    // send opret, blank tapret: pay fails with Composition(Stock("the spent UTXOs contain too many seals which can't fit the state transition input limit."))
-    // send tapret, blank opret: pay fails with Composition(Construction(NoInputs))
     wlt_1.send(
         &mut wlt_2,
         TransferType::Blinded,
