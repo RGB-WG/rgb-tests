@@ -609,7 +609,8 @@ fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
 
     wlt_1.mine_tx(&tx.txid(), false);
     wlt_2.accept_transfer(consignment, None);
-    wlt_1.sync();
+    wlt_1.sync_and_update_witnesses(None);
+    wlt_2.sync_and_update_witnesses(None);
 
     wlt_1.check_allocations(
         contract_id,
