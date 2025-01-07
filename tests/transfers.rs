@@ -510,9 +510,12 @@ fn rbf_transfer() {
 
 #[rstest]
 #[should_panic(
-    expected = "the invoice requirements can't be fulfilled using available assets or smart contract state."
+    expected = "called `Result::unwrap()` on an `Err` value: Composition(InsufficientState)"
 )]
 #[case(TransferType::Blinded)]
+#[should_panic(
+    expected = "called `Result::unwrap()` on an `Err` value: Composition(InsufficientState)"
+)]
 #[case(TransferType::Witness)]
 fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) {
     println!("transfer_type {transfer_type:?}");
