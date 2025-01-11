@@ -583,7 +583,6 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
 }
 
 #[rstest]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
 #[case(TransferType::Blinded)]
 #[case(TransferType::Witness)]
 fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
@@ -637,7 +636,6 @@ fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
 }
 
 #[rstest]
-#[ignore = "probably not a bug, but still unexpected"]
 #[case(TT::Blinded)]
 #[case(TT::Witness)]
 fn invoice_reuse(#[case] transfer_type: TransferType) {
