@@ -509,7 +509,7 @@ fn rbf_transfer() {
 }
 
 #[rstest]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
+#[should_panic(expected = "DoubleSpend")]
 #[case(TransferType::Blinded)]
 #[should_panic(expected = "Composition(InsufficientState)")]
 #[case(TransferType::Witness)]
@@ -535,17 +535,20 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     // with TransferType::Blinded this shows duplicated allocations
     wlt_2.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
-    // with TransferType::Blinded this fails because the wallet sees 2 allocations instead of 1
-    // comment it in order to see the inflation bug
+    let allocations = match transfer_type {
+        TransferType::Blinded => vec![amount, amount],
+        TransferType::Witness => vec![amount],
+    };
     wlt_2.check_allocations(
         contract_id,
         &iface_type_name,
         AssetSchema::Nia,
-        vec![amount],
+        allocations,
         false,
     );
 
-    // with TransferType::Blinded this works but should fail
+    // with TransferType::Blinded the receiver will detect a double spend, to avoid this the
+    // sendert should call update_witnesses when retrying the same transfer twice
     wlt_2.send(
         &mut wlt_1,
         TransferType::Blinded,
@@ -555,6 +558,10 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
         1000,
         None,
     );
+
+    if transfer_type == TransferType::Blinded {
+        unreachable!("should have panicked at previous send");
+    }
 
     // with TransferType::Blinded this shows 1900+200 as owned, but we issued 2000
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
