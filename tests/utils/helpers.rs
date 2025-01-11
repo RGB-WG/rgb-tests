@@ -1675,6 +1675,7 @@ impl TestWallet {
     ) -> Vec<Transfer> {
         let mut transfers = vec![];
         let stock = self.wallet.stock();
+        let witness_id = XChain::Bitcoin(witness_txid);
 
         for (contract_id, beneficiaries) in asset_beneficiaries {
             for beneficiary in beneficiaries {
@@ -1684,10 +1685,18 @@ impl TestWallet {
                             witness_txid,
                             seal.as_reduced_unsafe().vout,
                         )));
-                        transfers.push(stock.transfer(contract_id, [explicit_seal], None).unwrap());
+                        transfers.push(
+                            stock
+                                .transfer(contract_id, [explicit_seal], None, Some(witness_id))
+                                .unwrap(),
+                        );
                     }
                     BuilderSeal::Concealed(seal) => {
-                        transfers.push(stock.transfer(contract_id, vec![], Some(seal)).unwrap());
+                        transfers.push(
+                            stock
+                                .transfer(contract_id, vec![], Some(seal), Some(witness_id))
+                                .unwrap(),
+                        );
                     }
                 }
             }
