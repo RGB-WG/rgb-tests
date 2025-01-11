@@ -90,7 +90,7 @@ pub enum ReorgType {
     Revert,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TransferType {
     Blinded,
     Witness,
