@@ -748,8 +748,11 @@ fn accept_0conf() {
     );
 }
 
-#[test]
-fn ln_transfers() {
+#[rstest]
+#[case(false)]
+#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/292
+#[case(true)]
+fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     initialize();
 
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
@@ -787,6 +790,9 @@ fn ln_transfers() {
     let htlc_btc_amt = 4000;
     let htlc_derived_addr = wlt_1.get_derived_address();
 
+    // no problem: since there's no htlc for this commitment
+    wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
+
     println!("\n2. fake commitment TX (1 HTLC)");
     let beneficiaries = vec![
         (wlt_2.get_address(), Some(2000)),
@@ -810,6 +816,10 @@ fn ln_transfers() {
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
+
+    if update_witnesses_before_htlc {
+        wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
+    }
 
     println!("\n3. fake HTLC TX");
     let witness_id = fascia.witness_id();
@@ -887,6 +897,10 @@ fn ln_transfers() {
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
+    if update_witnesses_before_htlc {
+        wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
+    }
+
     println!("\n6. fake HTLC TX");
     let witness_id = fascia.witness_id();
     let txid = witness_id.as_reduced_unsafe();
@@ -913,6 +927,9 @@ fn ln_transfers() {
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
     wlt_1.consume_fascia(fascia.clone(), psbt.txid());
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
+
+    // no problem: since the force-close tx will be updated to mined soon
+    wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
 
     println!("\n7. broadcast old PSBT");
     let tx = wlt_1.sign_finalize_extract(&mut old_psbt);
