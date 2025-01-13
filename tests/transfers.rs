@@ -511,9 +511,7 @@ fn rbf_transfer() {
 #[rstest]
 #[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
 #[case(TransferType::Blinded)]
-#[should_panic(
-    expected = "the invoice requirements can't be fulfilled using available assets or smart contract state."
-)]
+#[should_panic(expected = "Composition(InsufficientState)")]
 #[case(TransferType::Witness)]
 fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) {
     println!("transfer_type {transfer_type:?}");
