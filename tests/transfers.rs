@@ -509,10 +509,12 @@ fn rbf_transfer() {
 }
 
 #[rstest]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
+#[should_panic(
+    expected = "called `Result::unwrap()` on an `Err` value: Composition(InsufficientState)"
+)]
 #[case(TransferType::Blinded)]
 #[should_panic(
-    expected = "the invoice requirements can't be fulfilled using available assets or smart contract state."
+    expected = "called `Result::unwrap()` on an `Err` value: Composition(InsufficientState)"
 )]
 #[case(TransferType::Witness)]
 fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) {
@@ -540,20 +542,17 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
 
     wlt_2.accept_transfer(consignment, None);
 
-    // with TransferType::Blinded this shows duplicated allocations
     wlt_2.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
-    // with TransferType::Blinded this fails because the wallet sees 2 allocations instead of 1
-    // comment it in order to see the inflation bug
     wlt_2.check_allocations(
         contract_id,
         &iface_type_name,
         AssetSchema::Nia,
-        vec![amount],
+        vec![],
         false,
     );
 
-    // with TransferType::Blinded this works but should fail
+    // this should fail
     wlt_2.send(
         &mut wlt_1,
         TransferType::Blinded,
@@ -564,12 +563,11 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
         None,
     );
 
-    // with TransferType::Blinded this shows 1900+200 as owned, but we issued 2000
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
 
-    // with TransferType::Blinded this works but should fail
+    // this should fail
     wlt_1.send(
         &mut wlt_3,
         TransferType::Blinded,
@@ -584,7 +582,6 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
 }
 
 #[rstest]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-core/issues/283
 #[case(TransferType::Blinded)]
 #[case(TransferType::Witness)]
 fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
@@ -615,7 +612,8 @@ fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
 
     wlt_1.mine_tx(&tx.txid(), false);
     wlt_2.accept_transfer(consignment, None);
-    wlt_1.sync();
+    wlt_1.sync_and_update_witnesses(None);
+    wlt_2.sync_and_update_witnesses(None);
 
     wlt_1.check_allocations(
         contract_id,
