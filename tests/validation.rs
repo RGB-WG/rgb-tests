@@ -174,6 +174,7 @@ fn get_consignment(scenario: Scenario) -> (Transfer, Vec<Tx>) {
 //
 // then copy the generated consignemnt file to tests/fixtures/attack_<n>.yaml
 // manually change tests/fixtures/attack_<n>.yaml files to simulate attacks
+#[cfg(not(feature = "altered"))]
 #[test]
 #[ignore = "one-shot"]
 fn validate_consignment_generate() {
@@ -217,6 +218,7 @@ fn get_tx(witness_id: &str) -> (Tx, XWitnessId) {
     (tx, xwitness_id)
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn validate_consignment_success() {
     for scenario in Scenario::iter() {
@@ -237,6 +239,7 @@ fn validate_consignment_success() {
     }
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn validate_consignment_chain_fail() {
     let resolver = Scenario::A.resolver();
@@ -256,6 +259,7 @@ fn validate_consignment_chain_fail() {
     assert_eq!(validity, Validity::Invalid);
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn validate_consignment_genesis_fail() {
     let resolver = Scenario::B.resolver();
@@ -315,6 +319,7 @@ fn validate_consignment_genesis_fail() {
     assert_eq!(validity, Validity::Invalid);
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn validate_consignment_bundles_fail() {
     let resolver = Scenario::A.resolver();
@@ -347,6 +352,7 @@ fn validate_consignment_bundles_fail() {
     assert_eq!(validity, Validity::Invalid);
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn validate_consignment_resolver_error() {
     let scenario = Scenario::A;

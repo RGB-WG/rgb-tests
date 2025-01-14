@@ -17,6 +17,7 @@ fn descriptor_and_close_method(
 ) {
 }
 
+#[cfg(not(feature = "altered"))]
 #[apply(descriptor_and_close_method)]
 fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
     println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
@@ -64,6 +65,7 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
     assert_eq!(allocation.state, Amount::from(issued_supply));
 }
 
+#[cfg(not(feature = "altered"))]
 #[apply(descriptor_and_close_method)]
 fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
     println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
@@ -147,6 +149,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
     assert_eq!(allocation.state.to_string(), "000000000100000000000000");
 }
 
+#[cfg(not(feature = "altered"))]
 #[apply(descriptor_and_close_method)]
 fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
     println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
@@ -194,6 +197,7 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
     assert_eq!(allocation.state, Amount::from(issued_supply));
 }
 
+#[cfg(not(feature = "altered"))]
 #[apply(descriptor_and_close_method)]
 fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMethod) {
     println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
@@ -228,6 +232,7 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
     }
 }
 
+#[cfg(not(feature = "altered"))]
 #[apply(descriptor_and_close_method)]
 fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMethod) {
     println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
@@ -262,6 +267,7 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
     }
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 #[should_panic(expected = "Layer1Mismatch(Liquid, Bitcoin)")]
 fn issue_on_different_layers() {

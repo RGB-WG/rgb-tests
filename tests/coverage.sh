@@ -62,6 +62,7 @@ _tit "generating coverage report"
 # shellcheck disable=2086
 INDEXER=esplora $COV --html "${LLVM_COV_OPTS[@]}" "${CARGO_TEST_OPTS[@]}"
 INDEXER=electrum $COV --no-clean --html "${LLVM_COV_OPTS[@]}" "${CARGO_TEST_OPTS[@]}"
+SKIP_INIT=1 INDEXER=electrum $COV --no-clean --html "${LLVM_COV_OPTS[@]}" --features altered
 
 ## show html report location
 echo "generated html report: target/llvm-cov/html/index.html"

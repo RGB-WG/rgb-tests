@@ -61,3 +61,6 @@
 [submodule "amplify-nonasync"]
 	path = amplify-nonasync
 	url = https://github.com/rust-amplify/amplify-nonasync.git
+[submodule "altered_submodules/rgb"]
+	path = altered_submodules/rgb
+	url = https://github.com/zoedberg/rgb

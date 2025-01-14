@@ -5,6 +5,7 @@ use utils::*;
 type TT = TransferType;
 type DT = DescriptorType;
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 // blinded
 #[case(TT::Blinded, DT::Wpkh, DT::Wpkh)]

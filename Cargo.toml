@@ -52,6 +52,14 @@ rgb-runtime = { path = "./rgb", features = [
     "serde",
 ] }
 rgb-psbt = { path = "./rgb/psbt" }
+## altered_submodules/rgb (cannot use path, see https://github.com/rust-lang/cargo/issues/10353)
+rgb_altered = { git = "https://github.com/zoedberg/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-runtime", features = [
+    "electrum_blocking",
+    "esplora_blocking",
+    "fs",
+    "serde",
+], optional = true }
+psrgbt_altered = { git = "https://github.com/zoedberg/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-psbt", optional = true }
 ## rgb-interfaces
 rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
@@ -123,3 +131,10 @@ strict_encoding_derive = { path = "./strict-encoding/rust/derive" }
 strict_types = { path = "./strict-types" }
 ## vesper
 vesper-lang = { path = "./vesper" }
+
+[features]
+default = []
+altered = [
+    "rgb_altered",
+    "psrgbt_altered",
+]

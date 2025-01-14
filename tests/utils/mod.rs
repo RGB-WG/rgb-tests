@@ -68,9 +68,25 @@ pub use once_cell::sync::Lazy;
 pub use psbt::{
     Beneficiary as PsbtBeneficiary, Payment, Prevout, Psbt, PsbtConstructor, PsbtMeta, PsbtVer,
 };
+#[cfg(not(feature = "altered"))]
 pub use psrgbt::{RgbExt, RgbInExt, RgbPsbt, TxParams};
+#[cfg(feature = "altered")]
+pub use psrgbt_altered::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
+#[cfg(not(feature = "altered"))]
 pub use rgb::{
+    info::ContractInfo,
+    interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
+    persistence::{MemContract, MemContractState, Stock},
+    resolvers::AnyResolver,
+    stl::ContractTerms,
+    validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
+    vm::{WitnessOrd, WitnessPos, XWitnessTx},
+    BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
+    RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
+};
+#[cfg(feature = "altered")]
+pub use rgb_altered::{
     info::ContractInfo,
     interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     persistence::{MemContract, MemContractState, Stock},
