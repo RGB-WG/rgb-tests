@@ -84,6 +84,10 @@ If you are developing new tests and want a faster execution, you can set
 cannot switch to another indexer when using this option, you'll have to use the
 same indexer type from the previous test execution.
 
+A feature `altered` is there to run some specific tests with altered crates
+(e.g. tests that simulate a modified sender that tries to perform an attack).
+Run `cargo test --features altered` to run those tests.
+
 ### Coverage
 
 To run the tests and generate a code coverage report run:

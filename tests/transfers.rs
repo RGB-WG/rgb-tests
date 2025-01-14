@@ -6,6 +6,7 @@ type TT = TransferType;
 type DT = DescriptorType;
 type AS = AssetSchema;
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 // blinded: nia - nia
 #[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::Nia, AS::Nia)]
@@ -449,6 +450,7 @@ fn transfer_loop(
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn rbf_transfer() {
     initialize();
@@ -508,6 +510,7 @@ fn rbf_transfer() {
     );
 }
 
+#[cfg(feature = "altered")]
 #[rstest]
 #[should_panic(expected = "DoubleSpend")]
 #[case(TransferType::Blinded)]
@@ -582,6 +585,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     wlt_3.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 }
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(TransferType::Blinded)]
 #[case(TransferType::Witness)]
@@ -635,6 +639,7 @@ fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(TT::Blinded)]
 #[case(TT::Witness)]
@@ -674,6 +679,7 @@ fn invoice_reuse(#[case] transfer_type: TransferType) {
     assert_eq!(consignment.bundles.len(), 1);
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn accept_0conf() {
     initialize();
@@ -727,6 +733,7 @@ fn accept_0conf() {
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(false)]
 #[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/292
@@ -927,6 +934,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn mainnet_wlt_receiving_test_asset() {
     initialize();
@@ -958,6 +966,7 @@ fn mainnet_wlt_receiving_test_asset() {
     }
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 #[ignore = "fix needed"] // https://github.com/BP-WG/bp-wallet/issues/70
 fn sync_mainnet_wlt() {
@@ -969,6 +978,7 @@ fn sync_mainnet_wlt() {
     wlt_1.sync();
 }
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 // close_method_in_invoice=true
 #[case(TT::Blinded, DT::Tr, DT::Wpkh, CloseMethod::OpretFirst, true)]
@@ -1071,6 +1081,7 @@ fn wlt_receiving_from_different_close_method(
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn collaborative_transfer() {
     initialize();
@@ -1169,6 +1180,7 @@ fn collaborative_transfer() {
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn receive_from_unbroadcasted_transfer_to_blinded() {
     initialize();
@@ -1246,6 +1258,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     ));
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn check_fungible_history() {
     initialize();
@@ -1301,6 +1314,7 @@ fn check_fungible_history() {
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[test]
 fn send_to_oneself() {
     initialize();
@@ -1339,6 +1353,7 @@ fn send_to_oneself() {
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(CloseMethod::OpretFirst, CloseMethod::OpretFirst)]
 #[case(CloseMethod::TapretFirst, CloseMethod::TapretFirst)]
@@ -1382,6 +1397,7 @@ fn blank_tapret_opret(#[case] close_method_0: CloseMethod, #[case] close_method_
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(HistoryType::Linear, ReorgType::ChangeOrder)]
 #[case(HistoryType::Linear, ReorgType::Revert)]
@@ -1780,6 +1796,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
     }
 }
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(HistoryType::Linear)]
 #[case(HistoryType::Branching)]
@@ -1970,6 +1987,7 @@ fn reorg_revert_multiple(#[case] history_type: HistoryType) {
     );
 }
 
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[ignore = "fix needed"]
 #[case(false)]

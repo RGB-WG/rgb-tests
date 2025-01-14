@@ -1698,6 +1698,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "rgb-psbt"
+version = "0.11.0-beta.9"
+source = "git+https://github.com/zoedberg/rgb?branch=revert_fix_same_blinded_transfer#1514ab8a2cd240292d2dbcbf27399d0a57e2f8ff"
+dependencies = [
+ "amplify",
+ "baid64",
+ "bp-core",
+ "bp-std",
+ "commit_verify",
+ "getrandom",
+ "rgb-std",
+ "strict_encoding",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "rgb-runtime"
 version = "0.11.0-beta.9"
 dependencies = [
@@ -1713,7 +1729,32 @@ dependencies = [
  "getrandom",
  "indexmap 2.6.0",
  "nonasync",
- "rgb-psbt",
+ "rgb-psbt 0.11.0-beta.9",
+ "rgb-std",
+ "serde",
+ "serde_yaml",
+ "strict_types",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "rgb-runtime"
+version = "0.11.0-beta.9"
+source = "git+https://github.com/zoedberg/rgb?branch=revert_fix_same_blinded_transfer#1514ab8a2cd240292d2dbcbf27399d0a57e2f8ff"
+dependencies = [
+ "amplify",
+ "baid64",
+ "bp-core",
+ "bp-electrum",
+ "bp-esplora",
+ "bp-std",
+ "bp-wallet",
+ "chrono",
+ "commit_verify",
+ "getrandom",
+ "indexmap 2.6.0",
+ "nonasync",
+ "rgb-psbt 0.11.0-beta.9 (git+https://github.com/zoedberg/rgb?branch=revert_fix_same_blinded_transfer)",
  "rgb-std",
  "serde",
  "serde_yaml",
@@ -1780,8 +1821,10 @@ dependencies = [
  "psbt",
  "rand",
  "rgb-interfaces",
- "rgb-psbt",
- "rgb-runtime",
+ "rgb-psbt 0.11.0-beta.9",
+ "rgb-psbt 0.11.0-beta.9 (git+https://github.com/zoedberg/rgb?branch=revert_fix_same_blinded_transfer)",
+ "rgb-runtime 0.11.0-beta.9",
+ "rgb-runtime 0.11.0-beta.9 (git+https://github.com/zoedberg/rgb?branch=revert_fix_same_blinded_transfer)",
  "rgb-schemata",
  "rgb-std",
  "rstest",
