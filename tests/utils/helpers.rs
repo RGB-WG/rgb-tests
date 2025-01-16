@@ -496,7 +496,7 @@ impl Report {
 }
 
 pub fn get_genesis_seal(outpoint: Outpoint, layer_1: Layer1) -> BuilderSeal<BlindSeal<Txid>> {
-    let blind_seal = BlindSeal::rand(outpoint.txid, outpoint.vout);
+    let blind_seal = BlindSeal::new_random(outpoint.txid, outpoint.vout);
     let genesis_seal = GenesisSeal::from(blind_seal);
     let seal: XChain<BlindSeal<Txid>> = XChain::with(layer_1, genesis_seal);
     BuilderSeal::from(seal)
