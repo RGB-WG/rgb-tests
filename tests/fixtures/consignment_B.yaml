@@ -5,12 +5,13 @@ genesis:
   ffv: 0
   schemaId: rgb:sch:RDYhMTR!9gv8Y2GLv9UNBEK1hcrCmdLDFk9Qd5fnO8k#brave-dinner-banana
   flags: null
-  timestamp: 1733499511
+  timestamp: 1737042887
   issuer: ssi:anonymous
+  layer1: bitcoin
   testnet: true
   closeMethod: opretFirst
   assetTags:
-    4000: 52885844f8bf6612ccbea95657851da98ebe8c5140493217bb47d5cc1cfd2cc7
+    4000: 3f7658265f1b576cf7351ba6d1906d0c0474ceef33d3ee43e4afbf1341f2d77b
   metadata: {}
   globals:
     2000:
@@ -26,13 +27,13 @@ genesis:
       - seal:
           chain: bitcoin
           data:
-            txid: cab530631f920777e564f79f9aa4baf0a29a9c809b23dee32299d5c4e222d17f
+            txid: 88bd97f1bb4cc6160c8f6fcb2e576f45b1aec0a6f2d53f4d755d3df7e50462d7
             vout: 1
-            blinding: 5047472919352414330
+            blinding: 6634764484427333225
         state:
           value: 666
           blinding: 7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e
-          tag: 52885844f8bf6612ccbea95657851da98ebe8c5140493217bb47d5cc1cfd2cc7
+          tag: 3f7658265f1b576cf7351ba6d1906d0c0474ceef33d3ee43e4afbf1341f2d77b
         lock: null
   valencies: []
   validator: null
@@ -43,42 +44,103 @@ bundles:
     data: !tx
       version: 2
       inputs:
-      - prevOutput: 00e7475b52f6489ca4909c998c69ce7e6049baca2357275a2063cd29130f06ef:1
+      - prevOutput: 88bd97f1bb4cc6160c8f6fcb2e576f45b1aec0a6f2d53f4d755d3df7e50462d7:1
         sigScript: ''
         sequence: 0
         witness: []
       outputs:
       - value: 9000
-        scriptPubkey: 00140f4aec87752df1ec0ce66e76d24d289a229f53e3
-      - value: 99971800
-        scriptPubkey: 0014d3857374465d1fe0af5017af7312ab6f6d07fb1a
+        scriptPubkey: 001437e8f0fe26a223b11e4911407a86e051b39310bc
+      - value: 99990600
+        scriptPubkey: 00145f1e30a1490a224dd848a8991de8a7706e7276d7
       - value: 0
-        scriptPubkey: 6a204210f435941f2484df1b56d8d5f8dc15036bd4a152552ca823be30ccf19717e4
+        scriptPubkey: 6a20d0208ddf0d1eadb303c565719b0a911431b76f07640566ab30382cde500c2348
       lockTime: 0
   anchoredBundles: !opret
     mpcProof:
-      pos: 5
-      cofactor: 0
+      pos: 2
+      cofactor: 1
       path:
-      - 9290c3e34a320cdf74da283d1078201d908833770ced97a5e8c1300686dbce5e
-      - 362cb97d523c87e05860a6395622ad40d91a6a83ef57b7ea39b67ba542637c2f
-      - ae089ce140f4a463ac9ee7304cd972c4d8639a54fa1d14b4b12c00fb37155a25
+      - 91e767a64eb22aa4f6128aaeaed541fb4f29364b4342c183422e84b1ea8bb815
+      - 44626a29430401fc0f50d87a1a49deeb2b96cd646fa54c3426baf2fe393f3200
+      - 925678ecd2e876f2156e8e21680c0d128fa8e094430a4846f33f4e2c8abc7246
     dbcProof: null
     bundle:
       closeMethod: opretFirst
       inputMap:
-        0: 79efadf177a1aeda5e8041538da9888871c73124a4c181e37d8d01b4cb7f5a62
+        0: 4acd11b75758a80f7b3bfd74341fc08ced3ba9a7c9ff2d34cb08261821b8f53c
       knownTransitions:
-        79efadf177a1aeda5e8041538da9888871c73124a4c181e37d8d01b4cb7f5a62:
+        4acd11b75758a80f7b3bfd74341fc08ced3ba9a7c9ff2d34cb08261821b8f53c:
           ffv: 0
-          contractId: rgb:NVNoWjPz-3x2CqpU-gBQZ$vh-KacVreu-mr4X!VI-yXI4QqM
+          contractId: rgb:GIV05G$d-BZ5$N3k-0EZ$ijw-JA4uMHY-hWeM6Xl-6Ki8G5g
+          nonce: 18446744073709551615
+          transitionType: 65535
+          metadata: {}
+          globals: {}
+          inputs:
+          - prevOut:
+              op: 188574e46fdd059e7f377934119fe28f0240e2e30762159e33a5e5e8a8bc1b98
+              ty: 4000
+              no: 0
+          assignments:
+            4000:
+              type: fungible
+              items:
+              - seal:
+                  chain: bitcoin
+                  data:
+                    txid: null
+                    vout: 1
+                    blinding: 6775826641241912795
+                state:
+                  value: 666
+                  blinding: 7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e
+                  tag: 3f7658265f1b576cf7351ba6d1906d0c0474ceef33d3ee43e4afbf1341f2d77b
+                lock: null
+          valencies: []
+          validator: null
+          witness: null
+- pubWitness:
+    chain: bitcoin
+    data: !tx
+      version: 2
+      inputs:
+      - prevOutput: b8fb67429d4328952b5aefe9c8eb343b690b1f7ebd0ab28aef1d1ffe548feec9:1
+        sigScript: ''
+        sequence: 0
+        witness: []
+      outputs:
+      - value: 9000
+        scriptPubkey: 001437e8f0fe26a223b11e4911407a86e051b39310bc
+      - value: 99971800
+        scriptPubkey: 0014d1a18ed1342f54ae1b949ae81fd5f8fbb035a3e3
+      - value: 0
+        scriptPubkey: 6a20b5a6d4cb971e039a9bee78ed7c1d40c5edfc6473e9a715f36a881dc92d7d8e04
+      lockTime: 0
+  anchoredBundles: !opret
+    mpcProof:
+      pos: 2
+      cofactor: 1
+      path:
+      - b5cdbbd60a06914f9bd19c2bc107d0290f671c52a2f86500c49550d326c58fd9
+      - 0b8658e81bb5275665f27108fc2e334235c65d6e258f5cd44a344717bc030a98
+      - 57d5922671db1bfad98d4ca776036ca560a745823bc94964d60eb0aef8a855df
+    dbcProof: null
+    bundle:
+      closeMethod: opretFirst
+      inputMap:
+        0: ff609a2799287972c299cb3ec331a74b464617010f3c100ac7280800de148c37
+      knownTransitions:
+        ff609a2799287972c299cb3ec331a74b464617010f3c100ac7280800de148c37:
+          ffv: 0
+          contractId: rgb:GIV05G$d-BZ5$N3k-0EZ$ijw-JA4uMHY-hWeM6Xl-6Ki8G5g
           nonce: 18446744073709551615
           transitionType: 10000
           metadata: {}
           globals: {}
           inputs:
           - prevOut:
-              op: 6461e227cf9f3c5405e41abe5155af7645194d6eacb7c5048b6eb11941af452c
+              op: 80f1c6c445862afed8f40a91d4e271d3b05d2ab160e4d6092cea18f6b0f4e43d
               ty: 4000
               no: 1
           assignments:
@@ -90,22 +152,22 @@ bundles:
                   data:
                     txid: null
                     vout: 0
-                    blinding: 2404800648635509652
+                    blinding: 6447300081785208315
                 state:
                   value: 77
-                  blinding: 8d98c737761c13f8d4abc458ad65b50eac5d0c1ebb092893c113b9b35b1815d0
-                  tag: 52885844f8bf6612ccbea95657851da98ebe8c5140493217bb47d5cc1cfd2cc7
+                  blinding: 5e7cf73db2d82356b7a3b0512c70148d8d421a682404761cf43f5250e39ee95c
+                  tag: 3f7658265f1b576cf7351ba6d1906d0c0474ceef33d3ee43e4afbf1341f2d77b
                 lock: null
               - seal:
                   chain: bitcoin
                   data:
                     txid: null
                     vout: 1
-                    blinding: 1099320404544862061
+                    blinding: 14823439642180369039
                 state:
                   value: 539
-                  blinding: fea3cc6c712782668349ff2483c0707e992d30e3351e04a6699d0f4a0da97bb3
-                  tag: 52885844f8bf6612ccbea95657851da98ebe8c5140493217bb47d5cc1cfd2cc7
+                  blinding: 42719d620571ed897dab9712460d54fc75a9db559ed5f05e00fe87ff15275cab
+                  tag: 3f7658265f1b576cf7351ba6d1906d0c0474ceef33d3ee43e4afbf1341f2d77b
                 lock: null
           valencies: []
           validator: null
@@ -115,42 +177,42 @@ bundles:
     data: !tx
       version: 2
       inputs:
-      - prevOutput: 6a4c454f7a72de0d4ebe69e9e22094a00a259fc177e4e1cebd6a47cc796a8afc:1
+      - prevOutput: 80c89be42001afdf27b20ca846d72d8ab61f41160580053804d5a19491989e2f:1
         sigScript: ''
         sequence: 0
         witness: []
       outputs:
       - value: 9000
-        scriptPubkey: 00140f4aec87752df1ec0ce66e76d24d289a229f53e3
+        scriptPubkey: 001437e8f0fe26a223b11e4911407a86e051b39310bc
       - value: 99981200
-        scriptPubkey: 0014536aa9f8d526752618bfad2bba287bbcadb3b79e
+        scriptPubkey: 001489a4ed797d745a21e20423f03c7ca15eb9f76861
       - value: 0
-        scriptPubkey: 6a205ccc036fc223cc84471ed980fa75bf7df21c8b6b2d6dc0e96b845cb835fca352
+        scriptPubkey: 6a2021dad0f9baf88f7b9fb04350712eb161d465f23f1380b0edd9d1ca7a93c66e03
       lockTime: 0
   anchoredBundles: !opret
     mpcProof:
-      pos: 5
-      cofactor: 0
+      pos: 2
+      cofactor: 1
       path:
-      - 0e8208c0dcb5cf5fbd5e7a9f2bce90e96a792a3719b17a5542870cd5bb35bbfc
-      - b2f02c0401221cb1791d5570b515ea167de92ff931ca7ee557fa56ec9f10fd88
-      - ae55eec94cfbcc3880198607a9ffe8e7d1a8421e9f14886c2ddefb70bdb2bb5e
+      - 11a6073c2355549770ad5e9ce2dc6b4adaba8bae41dfa49aa05f3d7197554803
+      - c688591b620007476758e77a77007bc444ae6d1e9ef5ee5ed6423ce58221bdc0
+      - fcfc5f510e8693189ea2cb40264433d5371600216550d76c6a915b87e35611a0
     dbcProof: null
     bundle:
       closeMethod: opretFirst
       inputMap:
-        0: 6461e227cf9f3c5405e41abe5155af7645194d6eacb7c5048b6eb11941af452c
+        0: 80f1c6c445862afed8f40a91d4e271d3b05d2ab160e4d6092cea18f6b0f4e43d
       knownTransitions:
-        6461e227cf9f3c5405e41abe5155af7645194d6eacb7c5048b6eb11941af452c:
+        80f1c6c445862afed8f40a91d4e271d3b05d2ab160e4d6092cea18f6b0f4e43d:
           ffv: 0
-          contractId: rgb:NVNoWjPz-3x2CqpU-gBQZ$vh-KacVreu-mr4X!VI-yXI4QqM
+          contractId: rgb:GIV05G$d-BZ5$N3k-0EZ$ijw-JA4uMHY-hWeM6Xl-6Ki8G5g
           nonce: 18446744073709551615
           transitionType: 10000
           metadata: {}
           globals: {}
           inputs:
           - prevOut:
-              op: 0253b75803ce75effcc25cf5f2489c00bae398a53e1a3ebb8b39b4ad1cf6783c
+              op: 4acd11b75758a80f7b3bfd74341fc08ced3ba9a7c9ff2d34cb08261821b8f53c
               ty: 4000
               no: 0
           assignments:
@@ -162,83 +224,22 @@ bundles:
                   data:
                     txid: null
                     vout: 0
-                    blinding: 2435813243217121090
+                    blinding: 18351228897215755770
                 state:
                   value: 50
-                  blinding: f241eada973ae81f2688bb014d5858eeae51fb49ece891bbd372729ab6296f7d
-                  tag: 52885844f8bf6612ccbea95657851da98ebe8c5140493217bb47d5cc1cfd2cc7
+                  blinding: dd8fe9dec6346d9e492f371b0c0114f3364165a76aecb83f491302bb55ee79b8
+                  tag: 3f7658265f1b576cf7351ba6d1906d0c0474ceef33d3ee43e4afbf1341f2d77b
                 lock: null
               - seal:
                   chain: bitcoin
                   data:
                     txid: null
                     vout: 1
-                    blinding: 7421574954111301314
+                    blinding: 12052708592936456938
                 state:
                   value: 616
-                  blinding: 8c3c93a3e743965f57f5c37d3126258e8adb601b40de8cfe6ade6a70988b5042
-                  tag: 52885844f8bf6612ccbea95657851da98ebe8c5140493217bb47d5cc1cfd2cc7
-                lock: null
-          valencies: []
-          validator: null
-          witness: null
-- pubWitness:
-    chain: bitcoin
-    data: !tx
-      version: 2
-      inputs:
-      - prevOutput: cab530631f920777e564f79f9aa4baf0a29a9c809b23dee32299d5c4e222d17f:1
-        sigScript: ''
-        sequence: 0
-        witness: []
-      outputs:
-      - value: 9000
-        scriptPubkey: 00140f4aec87752df1ec0ce66e76d24d289a229f53e3
-      - value: 99990600
-        scriptPubkey: 00147d49baa4a50c55d8c8f0ca72bdb61629d6916637
-      - value: 0
-        scriptPubkey: 6a20a4cb928f383de61a241cbd4c2a8d999bd4121263e3edeed18d3fdfce5dfb52bb
-      lockTime: 0
-  anchoredBundles: !opret
-    mpcProof:
-      pos: 5
-      cofactor: 0
-      path:
-      - 8789a4e30a0f1180281069e14118874de47fb9c817526df533e83c595385c849
-      - 18d2ac472b6f6b16664af23e73cb2d61c2aa81753dcdf0177c042b489bb75e27
-      - 6f3d5d660a4cbf24b08a532bec48f6ce760a5d978cfb0fe68c6b5f9ef74cdde7
-    dbcProof: null
-    bundle:
-      closeMethod: opretFirst
-      inputMap:
-        0: 0253b75803ce75effcc25cf5f2489c00bae398a53e1a3ebb8b39b4ad1cf6783c
-      knownTransitions:
-        0253b75803ce75effcc25cf5f2489c00bae398a53e1a3ebb8b39b4ad1cf6783c:
-          ffv: 0
-          contractId: rgb:NVNoWjPz-3x2CqpU-gBQZ$vh-KacVreu-mr4X!VI-yXI4QqM
-          nonce: 18446744073709551615
-          transitionType: 65535
-          metadata: {}
-          globals: {}
-          inputs:
-          - prevOut:
-              op: 3553685a33f3df1d82aa952005067fbe129a715adeba6af85fe548c9723842a3
-              ty: 4000
-              no: 0
-          assignments:
-            4000:
-              type: fungible
-              items:
-              - seal:
-                  chain: bitcoin
-                  data:
-                    txid: null
-                    vout: 1
-                    blinding: 7627067747171938676
-                state:
-                  value: 666
-                  blinding: 7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e
-                  tag: 52885844f8bf6612ccbea95657851da98ebe8c5140493217bb47d5cc1cfd2cc7
+                  blinding: a0ee949fb84a10e0354f4763727d698a02ebf5bdc2da667af53dda4ff8c64607
+                  tag: 3f7658265f1b576cf7351ba6d1906d0c0474ceef33d3ee43e4afbf1341f2d77b
                 lock: null
           valencies: []
           validator: null
