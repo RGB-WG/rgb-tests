@@ -64,11 +64,11 @@ impl Scenario {
         match self {
             Self::A => {
                 let (tx_1, witness_id_1) =
-                    get_tx("bc:1c80e38f2f60d264eb7098321ae884946b888a2ddfd27f1edad4cafb9a2d9310");
+                    get_tx("bc:252b60eb081f7128b82d4bc3abcf39413c94b6a51d3b27bfb530424c05ed7d09");
                 let (tx_2, witness_id_2) =
-                    get_tx("bc:6a3e8af0f6c16fd1bfbe28219bf79997e2f7383d640d9b6bfe2aedb5ec825ce2");
+                    get_tx("bc:f18f5b7496dff031a4700cd0b62d451489c9c560271b0048cf77b3d4c01a11bf");
                 let (tx_3, witness_id_3) =
-                    get_tx("bc:3f16d0aa315b3c314bc41d4b106f0d4512adda07d9db5b7a2e08105f131704ff");
+                    get_tx("bc:aadbf3642232746acb8e14ae520e97355c272f1ccde427067d2505370fd8e280");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -84,11 +84,11 @@ impl Scenario {
             }
             Self::B => {
                 let (tx_1, witness_id_1) =
-                    get_tx("bc:6a4c454f7a72de0d4ebe69e9e22094a00a259fc177e4e1cebd6a47cc796a8afc");
+                    get_tx("bc:80c89be42001afdf27b20ca846d72d8ab61f41160580053804d5a19491989e2f");
                 let (tx_2, witness_id_2) =
-                    get_tx("bc:00e7475b52f6489ca4909c998c69ce7e6049baca2357275a2063cd29130f06ef");
+                    get_tx("bc:b8fb67429d4328952b5aefe9c8eb343b690b1f7ebd0ab28aef1d1ffe548feec9");
                 let (tx_3, witness_id_3) =
-                    get_tx("bc:95e3389d5bf4475849333bde0ecc9fe645f8080d1ae7489b25eb37196454d6b0");
+                    get_tx("bc:57fcfd83cfb09f1f28c6c3cd66d3c727638d7ade64d56d5de672a2089590404a");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -280,19 +280,19 @@ fn validate_consignment_genesis_fail() {
     ));
     assert!(matches!(
         validation_status.failures[1],
-        Failure::MpcInvalid(_, _, _)
-    ));
-    assert!(matches!(
-        validation_status.failures[2],
         Failure::OperationAbsent(_)
     ));
     assert!(matches!(
-        validation_status.failures[3],
+        validation_status.failures[2],
         Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
-        validation_status.failures[4],
+        validation_status.failures[3],
         Failure::BundleExtraTransition(_, _)
+    ));
+    assert!(matches!(
+        validation_status.failures[4],
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(validation_status.warnings.is_empty());
     assert!(validation_status.info.is_empty());
@@ -358,7 +358,7 @@ fn validate_consignment_resolver_error() {
     let scenario = Scenario::A;
     let mut resolver = scenario.resolver();
     let txid =
-        Txid::from_str("6a3e8af0f6c16fd1bfbe28219bf79997e2f7383d640d9b6bfe2aedb5ec825ce2").unwrap();
+        Txid::from_str("f18f5b7496dff031a4700cd0b62d451489c9c560271b0048cf77b3d4c01a11bf").unwrap();
     let xwitness_id = XChain::Bitcoin(txid);
 
     // resolve_pub_witness error
