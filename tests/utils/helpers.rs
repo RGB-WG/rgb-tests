@@ -903,7 +903,7 @@ impl TestWallet {
             }
             InvoiceType::Witness => {
                 let address = self.get_address();
-                Beneficiary::WitnessVout(address.payload)
+                Beneficiary::WitnessVout(Pay2Vout::new(address.payload))
             }
         };
 
