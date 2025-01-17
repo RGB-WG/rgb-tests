@@ -53,13 +53,13 @@ rgb-runtime = { path = "./rgb", features = [
 ] }
 rgb-psbt = { path = "./rgb/psbt" }
 ## altered_submodules/rgb (cannot use path, see https://github.com/rust-lang/cargo/issues/10353)
-rgb_altered = { git = "https://github.com/zoedberg/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-runtime", features = [
+rgb_altered = { git = "https://github.com/RGB-WG/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-runtime", features = [
     "electrum_blocking",
     "esplora_blocking",
     "fs",
     "serde",
 ], optional = true }
-psrgbt_altered = { git = "https://github.com/zoedberg/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-psbt", optional = true }
+psrgbt_altered = { git = "https://github.com/RGB-WG/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-psbt", optional = true }
 ## rgb-interfaces
 rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
