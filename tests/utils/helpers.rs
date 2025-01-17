@@ -1534,7 +1534,7 @@ impl TestWallet {
                 .unwrap()
             {
                 for (opout, state) in opout_state_map {
-                    if let PersistedState::Amount(amt, _, _) = &state {
+                    if let PersistedState::Amount(amt) = &state {
                         asset_available_amt += amt.value();
                     }
                     asset_transition_builder =
@@ -1560,15 +1560,8 @@ impl TestWallet {
                 let seal = BuilderSeal::Revealed(XChain::with(Layer1::Bitcoin, graph_seal));
                 beneficiaries.push(seal);
 
-                let blinding_factor = if let Some(blinding) = asset_coloring_info.static_blinding {
-                    let mut blinding_32_bytes: [u8; 32] = [0; 32];
-                    blinding_32_bytes[0..8].copy_from_slice(&blinding.to_le_bytes());
-                    BlindingFactor::try_from(blinding_32_bytes).unwrap()
-                } else {
-                    BlindingFactor::random()
-                };
                 asset_transition_builder = asset_transition_builder
-                    .add_fungible_state_raw(assignment_id, seal, amount, blinding_factor)
+                    .add_fungible_state_raw(assignment_id, seal, amount)
                     .unwrap();
             }
             if sending_amt > asset_available_amt {

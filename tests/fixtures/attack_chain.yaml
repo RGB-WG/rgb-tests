@@ -1,20 +1,18 @@
 version: v2
 transfer: true
 terminals:
-  d60fbc4bfa14b26c1575506740867650f679ca13910d5ad5be22bfb3f2009da4:
+  888f5e74cc7379fa607fd3a5dd1fa7e5d0b8b57627ee9da15f7535b87a7db462:
     chain: liquid
-    data: f6c58818656854cc09c3201f4ecb3b995817dec16cac94f3b3244326d0cdc361
+    data: af7293b53f1f939739b57c3da493cd0377bea578aa40a6cce4eb1e3065352f89
 genesis:
   ffv: 0
   schemaId: rgb:sch:RDYhMTR!9gv8Y2GLv9UNBEK1hcrCmdLDFk9Qd5fnO8k#brave-dinner-banana
   flags: null
-  timestamp: 1737042623
+  timestamp: 1737379289
   issuer: ssi:anonymous
   layer1: liquid
   testnet: true
   closeMethod: opretFirst
-  assetTags:
-    4000: 625924a8313a2fd2a7772ed0ad025316fd9ef33e636ffebef1b6b3ed716154e6
   metadata: {}
   globals:
     2000:
@@ -30,13 +28,11 @@ genesis:
       - seal:
           chain: liquid
           data:
-            txid: 5aa2d96e9eb52cb0da1ddc0fe5f4c19d6cae82b7c9cc501038bbf29fbee2b817
-            vout: 0
-            blinding: 8957930379714788528
+            txid: 398cf9d0e0f5ce5de4942643f3bad605c543e570487776121e2998204697162b
+            vout: 1
+            blinding: 1247419942178703447
         state:
           value: 666
-          blinding: 7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e
-          tag: 625924a8313a2fd2a7772ed0ad025316fd9ef33e636ffebef1b6b3ed716154e6
         lock: null
   valencies: []
   validator: null
@@ -47,40 +43,166 @@ bundles:
     data: !tx
       version: 2
       inputs:
-      - prevOutput: 5aa2d96e9eb52cb0da1ddc0fe5f4c19d6cae82b7c9cc501038bbf29fbee2b817:0
+      - prevOutput: da9426377fb572da296e34be318da92e8f1d31aabacb87d8c281a1d7948467b5:0
+        sigScript: ''
+        sequence: 0
+        witness: []
+      outputs:
+      - value: 99999200
+        scriptPubkey: 0014657c84535102d0108f879cfc0f19d98dd4c5f7ae
+      - value: 0
+        scriptPubkey: 6a203c86375e6a9e80cbc7f1b087edb70372520084c0bc6935cbc08514eb92bc69dd
+      lockTime: 0
+  anchoredBundles: !opret
+    mpcProof:
+      pos: 1
+      cofactor: 0
+      path:
+      - fdb7f891fcc1f14059caf3f954d819881df819a17f7442285c544931468c4a26
+      - 25d09dcbaf6a9bd9bc2fe60002b402ea37804a0e866089d22cf0fbbb46b4869c
+      - 0fc2e4ce1fcc941b2b5b84ae3811f5b51fec1b3af176c20ac1e9478b580de48e
+    dbcProof: null
+    bundle:
+      closeMethod: opretFirst
+      inputMap:
+        0: 556e7182def5aa7d7638eca68ceda5874c29f7370c983ad5de554c6c4a42299c
+      knownTransitions:
+        556e7182def5aa7d7638eca68ceda5874c29f7370c983ad5de554c6c4a42299c:
+          ffv: 0
+          contractId: rgb:UUCriF2W-CsKNMod-JcUD9TF-yeMMKrz-HrH5fYS-ngoFzZU
+          nonce: 18446744073709551615
+          transitionType: 10000
+          metadata: {}
+          globals: {}
+          inputs:
+          - prevOut:
+              op: 2e214f12f502536013cc2c1709b626267e3dbfc14f5e6f4e6c4cf1038ae396d2
+              ty: 4000
+              no: 0
+          assignments:
+            4000:
+              type: fungible
+              items:
+              - seal:
+                  chain: liquid
+                  data:
+                    txid: null
+                    vout: 0
+                    blinding: 3396879040862603651
+                state:
+                  value: 616
+                lock: null
+              - seal:
+                  chain: liquid
+                  data: 5ca1eb33d07bd2d5e9c077aedda3fc0939d322e9fda0897154c369d96cd906a4
+                state:
+                  value: 50
+                lock: null
+          valencies: []
+          validator: null
+          witness: null
+- pubWitness:
+    chain: liquid
+    data: !tx
+      version: 2
+      inputs:
+      - prevOutput: 7cc93bfb48099795843063cf2d54f5a9f68d1eb13134dafa946a4f64f1349a56:0
+        sigScript: ''
+        sequence: 0
+        witness: []
+      outputs:
+      - value: 99998800
+        scriptPubkey: 00143ddfd44d299898c82f48a99fa32fd772e5506f7e
+      - value: 0
+        scriptPubkey: 6a20e0143bf3d59456750b37f7157fd91bccacfa4fb2a38c4a02ded8bf045a9c95f3
+      lockTime: 0
+  anchoredBundles: !opret
+    mpcProof:
+      pos: 1
+      cofactor: 0
+      path:
+      - b8cbdbaaaa92791ed44cbad01c607d70ad9d4e9dbcddf88814a23e10995f1c25
+      - 25bd988d9c58011a9a59acef153da765cbfe2071f69598affc0e8432616c7dcf
+      - 0bb65a0bf9e33214b7a23a11d6ffe147bc2eaa01b603ab975498bc02c7ceadad
+    dbcProof: null
+    bundle:
+      closeMethod: opretFirst
+      inputMap:
+        0: 1fbbf7120cfd5bee179d4415cebfe6927fdf4fb6a0643231645e4052cf6d9764
+      knownTransitions:
+        1fbbf7120cfd5bee179d4415cebfe6927fdf4fb6a0643231645e4052cf6d9764:
+          ffv: 0
+          contractId: rgb:UUCriF2W-CsKNMod-JcUD9TF-yeMMKrz-HrH5fYS-ngoFzZU
+          nonce: 18446744073709551615
+          transitionType: 10000
+          metadata: {}
+          globals: {}
+          inputs:
+          - prevOut:
+              op: 556e7182def5aa7d7638eca68ceda5874c29f7370c983ad5de554c6c4a42299c
+              ty: 4000
+              no: 0
+          assignments:
+            4000:
+              type: fungible
+              items:
+              - seal:
+                  chain: liquid
+                  data:
+                    txid: null
+                    vout: 0
+                    blinding: 3401881630917920501
+                state:
+                  value: 539
+                lock: null
+              - seal:
+                  chain: liquid
+                  data: af7293b53f1f939739b57c3da493cd0377bea578aa40a6cce4eb1e3065352f89
+                state:
+                  value: 77
+                lock: null
+          valencies: []
+          validator: null
+          witness: null
+- pubWitness:
+    chain: liquid
+    data: !tx
+      version: 2
+      inputs:
+      - prevOutput: 398cf9d0e0f5ce5de4942643f3bad605c543e570487776121e2998204697162b:1
         sigScript: ''
         sequence: 0
         witness: []
       outputs:
       - value: 99999600
-        scriptPubkey: 00148176f53030baa060021881c936191403a5132d3d
+        scriptPubkey: 0014f970c1b92bb6e147272c74bd402ba786d47a7274
       - value: 0
-        scriptPubkey: 6a2003d129a0929a0da484a83e503d17207e32495be0d19abd51fae93a8b88bfd7f8
+        scriptPubkey: 6a20d80b8b1dcbf9900acd93f36a507e508ab778b7a3c88b9df039f38c32bcfe6e10
       lockTime: 0
   anchoredBundles: !opret
     mpcProof:
-      pos: 7
+      pos: 1
       cofactor: 0
       path:
-      - e760769e0fd7ef516b564534aecf20a8c6ebc8af5b5565bfe85636dbc683b6c9
-      - ca7ad116f890ef167c293ae19e7212b9d393aa9fd03ce9388f3e7711e7396081
-      - 376fe7f0d6c1b55a57c0c361b46017be3b41a637183d62e763d4c3ef1eafa408
+      - a3893550f922a107a14bdbb56481ed1c1c775e9bd980fece220c0ca4f535bcfe
+      - 4ef764fa8a8dc4c2c5b24e0c48fceb8ab5b288acc8377bde161a97e8bd83029d
+      - ebec8c270e974479aeed5f13486562a9b82ba4cc3ec80d2f02ec4e354e7120a1
     dbcProof: null
     bundle:
       closeMethod: opretFirst
       inputMap:
-        0: 48d6d711fa9ebe4d080076b257029d8e9352379186c117ac6e71ee3a60bde458
+        0: 2e214f12f502536013cc2c1709b626267e3dbfc14f5e6f4e6c4cf1038ae396d2
       knownTransitions:
-        48d6d711fa9ebe4d080076b257029d8e9352379186c117ac6e71ee3a60bde458:
+        2e214f12f502536013cc2c1709b626267e3dbfc14f5e6f4e6c4cf1038ae396d2:
           ffv: 0
-          contractId: rgb:jwqhtZYN-BqOwBEw-2750vWB-u$3kNor-A1WLQBU-WlQEop0
+          contractId: rgb:UUCriF2W-CsKNMod-JcUD9TF-yeMMKrz-HrH5fYS-ngoFzZU
           nonce: 18446744073709551615
           transitionType: 65535
           metadata: {}
           globals: {}
           inputs:
           - prevOut:
-              op: 8f0aa1b5960d06a3b0044c36ef9d2f581bbfde4368ac0d562d00545a5404a29d
+              op: 5140ab885d960ac28d3287497140fd4c5c9e30c2abcc7ac7e5f6129e0a05cd95
               ty: 4000
               no: 0
           assignments:
@@ -92,145 +214,9 @@ bundles:
                   data:
                     txid: null
                     vout: 0
-                    blinding: 18109541497092664369
+                    blinding: 10679917118884114167
                 state:
                   value: 666
-                  blinding: 7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e
-                  tag: 625924a8313a2fd2a7772ed0ad025316fd9ef33e636ffebef1b6b3ed716154e6
-                lock: null
-          valencies: []
-          validator: null
-          witness: null
-- pubWitness:
-    chain: liquid
-    data: !tx
-      version: 2
-      inputs:
-      - prevOutput: f18f5b7496dff031a4700cd0b62d451489c9c560271b0048cf77b3d4c01a11bf:0
-        sigScript: ''
-        sequence: 0
-        witness: []
-      outputs:
-      - value: 99998800
-        scriptPubkey: 0014f349a8d7a41f93b44c29a4c0c941d2cfce8a3d29
-      - value: 0
-        scriptPubkey: 6a207da96850cea30ae37832ef9fa42c27e67bb7746781dd39225972d7fab87a9949
-      lockTime: 0
-  anchoredBundles: !opret
-    mpcProof:
-      pos: 7
-      cofactor: 0
-      path:
-      - b50124d2728c4ead4ede4f04dd1baaec6434864c6503909c37f5ecec107575a9
-      - ccadfa40e23678426f49d7ab55531d38191f1ce850bf03abc14981fcbbdbff1d
-      - 0d876bcdedafcd894a4b5f0c4fabf788b1d48953c69127783e301b63f3d89f1e
-    dbcProof: null
-    bundle:
-      closeMethod: opretFirst
-      inputMap:
-        0: ed309a7f2f07fc132174c5023f5965b2e5482137047bf6b92e65b3bfa5713aa5
-      knownTransitions:
-        ed309a7f2f07fc132174c5023f5965b2e5482137047bf6b92e65b3bfa5713aa5:
-          ffv: 0
-          contractId: rgb:jwqhtZYN-BqOwBEw-2750vWB-u$3kNor-A1WLQBU-WlQEop0
-          nonce: 18446744073709551615
-          transitionType: 10000
-          metadata: {}
-          globals: {}
-          inputs:
-          - prevOut:
-              op: 545de13eedf816c1397881bd0e3a5daad4a978e52329f75d6bda73de9388fea5
-              ty: 4000
-              no: 0
-          assignments:
-            4000:
-              type: fungible
-              items:
-              - seal:
-                  chain: liquid
-                  data:
-                    txid: null
-                    vout: 0
-                    blinding: 2355376232384358743
-                state:
-                  value: 539
-                  blinding: b76a2e82427d0fe0d4fd5e41a6ccadbe79974e4d5e612ee51d0e8f99962e9148
-                  tag: 625924a8313a2fd2a7772ed0ad025316fd9ef33e636ffebef1b6b3ed716154e6
-                lock: null
-              - seal:
-                  chain: liquid
-                  data: f6c58818656854cc09c3201f4ecb3b995817dec16cac94f3b3244326d0cdc361
-                state:
-                  value: 77
-                  blinding: 56db6eff0740ca506b96ecbda2403800141d63ccb8400399959b03fff0d2543d
-                  tag: 625924a8313a2fd2a7772ed0ad025316fd9ef33e636ffebef1b6b3ed716154e6
-                lock: null
-          valencies: []
-          validator: null
-          witness: null
-- pubWitness:
-    chain: liquid
-    data: !tx
-      version: 2
-      inputs:
-      - prevOutput: 252b60eb081f7128b82d4bc3abcf39413c94b6a51d3b27bfb530424c05ed7d09:0
-        sigScript: ''
-        sequence: 0
-        witness: []
-      outputs:
-      - value: 99999200
-        scriptPubkey: 001455d98771388ec14ffc5d58de9267eed55bbfcc02
-      - value: 0
-        scriptPubkey: 6a203bae1119b87eb25690b7fd213114b48a373e6491d79baa901ab155a96dfc1f5f
-      lockTime: 0
-  anchoredBundles: !opret
-    mpcProof:
-      pos: 7
-      cofactor: 0
-      path:
-      - 73b507b89d02c0380d7a07596bc81e1824a5e955f458f24ecb0f34c9f7c07069
-      - 0abb023877c33bc71395500499e0922bbf57290126d8cec073a55cc611123ab4
-      - 0c2233fee19ce875c5b0848b2a79ac15c8b820339d5200868c1df9ec29aa8329
-    dbcProof: null
-    bundle:
-      closeMethod: opretFirst
-      inputMap:
-        0: 545de13eedf816c1397881bd0e3a5daad4a978e52329f75d6bda73de9388fea5
-      knownTransitions:
-        545de13eedf816c1397881bd0e3a5daad4a978e52329f75d6bda73de9388fea5:
-          ffv: 0
-          contractId: rgb:jwqhtZYN-BqOwBEw-2750vWB-u$3kNor-A1WLQBU-WlQEop0
-          nonce: 18446744073709551615
-          transitionType: 10000
-          metadata: {}
-          globals: {}
-          inputs:
-          - prevOut:
-              op: 48d6d711fa9ebe4d080076b257029d8e9352379186c117ac6e71ee3a60bde458
-              ty: 4000
-              no: 0
-          assignments:
-            4000:
-              type: fungible
-              items:
-              - seal:
-                  chain: liquid
-                  data:
-                    txid: null
-                    vout: 0
-                    blinding: 5417743796570256751
-                state:
-                  value: 616
-                  blinding: 0e459d8149bdda3140944aff490ce5bfd305d53367589242f2d7350cb6caa444
-                  tag: 625924a8313a2fd2a7772ed0ad025316fd9ef33e636ffebef1b6b3ed716154e6
-                lock: null
-              - seal:
-                  chain: liquid
-                  data: 0897b0df904f72743ffd365518455b4e345c187e80c31412458494504e74c8bc
-                state:
-                  value: 50
-                  blinding: 7038e0fd34c0a44d3dea337f357198beab78a94b1725ec3b8ba74971c7b3da3a
-                  tag: 625924a8313a2fd2a7772ed0ad025316fd9ef33e636ffebef1b6b3ed716154e6
                 lock: null
           valencies: []
           validator: null
