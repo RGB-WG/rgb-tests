@@ -83,8 +83,8 @@ pub use rgb::{
     stl::ContractTerms,
     validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos, XWitnessTx},
-    BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
-    RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
+    DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
+    TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
 };
 #[cfg(feature = "altered")]
 pub use rgb_altered::{
@@ -96,8 +96,8 @@ pub use rgb_altered::{
     stl::ContractTerms,
     validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos, XWitnessTx},
-    BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
-    RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
+    DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
+    TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
 };
 pub use rgbstd::{
     containers::{
