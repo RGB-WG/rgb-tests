@@ -736,7 +736,6 @@ fn accept_0conf() {
 #[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(false)]
-#[ignore = "fix needed"] // https://github.com/RGB-WG/rgb-std/issues/292
 #[case(true)]
 fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     initialize();
@@ -745,21 +744,39 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     let wlt_2 = get_wallet(&DescriptorType::Wpkh);
     let pre_funding_height = get_height();
 
-    let utxo = wlt_1.get_utxo(Some(10_000));
-    let (contract_id, iface_type_name) = wlt_1.issue_nia(600, wlt_1.close_method(), Some(&utxo));
+    let utxo_1 = wlt_1.get_utxo(Some(10_000));
+    let utxo_2 = wlt_1.get_utxo(Some(20_000));
+    let amounts = vec![600, 600];
+    let outpoints = vec![Some(utxo_1), Some(utxo_2)];
+    let asset_info = AssetInfo::default_nia(amounts.clone());
+    let (contract_id, iface_type_name) =
+        wlt_1.issue_with_info(asset_info, wlt_1.close_method(), outpoints);
+
+    struct LNFasciaResolver {}
+    impl ResolveWitness for LNFasciaResolver {
+        fn resolve_pub_witness(&self, _: XWitnessId) -> Result<XWitnessTx, WitnessResolverError> {
+            unreachable!()
+        }
+        fn resolve_pub_witness_ord(
+            &self,
+            _: XWitnessId,
+        ) -> Result<WitnessOrd, WitnessResolverError> {
+            Ok(WitnessOrd::Ignored)
+        }
+    }
 
     println!("\n1. fake commitment TX (no HTLCs)");
     let beneficiaries = vec![
         (wlt_2.get_address(), Some(2000)),
         (wlt_1.get_address(), None),
     ];
-    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo], beneficiaries, None);
+    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo_1], beneficiaries, None);
     let coloring_info = ColoringInfo {
         asset_info_map: HashMap::from([(
             contract_id,
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
-                input_outpoints: vec![utxo],
+                input_outpoints: vec![utxo_1],
                 output_map: HashMap::from([(0, 100), (1, 500)]),
                 static_blinding: Some(666),
             },
@@ -768,7 +785,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         nonce: Some(u64::MAX - 1),
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
-    wlt_1.consume_fascia(fascia.clone(), psbt.txid());
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     let htlc_vout = 2;
@@ -785,13 +802,13 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         (wlt_1.get_address(), None),
         (htlc_derived_addr.addr, Some(htlc_btc_amt)),
     ];
-    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo], beneficiaries, None);
+    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo_1], beneficiaries, None);
     let coloring_info = ColoringInfo {
         asset_info_map: HashMap::from([(
             contract_id,
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
-                input_outpoints: vec![utxo],
+                input_outpoints: vec![utxo_1],
                 output_map: HashMap::from([(0, 100), (1, 300), (htlc_vout, htlc_rgb_amt)]),
                 static_blinding: Some(666),
             },
@@ -800,7 +817,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         nonce: Some(u64::MAX - 1),
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
-    wlt_1.consume_fascia(fascia.clone(), psbt.txid());
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     if update_witnesses_before_htlc {
@@ -831,7 +848,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         nonce: Some(u64::MAX),
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
-    wlt_1.consume_fascia(fascia.clone(), psbt.txid());
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     println!("\n4. fake commitment TX (no HTLCs)");
@@ -839,13 +856,13 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         (wlt_2.get_address(), Some(3000)),
         (wlt_1.get_address(), None),
     ];
-    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo], beneficiaries, None);
+    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo_1], beneficiaries, None);
     let coloring_info = ColoringInfo {
         asset_info_map: HashMap::from([(
             contract_id,
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
-                input_outpoints: vec![utxo],
+                input_outpoints: vec![utxo_1],
                 output_map: HashMap::from([(0, 100), (1, 500)]),
                 static_blinding: Some(666),
             },
@@ -854,7 +871,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         nonce: Some(u64::MAX - 1),
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
-    wlt_1.consume_fascia(fascia.clone(), psbt.txid());
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
     let mut old_psbt = psbt.clone();
 
@@ -865,13 +882,13 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         (wlt_1.get_address(), None),
         (htlc_derived_addr.addr, Some(htlc_btc_amt)),
     ];
-    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo], beneficiaries, None);
+    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo_1], beneficiaries, None);
     let coloring_info = ColoringInfo {
         asset_info_map: HashMap::from([(
             contract_id,
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
-                input_outpoints: vec![utxo],
+                input_outpoints: vec![utxo_1],
                 output_map: HashMap::from([(0, 122), (1, 298), (htlc_vout, htlc_rgb_amt)]),
                 static_blinding: Some(666),
             },
@@ -880,7 +897,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         nonce: Some(u64::MAX - 1),
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
-    wlt_1.consume_fascia(fascia.clone(), psbt.txid());
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     if update_witnesses_before_htlc {
@@ -911,17 +928,43 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         nonce: Some(u64::MAX),
     };
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
-    wlt_1.consume_fascia(fascia.clone(), psbt.txid());
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 
     // no problem: since the force-close tx will be updated to mined soon
     wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
 
-    println!("\n7. broadcast old PSBT");
+    println!("\n7. fake commitment TX (1 HTLC) on 2nd channel");
+    let beneficiaries = vec![
+        (wlt_2.get_address(), Some(2000)),
+        (wlt_1.get_address(), None),
+        (htlc_derived_addr.addr, Some(htlc_btc_amt)),
+    ];
+    let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo_2], beneficiaries, None);
+    let coloring_info = ColoringInfo {
+        asset_info_map: HashMap::from([(
+            contract_id,
+            AssetColoringInfo {
+                iface: iface_type_name.clone(),
+                input_outpoints: vec![utxo_2],
+                output_map: HashMap::from([(0, 100), (1, 300), (htlc_vout, htlc_rgb_amt)]),
+                static_blinding: Some(666),
+            },
+        )]),
+        static_blinding: Some(666),
+        nonce: Some(u64::MAX - 1),
+    };
+    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
+
+    println!("\n8. broadcast old PSBT");
     let tx = wlt_1.sign_finalize_extract(&mut old_psbt);
     wlt_1.broadcast_tx(&tx);
-    wlt_1.mine_tx(&tx.txid(), false);
-    wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
+    let txid = tx.txid();
+    wlt_1.mine_tx(&txid, false);
+    wlt_1.sync();
+    wlt_1.update_witnesses(pre_funding_height, vec![XChain::Bitcoin(txid)]);
     let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
     wlt_1.send(
         &mut wlt_3,
@@ -932,6 +975,33 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         1000,
         None,
     );
+
+    println!("\n9. fake HTLC TX on 2nd channel");
+    let witness_id = fascia.witness_id();
+    let txid = witness_id.as_reduced_unsafe();
+    let input_outpoint = Outpoint::new(*txid, htlc_vout);
+    let beneficiaries = vec![(wlt_1.get_address(), None)];
+    let (mut psbt, _meta) = wlt_1.construct_psbt_offchain(
+        vec![(input_outpoint, htlc_btc_amt, htlc_derived_addr.terminal)],
+        beneficiaries,
+        None,
+    );
+    let coloring_info = ColoringInfo {
+        asset_info_map: HashMap::from([(
+            contract_id,
+            AssetColoringInfo {
+                iface: iface_type_name.clone(),
+                input_outpoints: vec![input_outpoint],
+                output_map: HashMap::from([(0, htlc_rgb_amt)]),
+                static_blinding: Some(666),
+            },
+        )]),
+        static_blinding: Some(666),
+        nonce: Some(u64::MAX),
+    };
+    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
+    wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
 }
 
 #[cfg(not(feature = "altered"))]

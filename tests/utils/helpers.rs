@@ -743,7 +743,7 @@ impl TestWallet {
 
     pub fn sync_and_update_witnesses(&mut self, after_height: Option<u32>) {
         self.sync();
-        self.update_witnesses(after_height.unwrap_or(1));
+        self.update_witnesses(after_height.unwrap_or(1), vec![]);
     }
 
     pub fn switch_to_instance(&mut self, instance: u8) {
@@ -1643,17 +1643,25 @@ impl TestWallet {
             witness_id: XChain::Bitcoin(witness_txid),
         };
 
+        self.consume_fascia_custom_resolver(fascia, resolver);
+    }
+
+    pub fn consume_fascia_custom_resolver(
+        &mut self,
+        fascia: Fascia,
+        resolver: impl ResolveWitness,
+    ) {
         self.wallet
             .stock_mut()
             .consume_fascia(fascia, resolver)
             .unwrap();
     }
 
-    pub fn update_witnesses(&mut self, after_height: u32) {
+    pub fn update_witnesses(&mut self, after_height: u32, force_witnesses: Vec<XWitnessId>) {
         let resolver = self.get_resolver();
         self.wallet
             .stock_mut()
-            .update_witnesses(resolver, after_height)
+            .update_witnesses(resolver, after_height, force_witnesses)
             .unwrap();
     }
 
