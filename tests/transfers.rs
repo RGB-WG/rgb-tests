@@ -1038,7 +1038,6 @@ fn mainnet_wlt_receiving_test_asset() {
 
 #[cfg(not(feature = "altered"))]
 #[test]
-#[ignore = "fix needed"] // https://github.com/BP-WG/bp-wallet/issues/70
 fn sync_mainnet_wlt() {
     initialize();
 

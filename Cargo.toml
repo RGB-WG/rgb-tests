@@ -32,7 +32,9 @@ bp-core = { path = "./bp-core" }
 ## bp-electrum-client
 bp-electrum = { path = "./bp-electrum-client" }
 ## bp-esplora
-bp-esplora = { path = "./bp-esplora-client" }
+bp-esplora = { path = "./bp-esplora-client", features = [
+    "blocking-https",
+] }
 ## bp-std
 bp-std = { path = "./bp-std", features = ["signers"] }
 descriptors = { path = "./bp-std/descriptors" }
