@@ -13,18 +13,15 @@ enum MockResolvePubWitnessOrd {
 }
 
 struct MockResolver {
-    pub_witnesses: HashMap<XWitnessId, MockResolvePubWitness>,
-    pub_witness_ords: HashMap<XWitnessId, MockResolvePubWitnessOrd>,
+    pub_witnesses: HashMap<Txid, MockResolvePubWitness>,
+    pub_witness_ords: HashMap<Txid, MockResolvePubWitnessOrd>,
 }
 
 impl ResolveWitness for MockResolver {
-    fn resolve_pub_witness(
-        &self,
-        witness_id: XWitnessId,
-    ) -> Result<XWitnessTx, WitnessResolverError> {
+    fn resolve_pub_witness(&self, witness_id: Txid) -> Result<Tx, WitnessResolverError> {
         if let Some(res) = self.pub_witnesses.get(&witness_id) {
             match res {
-                MockResolvePubWitness::Success(tx) => Ok(XChain::Bitcoin(tx.clone())),
+                MockResolvePubWitness::Success(tx) => Ok(tx.clone()),
                 MockResolvePubWitness::Error(err) => Err(err.clone()),
             }
         } else {
@@ -34,7 +31,7 @@ impl ResolveWitness for MockResolver {
 
     fn resolve_pub_witness_ord(
         &self,
-        witness_id: XWitnessId,
+        witness_id: Txid,
     ) -> Result<WitnessOrd, WitnessResolverError> {
         if let Some(res) = self.pub_witness_ords.get(&witness_id) {
             match res {
@@ -64,11 +61,11 @@ impl Scenario {
         match self {
             Self::A => {
                 let (tx_1, witness_id_1) =
-                    get_tx("bc:da9426377fb572da296e34be318da92e8f1d31aabacb87d8c281a1d7948467b5");
+                    get_tx("6d28dcc62ff3b7077e852bc022641d2fb761d9840f9d8a255528af7d974bdc6d");
                 let (tx_2, witness_id_2) =
-                    get_tx("bc:7cc93bfb48099795843063cf2d54f5a9f68d1eb13134dafa946a4f64f1349a56");
+                    get_tx("91abc4f81b1f62fb064903111a45d1fe8dde012a1993acac9f0485578a25d2ea");
                 let (tx_3, witness_id_3) =
-                    get_tx("bc:5df49f41bc7416eb8573ebce3795227b770e480bea87ea5ee8d57e293de79771");
+                    get_tx("dba8e954792ca34d8fc0de4199346fe994b9e3ed1521e395a18f1868f2c977f4");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -84,11 +81,11 @@ impl Scenario {
             }
             Self::B => {
                 let (tx_1, witness_id_1) =
-                    get_tx("bc:5fe5ebf33ac525ecf9fecd18211630d022edf075accf137757dbca18f98c9795");
+                    get_tx("5703c396115f79a590b092c5e8e9c3780c74f1d4696369414617d7650ea83a09");
                 let (tx_2, witness_id_2) =
-                    get_tx("bc:1477b7ba53b36355f4aef8ebfa22cb71faa2a574ed37e06479de7945b79bb46f");
+                    get_tx("ab749bdcd8bc3c5bf8f72ac3ad997cb889930192cae359576765dacae4e5805c");
                 let (tx_3, witness_id_3) =
-                    get_tx("bc:5921fa422e0438beb1a78198249b79fc20ef468d1d443889f61a214667e6e576");
+                    get_tx("797cbdf8b72425b3e4ca512ee58075323afec5ad766579de5b2c6869b2ed6b53");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -192,12 +189,10 @@ fn validate_consignment_generate() {
     println!("written consignment in: {cons_path}");
     for tx in txes {
         let txid = tx.txid().to_string();
-        let witness_id = XWitnessId::from_str(&txid).unwrap();
-        let normalized_witness_id = witness_id.to_string().replace(":", "_");
         let yaml = serde_yaml::to_string(&tx).unwrap();
-        let yaml_path = format!("tests/fixtures/{normalized_witness_id}.yaml");
+        let yaml_path = format!("tests/fixtures/{txid}.yaml");
         std::fs::write(&yaml_path, yaml).unwrap();
-        println!("written tx: {witness_id}");
+        println!("written tx: {txid}");
     }
 }
 
@@ -209,13 +204,13 @@ fn get_consignment_from_yaml(fname: &str) -> Transfer {
     consignment
 }
 
-fn get_tx(witness_id: &str) -> (Tx, XWitnessId) {
-    let normalized_witness_id = witness_id.replace(":", "_");
-    let yaml_path = format!("tests/fixtures/{normalized_witness_id}.yaml");
+fn get_tx(txid: &str) -> (Tx, Txid) {
+    let normalized_txid = txid.replace(":", "_");
+    let yaml_path = format!("tests/fixtures/{normalized_txid}.yaml");
     let file = std::fs::File::open(yaml_path).unwrap();
     let tx: Tx = serde_yaml::from_reader(file).unwrap();
-    let xwitness_id = XWitnessId::from_str(witness_id).unwrap();
-    (tx, xwitness_id)
+    let txid = Txid::from_str(txid).unwrap();
+    (tx, txid)
 }
 
 #[cfg(not(feature = "altered"))]
@@ -276,7 +271,7 @@ fn validate_consignment_genesis_fail() {
     assert_eq!(validation_status.failures.len(), 5);
     assert!(matches!(
         validation_status.failures[0],
-        Failure::MpcInvalid(_, _, _)
+        Failure::OperationAbsent(_)
     ));
     assert!(matches!(
         validation_status.failures[1],
@@ -284,7 +279,7 @@ fn validate_consignment_genesis_fail() {
     ));
     assert!(matches!(
         validation_status.failures[2],
-        Failure::OperationAbsent(_)
+        Failure::BundleExtraTransition(_, _)
     ));
     assert!(matches!(
         validation_status.failures[3],
@@ -292,7 +287,7 @@ fn validate_consignment_genesis_fail() {
     ));
     assert!(matches!(
         validation_status.failures[4],
-        Failure::BundleExtraTransition(_, _)
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(validation_status.warnings.is_empty());
     assert!(validation_status.info.is_empty());
@@ -358,13 +353,11 @@ fn validate_consignment_resolver_error() {
     let scenario = Scenario::A;
     let mut resolver = scenario.resolver();
     let txid =
-        Txid::from_str("7cc93bfb48099795843063cf2d54f5a9f68d1eb13134dafa946a4f64f1349a56").unwrap();
-    let xwitness_id = XChain::Bitcoin(txid);
+        Txid::from_str("91abc4f81b1f62fb064903111a45d1fe8dde012a1993acac9f0485578a25d2ea").unwrap();
 
     // resolve_pub_witness error
-    *resolver.pub_witnesses.get_mut(&xwitness_id).unwrap() = MockResolvePubWitness::Error(
-        WitnessResolverError::Other(xwitness_id, s!("unexpected error")),
-    );
+    *resolver.pub_witnesses.get_mut(&txid).unwrap() =
+        MockResolvePubWitness::Error(WitnessResolverError::Other(txid, s!("unexpected error")));
     let consignment = get_consignment_from_yaml("attack_resolver_error");
     let res = consignment.validate(&resolver, true);
     assert!(res.is_err());
@@ -384,9 +377,8 @@ fn validate_consignment_resolver_error() {
     assert_eq!(validity, Validity::Invalid);
 
     // resolve_pub_witness_ord error
-    *resolver.pub_witness_ords.get_mut(&xwitness_id).unwrap() = MockResolvePubWitnessOrd::Error(
-        WitnessResolverError::Other(xwitness_id, s!("unexpected error")),
-    );
+    *resolver.pub_witness_ords.get_mut(&txid).unwrap() =
+        MockResolvePubWitnessOrd::Error(WitnessResolverError::Other(txid, s!("unexpected error")));
     let consignment = get_consignment_from_yaml("attack_resolver_error");
     let res = consignment.validate(&resolver, true);
     assert!(res.is_err());

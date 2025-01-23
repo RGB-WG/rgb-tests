@@ -75,6 +75,7 @@ pub use psrgbt_altered::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 #[cfg(not(feature = "altered"))]
 pub use rgb::{
+    containers::ValidContract,
     info::ContractInfo,
     interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
@@ -82,12 +83,13 @@ pub use rgb::{
     resolvers::AnyResolver,
     stl::ContractTerms,
     validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
-    vm::{WitnessOrd, WitnessPos, XWitnessTx},
+    vm::{WitnessOrd, WitnessPos},
     DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
-    TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
+    TapretKey, TransferParams, Transition, WalletProvider,
 };
 #[cfg(feature = "altered")]
 pub use rgb_altered::{
+    containers::ValidContract,
     info::ContractInfo,
     interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
@@ -95,9 +97,9 @@ pub use rgb_altered::{
     resolvers::AnyResolver,
     stl::ContractTerms,
     validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
-    vm::{WitnessOrd, WitnessPos, XWitnessTx},
+    vm::{WitnessOrd, WitnessPos},
     DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
-    TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
+    TapretKey, TransferParams, Transition, WalletProvider,
 };
 pub use rgbstd::{
     containers::{
@@ -115,7 +117,7 @@ pub use rgbstd::{
         AssetSpec, Attachment, Details, MediaType, Name, ProofOfReserves, RicardianContract, Ticker,
     },
     Allocation, Amount, ContractId, GlobalStateType, KnownState, Layer1, Operation,
-    OutputAssignment, OwnedFraction, Precision, Schema, TokenIndex, TxoSeal, XChain,
+    OutputAssignment, OwnedFraction, Precision, Schema, TokenIndex, TxoSeal,
 };
 pub use rstest::rstest;
 pub use schemata::{CollectibleFungibleAsset, NonInflatableAsset, UniqueDigitalAsset};

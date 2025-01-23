@@ -754,13 +754,10 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
 
     struct LNFasciaResolver {}
     impl ResolveWitness for LNFasciaResolver {
-        fn resolve_pub_witness(&self, _: XWitnessId) -> Result<XWitnessTx, WitnessResolverError> {
+        fn resolve_pub_witness(&self, _: Txid) -> Result<Tx, WitnessResolverError> {
             unreachable!()
         }
-        fn resolve_pub_witness_ord(
-            &self,
-            _: XWitnessId,
-        ) -> Result<WitnessOrd, WitnessResolverError> {
+        fn resolve_pub_witness_ord(&self, _: Txid) -> Result<WitnessOrd, WitnessResolverError> {
             Ok(WitnessOrd::Ignored)
         }
     }
@@ -825,9 +822,8 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     }
 
     println!("\n3. fake HTLC TX");
-    let witness_id = fascia.witness_id();
-    let txid = witness_id.as_reduced_unsafe();
-    let input_outpoint = Outpoint::new(*txid, htlc_vout);
+    let txid = fascia.witness_id();
+    let input_outpoint = Outpoint::new(txid, htlc_vout);
     let beneficiaries = vec![(wlt_1.get_address(), None)];
     let (mut psbt, _meta) = wlt_1.construct_psbt_offchain(
         vec![(input_outpoint, htlc_btc_amt, htlc_derived_addr.terminal)],
@@ -905,9 +901,8 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     }
 
     println!("\n6. fake HTLC TX");
-    let witness_id = fascia.witness_id();
-    let txid = witness_id.as_reduced_unsafe();
-    let input_outpoint = Outpoint::new(*txid, htlc_vout);
+    let txid = fascia.witness_id();
+    let input_outpoint = Outpoint::new(txid, htlc_vout);
     let beneficiaries = vec![(wlt_1.get_address(), None)];
     let (mut psbt, _meta) = wlt_1.construct_psbt_offchain(
         vec![(input_outpoint, htlc_btc_amt, htlc_derived_addr.terminal)],
@@ -964,7 +959,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     let txid = tx.txid();
     wlt_1.mine_tx(&txid, false);
     wlt_1.sync();
-    wlt_1.update_witnesses(pre_funding_height, vec![XChain::Bitcoin(txid)]);
+    wlt_1.update_witnesses(pre_funding_height, vec![txid]);
     let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
     wlt_1.send(
         &mut wlt_3,
@@ -977,9 +972,8 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     );
 
     println!("\n9. fake HTLC TX on 2nd channel");
-    let witness_id = fascia.witness_id();
-    let txid = witness_id.as_reduced_unsafe();
-    let input_outpoint = Outpoint::new(*txid, htlc_vout);
+    let txid = fascia.witness_id();
+    let input_outpoint = Outpoint::new(txid, htlc_vout);
     let beneficiaries = vec![(wlt_1.get_address(), None)];
     let (mut psbt, _meta) = wlt_1.construct_psbt_offchain(
         vec![(input_outpoint, htlc_btc_amt, htlc_derived_addr.terminal)],
@@ -1270,27 +1264,24 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     );
     // create transfer but do not broadcast its TX
     let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
-    let txid = tx.txid();
+    let witness_id = tx.txid();
 
     struct OffchainResolver<'a, 'cons, const TRANSFER: bool> {
-        witness_id: XWitnessId,
+        witness_id: Txid,
         consignment: &'cons IndexedConsignment<'cons, TRANSFER>,
         fallback: &'a AnyResolver,
     }
     impl<const TRANSFER: bool> ResolveWitness for OffchainResolver<'_, '_, TRANSFER> {
-        fn resolve_pub_witness(
-            &self,
-            witness_id: XWitnessId,
-        ) -> Result<XWitnessTx, WitnessResolverError> {
+        fn resolve_pub_witness(&self, witness_id: Txid) -> Result<Tx, WitnessResolverError> {
             self.consignment
                 .pub_witness(witness_id)
-                .and_then(|p| p.map_ref(|pw| pw.tx().cloned()).transpose())
+                .and_then(|p| p.tx().cloned())
                 .ok_or(WitnessResolverError::Unknown(witness_id))
                 .or_else(|_| self.fallback.resolve_pub_witness(witness_id))
         }
         fn resolve_pub_witness_ord(
             &self,
-            witness_id: XWitnessId,
+            witness_id: Txid,
         ) -> Result<WitnessOrd, WitnessResolverError> {
             if witness_id != self.witness_id {
                 return self.fallback.resolve_pub_witness_ord(witness_id);
@@ -1300,7 +1291,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     }
 
     let resolver = OffchainResolver {
-        witness_id: XChain::Bitcoin(txid),
+        witness_id,
         consignment: &IndexedConsignment::new(&consignment),
         fallback: &wlt_2.get_resolver(),
     };
