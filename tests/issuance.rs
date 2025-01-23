@@ -225,10 +225,10 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
     for (amt, outpoint) in amounts.iter().zip(outpoints.into_iter()) {
         assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
             && a.seal
-                == XChain::Bitcoin(ExplicitSeal {
+                == ExplicitSeal {
                     txid: outpoint.unwrap().txid,
                     vout: outpoint.unwrap().vout
-                })))
+                }))
     }
 }
 
@@ -260,23 +260,28 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
     for (amt, outpoint) in amounts.iter().zip(outpoints.into_iter()) {
         assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
             && a.seal
-                == XChain::Bitcoin(ExplicitSeal {
+                == ExplicitSeal {
                     txid: outpoint.unwrap().txid,
                     vout: outpoint.unwrap().vout
-                })))
+                }))
     }
 }
 
 #[cfg(not(feature = "altered"))]
-#[test]
-#[should_panic(expected = "Layer1Mismatch(Liquid, Bitcoin)")]
-fn issue_on_different_layers() {
+#[rstest]
+#[should_panic(
+    expected = "Invoice requesting layer 1 bitcoin but contract is on different layer 1 (liquid)"
+)]
+#[case(false)]
+#[ignore = "fix needed, transfer should fail"]
+#[case(true)]
+fn issue_on_different_layers(#[case] custom_invoice: bool) {
     initialize();
 
-    let mut wallet = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
 
-    let close_method = wallet.close_method();
-    let amounts = vec![200, 100];
+    let close_method = wlt_1.close_method();
+    let amounts = vec![100];
     let asset_info = AssetInfo::default_nia(amounts.clone());
     let mut builder = ContractBuilder::with(
         close_method,
@@ -286,17 +291,44 @@ fn issue_on_different_layers() {
         asset_info.issue_impl(),
         asset_info.types(),
         asset_info.scripts(),
-        Layer1::Bitcoin,
+        Layer1::Liquid,
     );
 
     builder = asset_info.add_global_state(builder);
 
-    let outpoint = wallet.get_utxo(None);
-    builder
-        .add_fungible_state(
-            "assetOwner",
-            get_genesis_seal(outpoint, Layer1::Liquid),
-            100u64,
-        )
+    let outpoint = wlt_1.get_utxo(None);
+    builder = builder
+        .add_fungible_state("assetOwner", get_genesis_seal(outpoint), amounts[0])
         .unwrap();
+
+    let contract = builder.issue_contract().expect("failure issuing contract");
+    let resolver = wlt_1.get_resolver();
+    wlt_1.import_contract(&contract, resolver);
+
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let contract_id = contract.contract_id();
+    let iface_type_name = asset_info.iface_type_name();
+    let amt = 60;
+    let sats = 1000;
+
+    if custom_invoice {
+        let address = wlt_2.get_address();
+        let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload));
+        let builder = RgbInvoiceBuilder::new(XChainNet::LiquidTestnet(beneficiary))
+            .set_contract(contract_id)
+            .set_interface(iface_type_name)
+            .set_amount_raw(amt);
+        let invoice = builder.finish();
+        wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(sats), None, None);
+    } else {
+        wlt_1.send(
+            &mut wlt_2,
+            TransferType::Witness,
+            contract_id,
+            &iface_type_name,
+            amt,
+            sats,
+            None,
+        );
+    }
 }
