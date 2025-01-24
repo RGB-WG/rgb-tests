@@ -61,11 +61,11 @@ impl Scenario {
         match self {
             Self::A => {
                 let (tx_1, witness_id_1) =
-                    get_tx("6d28dcc62ff3b7077e852bc022641d2fb761d9840f9d8a255528af7d974bdc6d");
+                    get_tx("6c05545f455f9a28fdf1c695f1c8e8f3b81adbbe967e95f15460fd74a32d9a4e");
                 let (tx_2, witness_id_2) =
-                    get_tx("91abc4f81b1f62fb064903111a45d1fe8dde012a1993acac9f0485578a25d2ea");
+                    get_tx("85227b4362a8acebfbe798f63dd3d65c905a5ea91a79b7f4200070ea7aff1e96");
                 let (tx_3, witness_id_3) =
-                    get_tx("dba8e954792ca34d8fc0de4199346fe994b9e3ed1521e395a18f1868f2c977f4");
+                    get_tx("8f388cc11a7d96e5f792b9b90530ff62c485fc31a50afe769b161eca91059a19");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -81,11 +81,11 @@ impl Scenario {
             }
             Self::B => {
                 let (tx_1, witness_id_1) =
-                    get_tx("5703c396115f79a590b092c5e8e9c3780c74f1d4696369414617d7650ea83a09");
+                    get_tx("8031b8bcababaf4fa55cd2b63271b1860124162242bd03d43100074ed3e9bcea");
                 let (tx_2, witness_id_2) =
-                    get_tx("ab749bdcd8bc3c5bf8f72ac3ad997cb889930192cae359576765dacae4e5805c");
+                    get_tx("5af032ce20c361e53d6e339b0985377c6faf0003eed47e9d036b81d9d30139fd");
                 let (tx_3, witness_id_3) =
-                    get_tx("797cbdf8b72425b3e4ca512ee58075323afec5ad766579de5b2c6869b2ed6b53");
+                    get_tx("ebb24d28abb46a2b9b7fb3170df295b107db07bf35f784f48a8544cbcc192420");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -120,10 +120,8 @@ fn get_consignment(scenario: Scenario) -> (Transfer, Vec<Tx>) {
     let sats = 9000;
 
     let utxo = wlt_1.get_utxo(None);
-    let (contract_id_1, iface_type_name_1) =
-        wlt_1.issue_nia(issued_supply_1, wlt_1.close_method(), Some(&utxo));
-    let (contract_id_2, iface_type_name_2) =
-        wlt_1.issue_nia(issued_supply_2, wlt_1.close_method(), Some(&utxo));
+    let (contract_id_1, iface_type_name_1) = wlt_1.issue_nia(issued_supply_1, Some(&utxo));
+    let (contract_id_2, iface_type_name_2) = wlt_1.issue_nia(issued_supply_2, Some(&utxo));
 
     let mut txes = vec![];
 
@@ -271,19 +269,19 @@ fn validate_consignment_genesis_fail() {
     assert_eq!(validation_status.failures.len(), 5);
     assert!(matches!(
         validation_status.failures[0],
-        Failure::OperationAbsent(_)
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
         validation_status.failures[1],
-        Failure::MpcInvalid(_, _, _)
+        Failure::OperationAbsent(_)
     ));
     assert!(matches!(
         validation_status.failures[2],
-        Failure::BundleExtraTransition(_, _)
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
         validation_status.failures[3],
-        Failure::MpcInvalid(_, _, _)
+        Failure::BundleExtraTransition(_, _)
     ));
     assert!(matches!(
         validation_status.failures[4],
@@ -328,18 +326,10 @@ fn validate_consignment_bundles_fail() {
         Err((status, _consignment)) => status,
     };
     dbg!(&validation_status);
-    assert_eq!(validation_status.failures.len(), 3);
+    assert_eq!(validation_status.failures.len(), 1);
     assert!(matches!(
         validation_status.failures[0],
         Failure::SealNoPubWitness(_, _, _)
-    ));
-    assert!(matches!(
-        validation_status.failures[1],
-        Failure::SealsInvalid(_, _, _)
-    ));
-    assert!(matches!(
-        validation_status.failures[2],
-        Failure::BundleInvalidCommitment(_, _, _, _)
     ));
     assert!(validation_status.warnings.is_empty());
     assert!(validation_status.info.is_empty());
@@ -353,7 +343,7 @@ fn validate_consignment_resolver_error() {
     let scenario = Scenario::A;
     let mut resolver = scenario.resolver();
     let txid =
-        Txid::from_str("91abc4f81b1f62fb064903111a45d1fe8dde012a1993acac9f0485578a25d2ea").unwrap();
+        Txid::from_str("85227b4362a8acebfbe798f63dd3d65c905a5ea91a79b7f4200070ea7aff1e96").unwrap();
 
     // resolve_pub_witness error
     *resolver.pub_witnesses.get_mut(&txid).unwrap() =

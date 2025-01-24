@@ -7,20 +7,14 @@ const MEDIA_FPATH: &str = "tests/fixtures/rgb_logo.jpeg";
 
 #[template]
 #[rstest]
-#[case(DescriptorType::Wpkh, CloseMethod::OpretFirst)]
-#[case(DescriptorType::Wpkh, CloseMethod::TapretFirst)]
-#[case(DescriptorType::Tr, CloseMethod::OpretFirst)]
-#[case(DescriptorType::Tr, CloseMethod::TapretFirst)]
-fn descriptor_and_close_method(
-    #[case] wallet_desc: DescriptorType,
-    #[case] close_method: CloseMethod,
-) {
-}
+#[case(DescriptorType::Wpkh)]
+#[case(DescriptorType::Tr)]
+fn descriptor(#[case] wallet_desc: DescriptorType) {}
 
 #[cfg(not(feature = "altered"))]
-#[apply(descriptor_and_close_method)]
-fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[apply(descriptor)]
+fn issue_nia(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -42,7 +36,7 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
         terms_media_fpath,
         vec![issued_supply],
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
     let spec = contract.spec();
@@ -66,9 +60,9 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
 }
 
 #[cfg(not(feature = "altered"))]
-#[apply(descriptor_and_close_method)]
-fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[apply(descriptor)]
+fn issue_uda(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -115,7 +109,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
         terms_media_fpath,
         token_data,
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb21>(contract_id);
     let spec = contract.spec();
@@ -150,9 +144,9 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
 }
 
 #[cfg(not(feature = "altered"))]
-#[apply(descriptor_and_close_method)]
-fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[apply(descriptor)]
+fn issue_cfa(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -172,7 +166,7 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
         terms_media_fpath,
         vec![issued_supply],
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
     assert_eq!(contract.name().to_string(), name.to_string());
@@ -198,9 +192,9 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
 }
 
 #[cfg(not(feature = "altered"))]
-#[apply(descriptor_and_close_method)]
-fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[apply(descriptor)]
+fn issue_nia_multiple_utxos(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -211,8 +205,7 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
         .map(|_| Some(wallet.get_utxo(None)))
         .collect();
     let asset_info = AssetInfo::default_nia(amounts.clone());
-    let (contract_id, iface_type_name) =
-        wallet.issue_with_info(asset_info, close_method, outpoints.clone());
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, outpoints.clone());
 
     let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
     assert_eq!(
@@ -233,9 +226,9 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
 }
 
 #[cfg(not(feature = "altered"))]
-#[apply(descriptor_and_close_method)]
-fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[apply(descriptor)]
+fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -246,8 +239,7 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
         .map(|_| Some(wallet.get_utxo(None)))
         .collect();
     let asset_info = AssetInfo::default_cfa(amounts.clone());
-    let (contract_id, iface_type_name) =
-        wallet.issue_with_info(asset_info, close_method, outpoints.clone());
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, outpoints.clone());
 
     let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
     assert_eq!(
@@ -280,11 +272,9 @@ fn issue_on_different_layers(#[case] custom_invoice: bool) {
 
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
 
-    let close_method = wlt_1.close_method();
     let amounts = vec![100];
     let asset_info = AssetInfo::default_nia(amounts.clone());
     let mut builder = ContractBuilder::with(
-        close_method,
         Identity::default(),
         asset_info.iface(),
         asset_info.schema(),

@@ -806,7 +806,6 @@ impl TestWallet {
     pub fn issue_with_info(
         &mut self,
         asset_info: AssetInfo,
-        close_method: CloseMethod,
         outpoints: Vec<Option<Outpoint>>,
     ) -> (ContractId, TypeName) {
         let outpoints = if outpoints.is_empty() {
@@ -819,7 +818,6 @@ impl TestWallet {
         };
 
         let mut builder = ContractBuilder::with(
-            close_method,
             Identity::default(),
             asset_info.iface(),
             asset_info.schema(),
@@ -843,30 +841,24 @@ impl TestWallet {
     pub fn issue_nia(
         &mut self,
         issued_supply: u64,
-        close_method: CloseMethod,
         outpoint: Option<&Outpoint>,
     ) -> (ContractId, TypeName) {
         let asset_info = AssetInfo::default_nia(vec![issued_supply]);
-        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
+        self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
 
-    pub fn issue_uda(
-        &mut self,
-        close_method: CloseMethod,
-        outpoint: Option<&Outpoint>,
-    ) -> (ContractId, TypeName) {
+    pub fn issue_uda(&mut self, outpoint: Option<&Outpoint>) -> (ContractId, TypeName) {
         let asset_info = AssetInfo::default_uda();
-        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
+        self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
 
     pub fn issue_cfa(
         &mut self,
         issued_supply: u64,
-        close_method: CloseMethod,
         outpoint: Option<&Outpoint>,
     ) -> (ContractId, TypeName) {
         let asset_info = AssetInfo::default_cfa(vec![issued_supply]);
-        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
+        self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
 
     pub fn invoice(
@@ -897,9 +889,6 @@ impl TestWallet {
         let mut builder = RgbInvoiceBuilder::new(XChainNet::bitcoin(network, beneficiary))
             .set_contract(contract_id)
             .set_interface(iface_type_name.clone());
-        if self.close_method() == CloseMethod::OpretFirst {
-            builder = builder.set_close_methods(vec![CloseMethod::OpretFirst]);
-        }
         if *iface_type_name == AssetSchema::Uda.iface_type_name() {
             if amount != 1 {
                 panic!("UDA amount must be 1");
@@ -1468,6 +1457,7 @@ impl TestWallet {
         coloring_info: ColoringInfo,
     ) -> (Fascia, AssetBeneficiariesMap) {
         let asset_beneficiaries = self.color_psbt_init(psbt, coloring_info);
+        psbt.set_rgb_close_method(CloseMethod::OpretFirst);
         psbt.complete_construction();
         let fascia = psbt.rgb_commit().unwrap();
         (fascia, asset_beneficiaries)
@@ -1600,8 +1590,7 @@ impl TestWallet {
                         .unwrap();
                 }
             }
-            psbt.push_rgb_transition(transition, CloseMethod::OpretFirst)
-                .unwrap();
+            psbt.push_rgb_transition(transition).unwrap();
         }
 
         asset_beneficiaries
