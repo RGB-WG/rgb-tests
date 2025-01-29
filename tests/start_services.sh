@@ -58,11 +58,9 @@ _stop_esplora() {
 }
 
 _stop_services() {
-    if [ "$PROFILE" == "esplora" ]; then
-        _stop_esplora esplora_1
-        _stop_esplora esplora_2
-        _stop_esplora esplora_3
-    fi
+    _stop_esplora esplora_1
+    _stop_esplora esplora_2
+    _stop_esplora esplora_3
     # bring all services down
     $COMPOSE --profile '*' down -v --remove-orphans
 }
