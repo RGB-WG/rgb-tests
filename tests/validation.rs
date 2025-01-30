@@ -42,6 +42,10 @@ impl ResolveWitness for MockResolver {
             Err(WitnessResolverError::Unknown(witness_id))
         }
     }
+
+    fn check_chain_net(&self, _: ChainNet) -> Result<(), WitnessResolverError> {
+        Ok(())
+    }
 }
 
 #[derive(Debug, EnumIter, Copy, Clone, PartialEq)]
@@ -61,11 +65,11 @@ impl Scenario {
         match self {
             Self::A => {
                 let (tx_1, witness_id_1) =
-                    get_tx("6c05545f455f9a28fdf1c695f1c8e8f3b81adbbe967e95f15460fd74a32d9a4e");
+                    get_tx("3bda7cfcd64b4255dc8d86090a49497379bd61a5de108f88e50c9a3cda9fa20b");
                 let (tx_2, witness_id_2) =
-                    get_tx("85227b4362a8acebfbe798f63dd3d65c905a5ea91a79b7f4200070ea7aff1e96");
+                    get_tx("2c033a3584f571a3b8146dc0f7f904cb421bda9880307ed38f5b7a28ae183eff");
                 let (tx_3, witness_id_3) =
-                    get_tx("8f388cc11a7d96e5f792b9b90530ff62c485fc31a50afe769b161eca91059a19");
+                    get_tx("f71c8a732de7148cb01ce34c108a1c982dcfb65f4c3c033f52ff9fb0e4d4de87");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -81,11 +85,11 @@ impl Scenario {
             }
             Self::B => {
                 let (tx_1, witness_id_1) =
-                    get_tx("8031b8bcababaf4fa55cd2b63271b1860124162242bd03d43100074ed3e9bcea");
+                    get_tx("82e491ecb9b7bb99714ec3a6ca4a896eedefc0460a741907c98338423eeebaf3");
                 let (tx_2, witness_id_2) =
-                    get_tx("5af032ce20c361e53d6e339b0985377c6faf0003eed47e9d036b81d9d30139fd");
+                    get_tx("6788fec62a2e871cc6b5f250aeadf68b11560719bb986bc97c271b0505211d81");
                 let (tx_3, witness_id_3) =
-                    get_tx("ebb24d28abb46a2b9b7fb3170df295b107db07bf35f784f48a8544cbcc192420");
+                    get_tx("bae5df6d2943dc8c17bc913a3ff2c5572cdf175c35b8933c6655a46bd4e22ced");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -217,7 +221,7 @@ fn validate_consignment_success() {
     for scenario in Scenario::iter() {
         let resolver = scenario.resolver();
         let consignment = get_consignment_from_yaml(&format!("consignment_{scenario}"));
-        let res = consignment.validate(&resolver, true);
+        let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
         assert!(res.is_ok());
         let validation_status = match res {
             Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -237,9 +241,9 @@ fn validate_consignment_success() {
 fn validate_consignment_chain_fail() {
     let resolver = Scenario::A.resolver();
 
-    // liquid
+    // genesis chainNet: change from bitcoinRegtest to liquidTestnet
     let consignment = get_consignment_from_yaml("attack_chain");
-    let res = consignment.validate(&resolver, true);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -259,7 +263,7 @@ fn validate_consignment_genesis_fail() {
 
     // schema ID: change genesis[schemaId] with CFA schema ID
     let consignment = get_consignment_from_yaml("attack_genesis_schema_id");
-    let res = consignment.validate(&resolver, true);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -273,28 +277,28 @@ fn validate_consignment_genesis_fail() {
     ));
     assert!(matches!(
         validation_status.failures[1],
-        Failure::OperationAbsent(_)
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
         validation_status.failures[2],
-        Failure::MpcInvalid(_, _, _)
+        Failure::OperationAbsent(_)
     ));
     assert!(matches!(
         validation_status.failures[3],
-        Failure::BundleExtraTransition(_, _)
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
         validation_status.failures[4],
-        Failure::MpcInvalid(_, _, _)
+        Failure::BundleExtraTransition(_, _)
     ));
     assert!(validation_status.warnings.is_empty());
     assert!(validation_status.info.is_empty());
     let validity = validation_status.validity();
     assert_eq!(validity, Validity::Invalid);
 
-    // genesis testnet: change from true to false
+    // genesis chainNet: change from bitcoinRegtest to bitcoinMainnet
     let consignment = get_consignment_from_yaml("attack_genesis_testnet");
-    let res = consignment.validate(&resolver, true);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -304,7 +308,7 @@ fn validate_consignment_genesis_fail() {
     assert_eq!(validation_status.failures.len(), 1);
     assert!(matches!(
         validation_status.failures[0],
-        Failure::NetworkMismatch(_)
+        Failure::ContractChainNetMismatch(_)
     ));
     assert!(validation_status.warnings.is_empty());
     assert!(validation_status.info.is_empty());
@@ -319,17 +323,25 @@ fn validate_consignment_bundles_fail() {
 
     // bundles pubWitness data inputs[0] sequence: change from 0 to 1
     let consignment = get_consignment_from_yaml("attack_bundles_pubWitness_data_input_sequence");
-    let res = consignment.validate(&resolver, true);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
         Err((status, _consignment)) => status,
     };
     dbg!(&validation_status);
-    assert_eq!(validation_status.failures.len(), 1);
+    assert_eq!(validation_status.failures.len(), 3);
     assert!(matches!(
         validation_status.failures[0],
         Failure::SealNoPubWitness(_, _, _)
+    ));
+    assert!(matches!(
+        validation_status.failures[1],
+        Failure::SealsInvalid(_, _, _)
+    ));
+    assert!(matches!(
+        validation_status.failures[2],
+        Failure::BundleInvalidCommitment(_, _, _, _)
     ));
     assert!(validation_status.warnings.is_empty());
     assert!(validation_status.info.is_empty());
@@ -343,13 +355,13 @@ fn validate_consignment_resolver_error() {
     let scenario = Scenario::A;
     let mut resolver = scenario.resolver();
     let txid =
-        Txid::from_str("85227b4362a8acebfbe798f63dd3d65c905a5ea91a79b7f4200070ea7aff1e96").unwrap();
+        Txid::from_str("2c033a3584f571a3b8146dc0f7f904cb421bda9880307ed38f5b7a28ae183eff").unwrap();
 
     // resolve_pub_witness error
     *resolver.pub_witnesses.get_mut(&txid).unwrap() =
         MockResolvePubWitness::Error(WitnessResolverError::Other(txid, s!("unexpected error")));
     let consignment = get_consignment_from_yaml("attack_resolver_error");
-    let res = consignment.validate(&resolver, true);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -370,7 +382,7 @@ fn validate_consignment_resolver_error() {
     *resolver.pub_witness_ords.get_mut(&txid).unwrap() =
         MockResolvePubWitnessOrd::Error(WitnessResolverError::Other(txid, s!("unexpected error")));
     let consignment = get_consignment_from_yaml("attack_resolver_error");
-    let res = consignment.validate(&resolver, true);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),

@@ -688,6 +688,10 @@ impl TestWallet {
         self.wallet.wallet().network()
     }
 
+    pub fn chain_net(&self) -> ChainNet {
+        self.network().into()
+    }
+
     pub fn testnet(&self) -> bool {
         self.network().is_testnet()
     }
@@ -824,7 +828,7 @@ impl TestWallet {
             asset_info.issue_impl(),
             asset_info.types(),
             asset_info.scripts(),
-            Layer1::Bitcoin,
+            self.chain_net(),
         );
 
         builder = asset_info.add_global_state(builder);
@@ -987,7 +991,7 @@ impl TestWallet {
         self.sync();
         let validate_start = Instant::now();
         let validated_consignment = consignment
-            .validate(&resolver, self.testnet())
+            .validate(&resolver, self.chain_net())
             .map_err(|(status, _)| status)
             .unwrap();
         let validate_duration = validate_start.elapsed();
@@ -1610,6 +1614,9 @@ impl TestWallet {
             ) -> Result<WitnessOrd, WitnessResolverError> {
                 assert_eq!(witness_id, self.witness_id);
                 Ok(WitnessOrd::Tentative)
+            }
+            fn check_chain_net(&self, _: ChainNet) -> Result<(), WitnessResolverError> {
+                unreachable!()
             }
         }
 
