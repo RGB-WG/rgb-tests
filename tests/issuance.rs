@@ -262,10 +262,10 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
 #[cfg(not(feature = "altered"))]
 #[rstest]
 #[should_panic(
-    expected = "Invoice requesting layer 1 bitcoin but contract is on different layer 1 (liquid)"
+    expected = "Invoice requesting chain-network pair BitcoinRegtest but contract commits to a different one (LiquidTestnet)"
 )]
 #[case(false)]
-#[ignore = "fix needed, transfer should fail"]
+#[should_panic(expected = "ContractChainNetMismatch(BitcoinRegtest)")]
 #[case(true)]
 fn issue_on_different_layers(#[case] custom_invoice: bool) {
     initialize();
@@ -281,7 +281,7 @@ fn issue_on_different_layers(#[case] custom_invoice: bool) {
         asset_info.issue_impl(),
         asset_info.types(),
         asset_info.scripts(),
-        Layer1::Liquid,
+        ChainNet::LiquidTestnet,
     );
 
     builder = asset_info.add_global_state(builder);

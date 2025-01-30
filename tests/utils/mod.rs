@@ -116,7 +116,7 @@ pub use rgbstd::{
     stl::{
         AssetSpec, Attachment, Details, MediaType, Name, ProofOfReserves, RicardianContract, Ticker,
     },
-    Allocation, Amount, ContractId, GlobalStateType, KnownState, Layer1, Operation,
+    Allocation, Amount, ChainNet, ContractId, GlobalStateType, KnownState, Layer1, Operation,
     OutputAssignment, OwnedFraction, Precision, Schema, TokenIndex, TxoSeal,
 };
 pub use rstest::rstest;

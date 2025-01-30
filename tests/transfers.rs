@@ -752,6 +752,9 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         fn resolve_pub_witness_ord(&self, _: Txid) -> Result<WitnessOrd, WitnessResolverError> {
             Ok(WitnessOrd::Ignored)
         }
+        fn check_chain_net(&self, _: ChainNet) -> Result<(), WitnessResolverError> {
+            unreachable!()
+        }
     }
 
     println!("\n1. fake commitment TX (no HTLCs)");
@@ -991,8 +994,14 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
 }
 
 #[cfg(not(feature = "altered"))]
-#[test]
-fn mainnet_wlt_receiving_test_asset() {
+#[rstest]
+#[should_panic(
+    expected = "Invoice requesting chain-network pair BitcoinMainnet but contract commits to a different one (BitcoinRegtest)"
+)]
+#[case(false)]
+#[should_panic(expected = "ContractChainNetMismatch(BitcoinMainnet)")]
+#[case(true)]
+fn mainnet_wlt_receiving_test_asset(#[case] custom_invoice: bool) {
     initialize();
 
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
@@ -1003,23 +1012,16 @@ fn mainnet_wlt_receiving_test_asset() {
     let utxo =
         Outpoint::from_str("bebcfcb200a17763f6932a6d6fca9448a4b46c5b737cc3810769a7403ef79ce6:0")
             .unwrap();
-    let invoice = wlt_2.invoice(
+    let mut invoice = wlt_2.invoice(
         contract_id,
         &iface_type_name,
         150,
         InvoiceType::Blinded(Some(utxo)),
     );
-    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
-    wlt_1.mine_tx(&tx.txid(), false);
-    match consignment.validate(&wlt_2.get_resolver(), wlt_2.testnet()) {
-        Err((status, _invalid_consignment)) => {
-            assert_eq!(
-                status.failures,
-                vec![Failure::NetworkMismatch(wlt_2.testnet())]
-            )
-        }
-        _ => panic!("validation must fail"),
+    if custom_invoice {
+        invoice.beneficiary = XChainNet::BitcoinRegtest(invoice.beneficiary.into_inner());
     }
+    wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
 }
 
 #[cfg(not(feature = "altered"))]
@@ -1177,6 +1179,9 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
             }
             Ok(WitnessOrd::Tentative)
         }
+        fn check_chain_net(&self, _: ChainNet) -> Result<(), WitnessResolverError> {
+            Ok(())
+        }
     }
 
     let resolver = OffchainResolver {
@@ -1194,7 +1199,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     wlt_2.mine_tx(&tx.txid(), false);
 
     // consignment validation fails because it notices an unbroadcasted TX in the history
-    let res = consignment.validate(&wlt_3.get_resolver(), wlt_3.testnet());
+    let res = consignment.validate(&wlt_3.get_resolver(), wlt_3.chain_net());
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
