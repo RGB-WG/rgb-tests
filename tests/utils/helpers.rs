@@ -774,7 +774,7 @@ impl TestWallet {
         let indexer = self.get_indexer();
         self.wallet
             .wallet_mut()
-            .update(&indexer)
+            .sync_from_scratch(&indexer)
             .into_result()
             .unwrap();
     }

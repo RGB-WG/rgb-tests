@@ -1939,9 +1939,7 @@ fn reorg_revert_multiple(#[case] history_type: HistoryType) {
 
 #[cfg(not(feature = "altered"))]
 #[rstest]
-#[ignore = "fix needed"]
 #[case(false)]
-#[ignore = "fix needed"]
 #[case(true)]
 #[serial]
 fn revert_genesis(#[case] with_transfers: bool) {
@@ -1993,7 +1991,6 @@ fn revert_genesis(#[case] with_transfers: bool) {
     wlt.switch_to_instance(INSTANCE_3);
     assert_eq!(wlt.get_witness_ord(&utxo.txid), WitnessOrd::Archived);
 
-    // this should remove the utxo that is now archived but it doesn't
     wlt.sync();
     let utxos = wlt.utxos();
     assert!(utxos.is_empty());
