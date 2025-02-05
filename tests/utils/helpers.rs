@@ -555,10 +555,7 @@ fn _get_wallet(
         instance,
     };
 
-    // TODO: remove if once found solution for esplora 'Too many requests' error
-    if network.is_testnet() {
-        wallet.sync();
-    }
+    wallet.sync();
 
     wallet
 }
