@@ -432,7 +432,7 @@ impl AssetInfo {
             Self::Nia { issue_amounts, .. } | Self::Cfa { issue_amounts, .. } => {
                 for (amt, outpoint) in issue_amounts.iter().zip(outpoints.iter().cycle()) {
                     builder = builder
-                        .add_fungible_state("assetOwner", get_genesis_seal(*outpoint), *amt)
+                        .add_fungible_state("assetOwner", get_builder_seal(*outpoint), *amt)
                         .unwrap();
                 }
                 builder
@@ -441,7 +441,7 @@ impl AssetInfo {
                 let fraction = OwnedFraction::from(1);
                 let allocation = Allocation::with(token_data.index, fraction);
                 builder
-                    .add_data("assetOwner", get_genesis_seal(outpoints[0]), allocation)
+                    .add_data("assetOwner", get_builder_seal(outpoints[0]), allocation)
                     .unwrap()
             }
         }
@@ -482,11 +482,9 @@ impl Report {
     }
 }
 
-pub fn get_genesis_seal(outpoint: Outpoint) -> BuilderSeal<BlindSeal<Txid>> {
+pub fn get_builder_seal(outpoint: Outpoint) -> BuilderSeal<BlindSeal<Txid>> {
     let blind_seal = BlindSeal::new_random(outpoint.txid, outpoint.vout);
-    let genesis_seal = GenesisSeal::from(blind_seal);
-    let seal: BlindSeal<Txid> = genesis_seal;
-    BuilderSeal::from(seal)
+    BuilderSeal::from(blind_seal)
 }
 
 fn _get_wallet(
