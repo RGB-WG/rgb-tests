@@ -1,18 +1,18 @@
 services:
   bitcoind_1:
-    image: registry.gitlab.com/hashbeam/docker/bitcoind:25.0
+    image: registry.gitlab.com/hashbeam/docker/bitcoind:28.1
     profiles: [electrum]
     command: "-fallbackfee=0.0002"
   bitcoind_2:
-    image: registry.gitlab.com/hashbeam/docker/bitcoind:25.0
+    image: registry.gitlab.com/hashbeam/docker/bitcoind:28.1
     profiles: [electrum]
     command: "-fallbackfee=0.0002"
   bitcoind_3:
-    image: registry.gitlab.com/hashbeam/docker/bitcoind:25.0
+    image: registry.gitlab.com/hashbeam/docker/bitcoind:28.1
     profiles: [electrum]
     command: "-fallbackfee=0.0002"
   electrs_1:
-    image: registry.gitlab.com/hashbeam/docker/electrs:0.9.14
+    image: registry.gitlab.com/hashbeam/docker/electrs:0.10.9
     profiles: [electrum]
     environment:
       BTCHOST: bitcoind_1
@@ -21,7 +21,7 @@ services:
     depends_on:
       - bitcoind_1
   electrs_2:
-    image: registry.gitlab.com/hashbeam/docker/electrs:0.9.14
+    image: registry.gitlab.com/hashbeam/docker/electrs:0.10.9
     profiles: [electrum]
     environment:
       BTCHOST: bitcoind_2
@@ -30,7 +30,7 @@ services:
     depends_on:
       - bitcoind_2
   electrs_3:
-    image: registry.gitlab.com/hashbeam/docker/electrs:0.9.14
+    image: registry.gitlab.com/hashbeam/docker/electrs:0.10.9
     profiles: [electrum]
     environment:
       BTCHOST: bitcoind_3
@@ -39,7 +39,7 @@ services:
     depends_on:
       - bitcoind_3
   esplora_1:
-    image: blockstream/esplora:956c74f42eb6ad803d8aedc272ba83d3aa6dcf5c
+    image: blockstream/esplora:4de8457de518526425d4f872d98d5cdb9efdaf0e
     profiles: [esplora]
     command: /srv/explorer/run.sh bitcoin-regtest explorer
     environment:
@@ -51,7 +51,7 @@ services:
       - 50004:50001
       - 8094:80
   esplora_2:
-    image: blockstream/esplora:956c74f42eb6ad803d8aedc272ba83d3aa6dcf5c
+    image: blockstream/esplora:4de8457de518526425d4f872d98d5cdb9efdaf0e
     profiles: [esplora]
     command: /srv/explorer/run.sh bitcoin-regtest explorer
     environment:
@@ -63,7 +63,7 @@ services:
       - 50005:50001
       - 8095:80
   esplora_3:
-    image: blockstream/esplora:956c74f42eb6ad803d8aedc272ba83d3aa6dcf5c
+    image: blockstream/esplora:4de8457de518526425d4f872d98d5cdb9efdaf0e
     profiles: [esplora]
     command: /srv/explorer/run.sh bitcoin-regtest explorer
     environment:
