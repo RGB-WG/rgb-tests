@@ -288,7 +288,7 @@ fn issue_on_different_layers(#[case] custom_invoice: bool) {
 
     let outpoint = wlt_1.get_utxo(None);
     builder = builder
-        .add_fungible_state("assetOwner", get_genesis_seal(outpoint), amounts[0])
+        .add_fungible_state("assetOwner", get_builder_seal(outpoint), amounts[0])
         .unwrap();
 
     let contract = builder.issue_contract().expect("failure issuing contract");
