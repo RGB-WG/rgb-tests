@@ -46,21 +46,16 @@ _wait_for_esplora() {
     done
 }
 
-_stop_esplora() {
-    # stop an esplora sub service
+_stop_esplora_tor() {
     esplora_service_name="$1"
-    esplora_sub_service_name="${2:-electrs}"
     if $COMPOSE ps |grep -q $esplora_service_name; then
-        for SRV in socat $esplora_sub_service_name; do
+        for SRV in socat tor; do
             $COMPOSE exec $esplora_service_name bash -c "sv -w 60 force-stop /etc/service/$SRV"
         done
     fi
 }
 
 _stop_services() {
-    _stop_esplora esplora_1
-    _stop_esplora esplora_2
-    _stop_esplora esplora_3
     # bring all services down
     $COMPOSE --profile '*' down -v --remove-orphans
 }
@@ -108,9 +103,9 @@ if [ "$PROFILE" == "esplora" ]; then
     _wait_for_esplora esplora_1
     _wait_for_esplora esplora_2
     _wait_for_esplora esplora_3
-    _stop_esplora esplora_1 tor
-    _stop_esplora esplora_2 tor
-    _stop_esplora esplora_3 tor
+    _stop_esplora_tor esplora_1
+    _stop_esplora_tor esplora_2
+    _stop_esplora_tor esplora_3
 elif [ "$PROFILE" == "electrum" ]; then
     _wait_for_bitcoind bitcoind_1
     _wait_for_bitcoind bitcoind_2
