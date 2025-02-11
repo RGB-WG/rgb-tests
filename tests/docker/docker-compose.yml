@@ -1,3 +1,5 @@
+# Project name: rgb-tests
+# Use with: docker compose -p rgb-tests
 volumes:
   bitcoin-data-1:
   bitcoin-data-2:
@@ -18,6 +20,7 @@ networks:
 services:
   # Node 1 services (isolated network)
   init-1:
+    container_name: bitcoin-init-1
     networks:
       - rgb-tests-1
     image: bitlightlabs/bitcoind:v27.0
@@ -55,6 +58,7 @@ services:
         echo "taproot=1" >> /data/.bitcoin/bitcoin.conf
 
   bitcoin-core-1:
+    container_name: bitcoin-core-1
     networks:
       rgb-tests-1:
         ipv4_address: 172.30.1.205
@@ -74,6 +78,7 @@ services:
         bitcoind -regtest -rpcbind=0.0.0.0 -listenonion=0
 
   esplora-api-1:
+    container_name: esplora-api-1
     networks:
       - rgb-tests-1
     image: bitlightlabs/esplora-api:latest
@@ -103,6 +108,7 @@ services:
 
   # Node 2 & 3 services (shared network)
   init-2:
+    container_name: bitcoin-init-2
     networks:
       - rgb-tests-2
     image: bitlightlabs/bitcoind:v27.0
@@ -140,6 +146,7 @@ services:
         echo "taproot=1" >> /data/.bitcoin/bitcoin.conf
 
   init-3:
+    container_name: bitcoin-init-3
     networks:
       - rgb-tests-2
     image: bitlightlabs/bitcoind:v27.0
@@ -177,6 +184,7 @@ services:
         echo "taproot=1" >> /data/.bitcoin/bitcoin.conf
 
   bitcoin-core-2:
+    container_name: bitcoin-core-2
     networks:
       rgb-tests-2:
         ipv4_address: 172.30.2.205
@@ -197,6 +205,7 @@ services:
         bitcoind -regtest -rpcbind=0.0.0.0 -listenonion=0 -discover=0 -dns=0
 
   bitcoin-core-3:
+    container_name: bitcoin-core-3
     networks:
       rgb-tests-2:
         ipv4_address: 172.30.2.206
@@ -217,6 +226,7 @@ services:
         bitcoind -regtest -rpcbind=0.0.0.0 -listenonion=0 -discover=0 -dns=0
 
   esplora-api-2:
+    container_name: esplora-api-2
     networks:
       - rgb-tests-2
     image: bitlightlabs/esplora-api:latest
@@ -245,6 +255,7 @@ services:
       - "${API_PORT_2:-3002}:3000"
 
   esplora-api-3:
+    container_name: esplora-api-3
     networks:
       - rgb-tests-2
     image: bitlightlabs/esplora-api:latest
@@ -272,18 +283,21 @@ services:
       - "${ELECTRUM_PORT_3:-50003}:50001"
       - "${API_PORT_3:-3003}:3000"
   esplora-1:
+    container_name: esplora-1
     image: bitlightlabs/esplora:latest
     environment:
       - API_URL=http://127.0.0.1:${API_PORT_1}
     ports:
       - "${EXPLORE_UI_PORT_1:-5005}:5000"
   esplora-2:
+    container_name: esplora-2
     image: bitlightlabs/esplora:latest
     environment:
       - API_URL=http://127.0.0.1:${API_PORT_2}
     ports:
       - "${EXPLORE_UI_PORT_2:-5006}:5000"
   esplora-3:
+    container_name: esplora-3
     image: bitlightlabs/esplora:latest
     environment:
       - API_URL=http://127.0.0.1:${API_PORT_3}

@@ -3,10 +3,14 @@
 # utility script to run and command regtest services
 #
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
 name="./$(basename "$0")"
 
-COMPOSE="docker compose"
-if ! $COMPOSE >/dev/null; then
+COMPOSE="docker compose -p rgb-tests"
+if ! docker compose version >/dev/null; then
     echo "could not call docker compose (hint: install docker compose plugin)"
     exit 1
 fi
