@@ -1,0 +1,291 @@
+volumes:
+  bitcoin-data-1:
+  bitcoin-data-2:
+  bitcoin-data-3:
+
+networks:
+  rgb-tests-1:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.1.0/24
+  rgb-tests-2:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.2.0/24
+
+services:
+  # Node 1 services (isolated network)
+  init-1:
+    networks:
+      - rgb-tests-1
+    image: bitlightlabs/bitcoind:v27.0
+    restart: "no"
+    entrypoint: /bin/sh
+    volumes:
+      - bitcoin-data-1:/data/.bitcoin
+    command:
+      - -c
+      - |
+        echo "Initializing bitcoind configuration for node 1"
+        echo "# Global settings" > /data/.bitcoin/bitcoin.conf
+        echo "server=1" >> /data/.bitcoin/bitcoin.conf
+        echo "discover=0" >> /data/.bitcoin/bitcoin.conf
+        echo "dns=0" >> /data/.bitcoin/bitcoin.conf
+        echo "dnsseed=0" >> /data/.bitcoin/bitcoin.conf
+        echo "upnp=0" >> /data/.bitcoin/bitcoin.conf
+        echo "natpmp=0" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcuser=${RPC_USER}" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcpassword=${RPC_PASSWORD}" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcallowip=0.0.0.0/0" >> /data/.bitcoin/bitcoin.conf
+        echo "changetype=bech32" >> /data/.bitcoin/bitcoin.conf
+        echo "fallbackfee=0.0002" >> /data/.bitcoin/bitcoin.conf
+        echo "zmqpubrawblock=tcp://0.0.0.0:28332" >> /data/.bitcoin/bitcoin.conf
+        echo "zmqpubrawtx=tcp://0.0.0.0:28333" >> /data/.bitcoin/bitcoin.conf
+        echo "" >> /data/.bitcoin/bitcoin.conf
+        echo "# Regtest settings" >> /data/.bitcoin/bitcoin.conf
+        echo "[regtest]" >> /data/.bitcoin/bitcoin.conf
+        echo "regtest=1" >> /data/.bitcoin/bitcoin.conf
+        echo "listen=1" >> /data/.bitcoin/bitcoin.conf
+        echo "bind=0.0.0.0" >> /data/.bitcoin/bitcoin.conf
+        echo "port=18444" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcbind=0.0.0.0" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcport=18443" >> /data/.bitcoin/bitcoin.conf
+        echo "taproot=1" >> /data/.bitcoin/bitcoin.conf
+
+  bitcoin-core-1:
+    networks:
+      rgb-tests-1:
+        ipv4_address: 172.30.1.205
+    image: bitlightlabs/bitcoind:v27.0
+    restart: on-failure
+    depends_on:
+      - init-1
+    volumes:
+      - bitcoin-data-1:/data/.bitcoin
+    entrypoint: /bin/sh
+    ports:
+      - "${BITCOIN_RPC_PORT_1:-18443}:18443"
+    command:
+      - -c
+      - |
+        while [ ! -f /data/.bitcoin/bitcoin.conf ]; do sleep 1; done
+        bitcoind -regtest -rpcbind=0.0.0.0 -listenonion=0
+
+  esplora-api-1:
+    networks:
+      - rgb-tests-1
+    image: bitlightlabs/esplora-api:latest
+    volumes:
+      - bitcoin-data-1:/data/.bitcoin
+    depends_on:
+      - bitcoin-core-1
+    command:
+      - -vvvv
+      - --network
+      - regtest
+      - --daemon-dir
+      - /data/.bitcoin
+      - --daemon-rpc-addr
+      - 172.30.1.205:18443
+      - --cors
+      - "*"
+      - --cookie
+      - "${RPC_USER:-bitcoin}:${RPC_PASSWORD:-bitcoin}"
+      - --http-addr
+      - "0.0.0.0:3000"
+      - --electrum-rpc-addr
+      - 0.0.0.0:50001
+    ports:
+      - "${ELECTRUM_PORT_1:-50001}:50001"
+      - "${API_PORT_1:-3001}:3000"
+
+  # Node 2 & 3 services (shared network)
+  init-2:
+    networks:
+      - rgb-tests-2
+    image: bitlightlabs/bitcoind:v27.0
+    restart: "no"
+    entrypoint: /bin/sh
+    volumes:
+      - bitcoin-data-2:/data/.bitcoin
+    command:
+      - -c
+      - |
+        echo "Initializing bitcoind configuration for node 2"
+        echo "# Global settings" > /data/.bitcoin/bitcoin.conf
+        echo "server=1" >> /data/.bitcoin/bitcoin.conf
+        echo "discover=0" >> /data/.bitcoin/bitcoin.conf
+        echo "dns=0" >> /data/.bitcoin/bitcoin.conf
+        echo "dnsseed=0" >> /data/.bitcoin/bitcoin.conf
+        echo "upnp=0" >> /data/.bitcoin/bitcoin.conf
+        echo "natpmp=0" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcuser=${RPC_USER}" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcpassword=${RPC_PASSWORD}" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcallowip=0.0.0.0/0" >> /data/.bitcoin/bitcoin.conf
+        echo "changetype=bech32" >> /data/.bitcoin/bitcoin.conf
+        echo "fallbackfee=0.0002" >> /data/.bitcoin/bitcoin.conf
+        echo "zmqpubrawblock=tcp://0.0.0.0:28332" >> /data/.bitcoin/bitcoin.conf
+        echo "zmqpubrawtx=tcp://0.0.0.0:28333" >> /data/.bitcoin/bitcoin.conf
+        echo "" >> /data/.bitcoin/bitcoin.conf
+        echo "# Regtest settings" >> /data/.bitcoin/bitcoin.conf
+        echo "[regtest]" >> /data/.bitcoin/bitcoin.conf
+        echo "regtest=1" >> /data/.bitcoin/bitcoin.conf
+        echo "listen=1" >> /data/.bitcoin/bitcoin.conf
+        echo "bind=0.0.0.0" >> /data/.bitcoin/bitcoin.conf
+        echo "port=18444" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcbind=0.0.0.0" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcport=18443" >> /data/.bitcoin/bitcoin.conf
+        echo "taproot=1" >> /data/.bitcoin/bitcoin.conf
+
+  init-3:
+    networks:
+      - rgb-tests-2
+    image: bitlightlabs/bitcoind:v27.0
+    restart: "no"
+    entrypoint: /bin/sh
+    volumes:
+      - bitcoin-data-3:/data/.bitcoin
+    command:
+      - -c
+      - |
+        echo "Initializing bitcoind configuration for node 3"
+        echo "# Global settings" > /data/.bitcoin/bitcoin.conf
+        echo "server=1" >> /data/.bitcoin/bitcoin.conf
+        echo "discover=0" >> /data/.bitcoin/bitcoin.conf
+        echo "dns=0" >> /data/.bitcoin/bitcoin.conf
+        echo "dnsseed=0" >> /data/.bitcoin/bitcoin.conf
+        echo "upnp=0" >> /data/.bitcoin/bitcoin.conf
+        echo "natpmp=0" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcuser=${RPC_USER}" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcpassword=${RPC_PASSWORD}" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcallowip=0.0.0.0/0" >> /data/.bitcoin/bitcoin.conf
+        echo "changetype=bech32" >> /data/.bitcoin/bitcoin.conf
+        echo "fallbackfee=0.0002" >> /data/.bitcoin/bitcoin.conf
+        echo "zmqpubrawblock=tcp://0.0.0.0:28332" >> /data/.bitcoin/bitcoin.conf
+        echo "zmqpubrawtx=tcp://0.0.0.0:28333" >> /data/.bitcoin/bitcoin.conf
+        echo "" >> /data/.bitcoin/bitcoin.conf
+        echo "# Regtest settings" >> /data/.bitcoin/bitcoin.conf
+        echo "[regtest]" >> /data/.bitcoin/bitcoin.conf
+        echo "regtest=1" >> /data/.bitcoin/bitcoin.conf
+        echo "listen=1" >> /data/.bitcoin/bitcoin.conf
+        echo "bind=0.0.0.0" >> /data/.bitcoin/bitcoin.conf
+        echo "port=18444" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcbind=0.0.0.0" >> /data/.bitcoin/bitcoin.conf
+        echo "rpcport=18443" >> /data/.bitcoin/bitcoin.conf
+        echo "taproot=1" >> /data/.bitcoin/bitcoin.conf
+
+  bitcoin-core-2:
+    networks:
+      rgb-tests-2:
+        ipv4_address: 172.30.2.205
+    image: bitlightlabs/bitcoind:v27.0
+    restart: on-failure
+    depends_on:
+      - init-2
+    volumes:
+      - bitcoin-data-2:/data/.bitcoin
+    entrypoint: /bin/sh
+    ports:
+      - "${BITCOIN_RPC_PORT_2:-18444}:18443"
+      - "28444:18444"
+    command:
+      - -c
+      - |
+        while [ ! -f /data/.bitcoin/bitcoin.conf ]; do sleep 1; done
+        bitcoind -regtest -rpcbind=0.0.0.0 -listenonion=0 -discover=0 -dns=0
+
+  bitcoin-core-3:
+    networks:
+      rgb-tests-2:
+        ipv4_address: 172.30.2.206
+    image: bitlightlabs/bitcoind:v27.0
+    restart: on-failure
+    depends_on:
+      - init-3
+    volumes:
+      - bitcoin-data-3:/data/.bitcoin
+    entrypoint: /bin/sh
+    ports:
+      - "${BITCOIN_RPC_PORT_3:-18445}:18443"
+      - "28445:18444"
+    command:
+      - -c
+      - |
+        while [ ! -f /data/.bitcoin/bitcoin.conf ]; do sleep 1; done
+        bitcoind -regtest -rpcbind=0.0.0.0 -listenonion=0 -discover=0 -dns=0
+
+  esplora-api-2:
+    networks:
+      - rgb-tests-2
+    image: bitlightlabs/esplora-api:latest
+    volumes:
+      - bitcoin-data-2:/data/.bitcoin
+    depends_on:
+      - bitcoin-core-2
+    command:
+      - -vvvv
+      - --network
+      - regtest
+      - --daemon-dir
+      - /data/.bitcoin
+      - --daemon-rpc-addr
+      - 172.30.2.205:18443
+      - --cors
+      - "*"
+      - --cookie
+      - "${RPC_USER:-bitcoin}:${RPC_PASSWORD:-bitcoin}"
+      - --http-addr
+      - "0.0.0.0:3000"
+      - --electrum-rpc-addr
+      - 0.0.0.0:50001
+    ports:
+      - "${ELECTRUM_PORT_2:-50002}:50001"
+      - "${API_PORT_2:-3002}:3000"
+
+  esplora-api-3:
+    networks:
+      - rgb-tests-2
+    image: bitlightlabs/esplora-api:latest
+    volumes:
+      - bitcoin-data-3:/data/.bitcoin
+    depends_on:
+      - bitcoin-core-3
+    command:
+      - -vvvv
+      - --network
+      - regtest
+      - --daemon-dir
+      - /data/.bitcoin
+      - --daemon-rpc-addr
+      - 172.30.2.206:18443
+      - --cors
+      - "*"
+      - --cookie
+      - "${RPC_USER:-bitcoin}:${RPC_PASSWORD:-bitcoin}"
+      - --http-addr
+      - "0.0.0.0:3000"
+      - --electrum-rpc-addr
+      - 0.0.0.0:50001
+    ports:
+      - "${ELECTRUM_PORT_3:-50003}:50001"
+      - "${API_PORT_3:-3003}:3000"
+  esplora-1:
+    image: bitlightlabs/esplora:latest
+    environment:
+      - API_URL=http://127.0.0.1:${API_PORT_1}
+    ports:
+      - "${EXPLORE_UI_PORT_1:-5005}:5000"
+  esplora-2:
+    image: bitlightlabs/esplora:latest
+    environment:
+      - API_URL=http://127.0.0.1:${API_PORT_2}
+    ports:
+      - "${EXPLORE_UI_PORT_2:-5006}:5000"
+  esplora-3:
+    image: bitlightlabs/esplora:latest
+    environment:
+      - API_URL=http://127.0.0.1:${API_PORT_3}
+    ports:
+      - "${EXPLORE_UI_PORT_3:-5007}:5000"
