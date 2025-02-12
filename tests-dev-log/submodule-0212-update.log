@@ -1,0 +1,79 @@
+---- submodule: rgb-std
+Previous HEAD position was fe00f28 chore: fix clippy lints
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: rust-aluvm
+Previous HEAD position was c1a9225 Merge branch 'v0.12'
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: rgb-interfaces
+Previous HEAD position was 70b5528 chore: release v0.11.0-beta.9
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: client_side_validation
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: bp-core
+Previous HEAD position was 38939b3 chore: update dependnecies
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: rgb-core
+Previous HEAD position was 5dbad491 release v0.12.0-beta.4
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: bp-std
+Previous HEAD position was 091ac1e chore: fix clippy lints
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: rgb-schemata
+WARNING: branch "v0.12" not found
+---- submodule: strict-types
+WARNING: branch "v0.12" not found
+---- submodule: strict-encoding
+WARNING: branch "v0.12" not found
+---- submodule: bp-electrum-client
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: rust-amplify
+WARNING: branch "v0.12" not found
+---- submodule: rgb
+Previous HEAD position was e6adad0 chore: add description to rgb-wallet crate
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: bp-wallet
+Previous HEAD position was 1787494 chore: update dependencies in convert crate
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: amplify-num
+WARNING: branch "v0.12" not found
+---- submodule: amplify-derive
+WARNING: branch "v0.12" not found
+---- submodule: ascii-armor
+WARNING: branch "v0.12" not found
+---- submodule: bp-esplora-client
+Previous HEAD position was ed54091 chore: release v0.12.0-beta.4
+branch 'v0.12' set up to track 'origin/v0.12'.
+Switched to a new branch 'v0.12'
+Already up to date.
+---- submodule: vesper
+WARNING: branch "v0.12" not found
+---- submodule: rust-baid64
+WARNING: branch "v0.12" not found
+---- submodule: amplify-nonasync
+WARNING: branch "v0.12" not found
+---- submodule: zk-aluvm
+WARNING: branch "v0.12" not found
+---- submodule: ultrasonic
+WARNING: branch "v0.12" not found
+---- submodule: sonic
+WARNING: branch "v0.12" not found
