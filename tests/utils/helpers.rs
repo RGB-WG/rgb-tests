@@ -918,6 +918,18 @@ impl TestWallet {
         psbt.extract().unwrap()
     }
 
+    pub fn pay(
+        &mut self,
+        invoice: RgbInvoice,
+        sats: Option<u64>,
+        fee: Option<u64>,
+    ) -> (Psbt, PsbtMeta, Transfer) {
+        let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
+        let sats = Sats::from_sats(sats.unwrap_or(2000));
+        let params = TransferParams::with(fee, sats);
+        self.wallet.pay(&invoice, params).unwrap()
+    }
+
     pub fn transfer(
         &mut self,
         invoice: RgbInvoice,
@@ -928,11 +940,8 @@ impl TestWallet {
     ) -> (Transfer, Tx) {
         self.sync();
 
-        let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
-        let sats = Sats::from_sats(sats.unwrap_or(2000));
-        let params = TransferParams::with(fee, sats);
         let pay_start = Instant::now();
-        let (mut psbt, _psbt_meta, consignment) = self.wallet.pay(&invoice, params).unwrap();
+        let (mut psbt, _psbt_meta, consignment) = self.pay(invoice, sats, fee);
         let pay_duration = pay_start.elapsed();
         if let Some(report) = report {
             report.write_duration(pay_duration);
