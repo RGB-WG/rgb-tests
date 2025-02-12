@@ -264,16 +264,28 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
 #[should_panic(
     expected = "Invoice requesting chain-network pair BitcoinRegtest but contract commits to a different one (LiquidTestnet)"
 )]
-#[case(false)]
-#[should_panic(expected = "ContractChainNetMismatch(BitcoinRegtest)")]
-#[case(true)]
-fn issue_on_different_layers(#[case] custom_invoice: bool) {
+#[case("standard_invoice")]
+#[should_panic(expected = "NetworkMismatch")]
+#[case("liquid_testnet_invoice")]
+#[should_panic(expected = "ContractChainNetMismatch(BitcoinMainnet)")]
+#[case("liquid_mainnet_invoice")]
+fn issue_on_different_layers(#[case] scenario: &str) {
     initialize();
 
-    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_1 = if scenario == "liquid_mainnet_invoice" {
+        get_mainnet_wallet()
+    } else {
+        get_wallet(&DescriptorType::Wpkh)
+    };
 
-    let amounts = vec![100];
+    let issued_amt = 100;
+    let amounts = vec![issued_amt];
     let asset_info = AssetInfo::default_nia(amounts.clone());
+    let contract_chainnet = if scenario == "liquid_mainnet_invoice" {
+        ChainNet::LiquidMainnet
+    } else {
+        ChainNet::LiquidTestnet
+    };
     let mut builder = ContractBuilder::with(
         Identity::default(),
         asset_info.iface(),
@@ -281,12 +293,18 @@ fn issue_on_different_layers(#[case] custom_invoice: bool) {
         asset_info.issue_impl(),
         asset_info.types(),
         asset_info.scripts(),
-        ChainNet::LiquidTestnet,
+        contract_chainnet,
     );
 
     builder = asset_info.add_global_state(builder);
 
-    let outpoint = wlt_1.get_utxo(None);
+    let outpoint = if scenario == "liquid_mainnet_invoice" {
+        Outpoint::from_str("bebcfcb200a17763f6932a6d6fca9448a4b46c5b737cc3810769a7403ef79ce6:0")
+            .unwrap()
+    } else {
+        wlt_1.get_utxo(None)
+    };
+
     builder = builder
         .add_fungible_state("assetOwner", get_builder_seal(outpoint), amounts[0])
         .unwrap();
@@ -295,30 +313,49 @@ fn issue_on_different_layers(#[case] custom_invoice: bool) {
     let resolver = wlt_1.get_resolver();
     wlt_1.import_contract(&contract, resolver);
 
-    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = if scenario == "liquid_mainnet_invoice" {
+        get_mainnet_wallet()
+    } else {
+        get_wallet(&DescriptorType::Wpkh)
+    };
     let contract_id = contract.contract_id();
     let iface_type_name = asset_info.iface_type_name();
     let amt = 60;
     let sats = 1000;
 
-    if custom_invoice {
-        let address = wlt_2.get_address();
-        let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload));
-        let builder = RgbInvoiceBuilder::new(XChainNet::LiquidTestnet(beneficiary))
-            .set_contract(contract_id)
-            .set_interface(iface_type_name)
-            .set_amount_raw(amt);
-        let invoice = builder.finish();
-        wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(sats), None, None);
-    } else {
-        wlt_1.send(
-            &mut wlt_2,
-            TransferType::Witness,
-            contract_id,
-            &iface_type_name,
-            amt,
-            sats,
-            None,
-        );
+    match scenario {
+        "standard_invoice" => {
+            wlt_1.send(
+                &mut wlt_2,
+                TransferType::Witness,
+                contract_id,
+                &iface_type_name,
+                amt,
+                sats,
+                None,
+            );
+        }
+        "liquid_testnet_invoice" => {
+            let address = wlt_2.get_address();
+            let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload));
+            let builder = RgbInvoiceBuilder::new(XChainNet::LiquidTestnet(beneficiary))
+                .set_contract(contract_id)
+                .set_interface(iface_type_name)
+                .set_amount_raw(amt);
+            let invoice = builder.finish();
+            wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(sats), None, None);
+        }
+        "liquid_mainnet_invoice" => {
+            let address = wlt_2.get_address();
+            let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload));
+            let builder = RgbInvoiceBuilder::new(XChainNet::LiquidMainnet(beneficiary))
+                .set_contract(contract_id)
+                .set_interface(iface_type_name)
+                .set_amount_raw(issued_amt);
+            let invoice = builder.finish();
+            let (_, _, consignment) = wlt_1.pay(invoice, Some(500), Some(100));
+            wlt_2.accept_transfer(consignment.clone(), None);
+        }
+        _ => unreachable!(),
     }
 }
