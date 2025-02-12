@@ -684,7 +684,13 @@ impl TestWallet {
     }
 
     pub fn chain_net(&self) -> ChainNet {
-        self.network().into()
+        match self.network() {
+            Network::Mainnet => ChainNet::BitcoinMainnet,
+            Network::Regtest => ChainNet::BitcoinRegtest,
+            Network::Signet => ChainNet::BitcoinSignet,
+            Network::Testnet3 => ChainNet::BitcoinTestnet3,
+            Network::Testnet4 => ChainNet::BitcoinTestnet4,
+        }
     }
 
     pub fn testnet(&self) -> bool {
