@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -u
 
 _die () {
     echo "ERR: $*" >&2
