@@ -33,45 +33,47 @@ pub fn initialize() {
                 panic!("invalid indexer. possible values: `esplora` (default), `electrum`")
             }
         });
-        
+
         if std::env::var("SKIP_INIT").is_ok() {
             println!("skipping services initialization");
             return;
         }
-        
-        let start_services_file = PathBuf::from("tests").join("docker").join("start_services.sh");
+
+        let start_services_file = PathBuf::from("tests")
+            .join("docker")
+            .join("start_services.sh");
         println!("starting test services...");
-        
+
         let start_output = Command::new(&start_services_file)
             .arg("start")
             .output()
             .expect("failed to start test services");
-            
+
         if !start_output.status.success() {
             println!("stdout: {}", String::from_utf8_lossy(&start_output.stdout));
             println!("stderr: {}", String::from_utf8_lossy(&start_output.stderr));
             panic!("failed to start test services");
         }
-        
+
         // Wait for all nodes to be ready
         for instance in INSTANCE_1..=INSTANCE_3 {
             let mut attempts = 0;
             let max_attempts = 30;
-            
+
             loop {
                 if attempts >= max_attempts {
                     panic!("Node {instance} failed to start after {max_attempts} attempts");
                 }
-                
+
                 let result = _bitcoin_cli_cmd(instance, vec!["getblockchaininfo"]);
                 if !result.is_empty() {
                     break;
                 }
-                
+
                 attempts += 1;
                 std::thread::sleep(Duration::from_secs(1));
             }
-            
+
             // Wait for indexer sync
             _wait_indexer_sync(instance);
         }
@@ -94,7 +96,9 @@ fn _service_base_name() -> String {
 }
 
 fn _bitcoin_cli_cmd(instance: u8, args: Vec<&str>) -> String {
-    let compose_file = PathBuf::from("tests").join("docker").join("docker-compose.yml");
+    let compose_file = PathBuf::from("tests")
+        .join("docker")
+        .join("docker-compose.yml");
     let mut bitcoin_cli = vec![
         s!("-p"),
         s!("rgb-tests"),
@@ -103,7 +107,7 @@ fn _bitcoin_cli_cmd(instance: u8, args: Vec<&str>) -> String {
         s!("exec"),
         s!("-T"),
     ];
-    
+
     let service_name = format!("bitcoin-core-{instance}");
     bitcoin_cli.extend(vec![
         service_name,
@@ -120,7 +124,7 @@ fn _bitcoin_cli_cmd(instance: u8, args: Vec<&str>) -> String {
         .args(&args)
         .output()
         .unwrap_or_else(|_| panic!("failed to call bitcoind with args {args:?}"));
-    
+
     if !output.status.success() {
         println!("{output:?}");
         panic!("failed to get successful output with args {args:?}");
@@ -226,50 +230,30 @@ pub fn resume_mining() {
 
 fn _get_connection_tuple() -> Vec<(u8, String)> {
     vec![
-        (INSTANCE_3, NODE2_ADDR.to_string()),  // Node 2's address
-        (INSTANCE_2, NODE3_ADDR.to_string()),  // Node 3's address
+        (INSTANCE_3, NODE2_ADDR.to_string()), // Node 2's address
+        (INSTANCE_2, NODE3_ADDR.to_string()), // Node 3's address
     ]
 }
 
 pub fn connect_reorg_nodes() {
     for (instance, node_addr) in _get_connection_tuple() {
-        let peers = _bitcoin_cli_cmd(instance, vec!["getpeerinfo"]);
-        // println!("connect_reorg_nodes:instance:{} peers: {}", instance, peers);
-        if !peers.contains(&node_addr) {
-            _bitcoin_cli_cmd(instance, vec!["addnode", &node_addr, "add"]);
-        }
+        _bitcoin_cli_cmd(instance, vec!["addnode", &node_addr, "onetry"]);
     }
-    
+
     let t_0 = OffsetDateTime::now_utc();
-    let mut attempt = 1;
-    let max_attempts = 30;
-    
+
     loop {
         if (OffsetDateTime::now_utc() - t_0).as_seconds_f32() > 60.0 {
             panic!("nodes failed to sync after 60 seconds");
         }
-        
+
         let height_2 = get_height_custom(INSTANCE_2);
         let height_3 = get_height_custom(INSTANCE_3);
-        
+
         if height_2 == height_3 {
-            // Verify connections are established
-            let peers_2 = _bitcoin_cli_cmd(INSTANCE_2, vec!["getpeerinfo"]);
-            let peers_3 = _bitcoin_cli_cmd(INSTANCE_3, vec!["getpeerinfo"]);
-            
-            if peers_2.contains(NODE3_IP) && peers_3.contains(NODE2_IP) {
-                break;
-            }
+            break;
         }
-        
-        if attempt == max_attempts - 5 {
-            // Retry connections if near max attempts
-            for (instance, node_addr) in _get_connection_tuple() {
-                _bitcoin_cli_cmd(instance, vec!["addnode", &node_addr, "add"]);
-            }
-        }
-        
-        attempt += 1;
+
         std::thread::sleep(Duration::from_millis(500));
     }
 }
@@ -282,7 +266,10 @@ pub fn disconnect_reorg_nodes() {
     for (instance, _) in _get_connection_tuple() {
         // dump peer info
         let peers = _bitcoin_cli_cmd(instance, vec!["getpeerinfo"]);
-        println!("disconnect_reorg_nodes:instance:{} peers: {}", instance, peers);
+        println!(
+            "disconnect_reorg_nodes:instance:{} peers: {}",
+            instance, peers
+        );
     }
 }
 

@@ -104,51 +104,8 @@ _connect_nodes() {
     
     # Use 'add' instead of 'onetry' for persistent connections
     echo "Adding peer connections..."
-    $BITCOIN_CLI_2 addnode "$NODE3_IP:18444" "add"
-    $BITCOIN_CLI_3 addnode "$NODE2_IP:18444" "add"
-    
-    # Wait for connections to be established
-    local max_attempts=30
-    local attempt=1
-    
-    while [ $attempt -le $max_attempts ]; do
-        echo "Checking node connections (attempt $attempt/$max_attempts)..."
-        
-        # Get connection information
-        local peers_2=$($BITCOIN_CLI_2 getpeerinfo)
-        local peers_3=$($BITCOIN_CLI_3 getpeerinfo)
-        
-        # Check node 2's connections
-        local connected_2=$(echo "$peers_2" | grep -c "$NODE3_IP")
-        # Check node 3's connections
-        local connected_3=$(echo "$peers_3" | grep -c "$NODE2_IP")
-        
-        if [ "$connected_2" -gt 0 ] && [ "$connected_3" -gt 0 ]; then
-            echo "Nodes successfully connected"
-            
-            # Display detailed connection information
-            echo "Node 2 connections:"
-            $BITCOIN_CLI_2 getpeerinfo | grep "addr\|subver\|banscore"
-            echo "Node 3 connections:"
-            $BITCOIN_CLI_3 getpeerinfo | grep "addr\|subver\|banscore"
-            
-            return 0
-        fi
-        
-        echo "Waiting for connections to establish..."
-        sleep 2
-        attempt=$((attempt + 1))
-        
-        # If near the last few attempts, try adding nodes again
-        if [ $attempt -eq $((max_attempts - 5)) ]; then
-            echo "Retrying node connections..."
-            $BITCOIN_CLI_2 addnode "$NODE3_IP:18444" "add"
-            $BITCOIN_CLI_3 addnode "$NODE2_IP:18444" "add"
-        fi
-    done
-    
-    echo "Failed to establish connections after $max_attempts attempts"
-    return 1
+    $BITCOIN_CLI_2 addnode "$NODE3_IP:18444" "onetry"
+    $BITCOIN_CLI_3 addnode "$NODE2_IP:18444" "onetry"
 }
 
 _wait_for_sync() {
