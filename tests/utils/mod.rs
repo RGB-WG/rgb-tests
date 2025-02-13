@@ -1,5 +1,5 @@
-// pub mod chain;
-// pub mod helpers;
+pub mod chain;
+pub mod helpers;
 
 pub const TEST_DATA_DIR: &str = "test-data";
 pub const INTEGRATION_DATA_DIR: &str = "integration";
@@ -45,7 +45,14 @@ pub use amplify::{
 use bitcoin_hashes::{sha256, Hash};
 pub use bp::{
     // seals::txout::{BlindSeal, CloseMethod, ExplicitSeal},
-    ConsensusDecode, Outpoint, Sats, ScriptPubkey, SeqNo, Tx, Txid, Vout,
+    ConsensusDecode,
+    Outpoint,
+    Sats,
+    ScriptPubkey,
+    SeqNo,
+    Tx,
+    Txid,
+    Vout,
 };
 pub use bpstd::{
     h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, DerivedAddr, Descriptor,
@@ -82,6 +89,11 @@ pub use psbt::{
 //     BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
 //     RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
 // };
+use rgb::popls::bp::file::{BpDirMound, DirBarrow};
+use rgb::Consensus;
+use rgb::{CallScope, ContractId, CreateParams};
+use rgbp::{descriptor::RgbDescr, RgbDirRuntime, RgbRuntime, RgbWallet};
+
 // pub use rgbstd::{
 //     containers::{
 //         BuilderSeal, ConsignmentExt, Fascia, FileContent, IndexedConsignment, Kit, Transfer,
@@ -110,3 +122,6 @@ pub use strum_macros::EnumIter;
 pub use time::OffsetDateTime;
 
 // pub use crate::utils::{chain::*, helpers::*};
+
+pub const KEY_CHAIN_RGB: u8 = 9;
+pub const KEY_CHAIN_TAPRET: u8 = 10;

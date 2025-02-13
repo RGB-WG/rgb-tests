@@ -1,4 +1,13 @@
-use super::*;
+use std::fs::File;
+
+use rand::RngCore;
+
+use crate::utils::chain::fund_wallet;
+
+use super::{
+    chain::{indexer_url, mine_custom, Indexer, INDEXER},
+    *,
+};
 
 pub struct TestWallet {
     wallet: RgbWallet<Wallet<XpubDerivable, RgbDescr>>,
@@ -157,326 +166,326 @@ impl fmt::Display for AssetSchema {
 }
 
 impl AssetSchema {
-    fn iface_type_name(&self) -> TypeName {
-        tn!(match self {
-            Self::Nia => "RGB20Fixed",
-            Self::Uda => "RGB21Unique",
-            Self::Cfa => "RGB25Base",
-        })
-    }
+    // fn iface_type_name(&self) -> TypeName {
+    //     tn!(match self {
+    //         Self::Nia => "RGB20Fixed",
+    //         Self::Uda => "RGB21Unique",
+    //         Self::Cfa => "RGB25Base",
+    //     })
+    // }
 
-    fn schema(&self) -> Schema {
-        match self {
-            Self::Nia => NonInflatableAsset::schema(),
-            Self::Uda => UniqueDigitalAsset::schema(),
-            Self::Cfa => CollectibleFungibleAsset::schema(),
-        }
-    }
+    // fn schema(&self) -> Schema {
+    //     match self {
+    //         Self::Nia => NonInflatableAsset::schema(),
+    //         Self::Uda => UniqueDigitalAsset::schema(),
+    //         Self::Cfa => CollectibleFungibleAsset::schema(),
+    //     }
+    // }
 
-    fn issue_impl(&self) -> IfaceImpl {
-        match self {
-            Self::Nia => NonInflatableAsset::issue_impl(),
-            Self::Uda => UniqueDigitalAsset::issue_impl(),
-            Self::Cfa => CollectibleFungibleAsset::issue_impl(),
-        }
-    }
+    // fn issue_impl(&self) -> IfaceImpl {
+    //     match self {
+    //         Self::Nia => NonInflatableAsset::issue_impl(),
+    //         Self::Uda => UniqueDigitalAsset::issue_impl(),
+    //         Self::Cfa => CollectibleFungibleAsset::issue_impl(),
+    //     }
+    // }
 
-    fn scripts(&self) -> Scripts {
-        match self {
-            Self::Nia => NonInflatableAsset::scripts(),
-            Self::Uda => UniqueDigitalAsset::scripts(),
-            Self::Cfa => CollectibleFungibleAsset::scripts(),
-        }
-    }
+    // fn scripts(&self) -> Scripts {
+    //     match self {
+    //         Self::Nia => NonInflatableAsset::scripts(),
+    //         Self::Uda => UniqueDigitalAsset::scripts(),
+    //         Self::Cfa => CollectibleFungibleAsset::scripts(),
+    //     }
+    // }
 
-    fn types(&self) -> TypeSystem {
-        match self {
-            Self::Nia => NonInflatableAsset::types(),
-            Self::Uda => UniqueDigitalAsset::types(),
-            Self::Cfa => CollectibleFungibleAsset::types(),
-        }
-    }
+    // fn types(&self) -> TypeSystem {
+    //     match self {
+    //         Self::Nia => NonInflatableAsset::types(),
+    //         Self::Uda => UniqueDigitalAsset::types(),
+    //         Self::Cfa => CollectibleFungibleAsset::types(),
+    //     }
+    // }
 
-    fn iface(&self) -> Iface {
-        match self {
-            Self::Nia => Rgb20::iface(&Rgb20::FIXED),
-            Self::Uda => Rgb21::iface(&Rgb21::NONE),
-            Self::Cfa => Rgb25::iface(&Rgb25::NONE),
-        }
-    }
+    // fn iface(&self) -> Iface {
+    //     match self {
+    //         Self::Nia => Rgb20::iface(&Rgb20::FIXED),
+    //         Self::Uda => Rgb21::iface(&Rgb21::NONE),
+    //         Self::Cfa => Rgb25::iface(&Rgb25::NONE),
+    //     }
+    // }
 
-    fn get_valid_kit(&self) -> ValidKit {
-        let mut kit = Kit::default();
-        kit.schemata.push(self.schema()).unwrap();
-        kit.ifaces.push(self.iface()).unwrap();
-        kit.iimpls.push(self.issue_impl()).unwrap();
-        kit.scripts.extend(self.scripts().into_values()).unwrap();
-        kit.types = self.types();
-        kit.validate().unwrap()
-    }
+    // fn get_valid_kit(&self) -> ValidKit {
+    //     let mut kit = Kit::default();
+    //     kit.schemata.push(self.schema()).unwrap();
+    //     kit.ifaces.push(self.iface()).unwrap();
+    //     kit.iimpls.push(self.issue_impl()).unwrap();
+    //     kit.scripts.extend(self.scripts().into_values()).unwrap();
+    //     kit.types = self.types();
+    //     kit.validate().unwrap()
+    // }
 }
 
-#[derive(Debug)]
-pub enum AssetInfo {
-    Nia {
-        spec: AssetSpec,
-        terms: ContractTerms,
-        issue_amounts: Vec<u64>,
-    },
-    Uda {
-        spec: AssetSpec,
-        terms: ContractTerms,
-        token_data: TokenData,
-    },
-    Cfa {
-        name: Name,
-        precision: Precision,
-        details: Option<Details>,
-        terms: ContractTerms,
-        issue_amounts: Vec<u64>,
-    },
-}
+// #[derive(Debug)]
+// pub enum AssetInfo {
+//     Nia {
+//         spec: AssetSpec,
+//         terms: ContractTerms,
+//         issue_amounts: Vec<u64>,
+//     },
+//     Uda {
+//         spec: AssetSpec,
+//         terms: ContractTerms,
+//         token_data: TokenData,
+//     },
+//     Cfa {
+//         name: Name,
+//         precision: Precision,
+//         details: Option<Details>,
+//         terms: ContractTerms,
+//         issue_amounts: Vec<u64>,
+//     },
+// }
 
-impl AssetInfo {
-    fn asset_schema(&self) -> AssetSchema {
-        match self {
-            Self::Nia { .. } => AssetSchema::Nia,
-            Self::Uda { .. } => AssetSchema::Uda,
-            Self::Cfa { .. } => AssetSchema::Cfa,
-        }
-    }
+// impl AssetInfo {
+//     fn asset_schema(&self) -> AssetSchema {
+//         match self {
+//             Self::Nia { .. } => AssetSchema::Nia,
+//             Self::Uda { .. } => AssetSchema::Uda,
+//             Self::Cfa { .. } => AssetSchema::Cfa,
+//         }
+//     }
 
-    fn iface_type_name(&self) -> TypeName {
-        self.asset_schema().iface_type_name()
-    }
+//     fn iface_type_name(&self) -> TypeName {
+//         self.asset_schema().iface_type_name()
+//     }
 
-    fn schema(&self) -> Schema {
-        self.asset_schema().schema()
-    }
+//     fn schema(&self) -> Schema {
+//         self.asset_schema().schema()
+//     }
 
-    fn issue_impl(&self) -> IfaceImpl {
-        self.asset_schema().issue_impl()
-    }
+//     fn issue_impl(&self) -> IfaceImpl {
+//         self.asset_schema().issue_impl()
+//     }
 
-    fn scripts(&self) -> Scripts {
-        self.asset_schema().scripts()
-    }
+//     fn scripts(&self) -> Scripts {
+//         self.asset_schema().scripts()
+//     }
 
-    fn types(&self) -> TypeSystem {
-        self.asset_schema().types()
-    }
+//     fn types(&self) -> TypeSystem {
+//         self.asset_schema().types()
+//     }
 
-    fn iface(&self) -> Iface {
-        self.asset_schema().iface()
-    }
+//     fn iface(&self) -> Iface {
+//         self.asset_schema().iface()
+//     }
 
-    pub fn default_cfa(issue_amounts: Vec<u64>) -> Self {
-        AssetInfo::cfa("CFA asset name", 0, None, "CFA terms", None, issue_amounts)
-    }
+//     pub fn default_cfa(issue_amounts: Vec<u64>) -> Self {
+//         AssetInfo::cfa("CFA asset name", 0, None, "CFA terms", None, issue_amounts)
+//     }
 
-    pub fn default_nia(issue_amounts: Vec<u64>) -> Self {
-        AssetInfo::nia(
-            "NIATCKR",
-            "NIA asset name",
-            2,
-            None,
-            "NIA terms",
-            None,
-            issue_amounts,
-        )
-    }
+//     pub fn default_nia(issue_amounts: Vec<u64>) -> Self {
+//         AssetInfo::nia(
+//             "NIATCKR",
+//             "NIA asset name",
+//             2,
+//             None,
+//             "NIA terms",
+//             None,
+//             issue_amounts,
+//         )
+//     }
 
-    pub fn default_uda() -> Self {
-        AssetInfo::uda(
-            "UDATCKR",
-            "UDA asset name",
-            None,
-            "NIA terms",
-            None,
-            uda_token_data_minimal(),
-        )
-    }
+//     pub fn default_uda() -> Self {
+//         AssetInfo::uda(
+//             "UDATCKR",
+//             "UDA asset name",
+//             None,
+//             "NIA terms",
+//             None,
+//             uda_token_data_minimal(),
+//         )
+//     }
 
-    pub fn nia(
-        ticker: &str,
-        name: &str,
-        precision: u8,
-        details: Option<&str>,
-        terms_text: &str,
-        terms_media_fpath: Option<&str>,
-        issue_amounts: Vec<u64>,
-    ) -> Self {
-        let spec = AssetSpec::with(
-            ticker,
-            name,
-            Precision::try_from(precision).unwrap(),
-            details,
-        )
-        .unwrap();
-        let text = RicardianContract::from_str(terms_text).unwrap();
-        let attachment = terms_media_fpath.map(attachment_from_fpath);
-        let terms = ContractTerms {
-            text,
-            media: attachment,
-        };
-        Self::Nia {
-            spec,
-            terms,
-            issue_amounts,
-        }
-    }
+//     pub fn nia(
+//         ticker: &str,
+//         name: &str,
+//         precision: u8,
+//         details: Option<&str>,
+//         terms_text: &str,
+//         terms_media_fpath: Option<&str>,
+//         issue_amounts: Vec<u64>,
+//     ) -> Self {
+//         let spec = AssetSpec::with(
+//             ticker,
+//             name,
+//             Precision::try_from(precision).unwrap(),
+//             details,
+//         )
+//         .unwrap();
+//         let text = RicardianContract::from_str(terms_text).unwrap();
+//         let attachment = terms_media_fpath.map(attachment_from_fpath);
+//         let terms = ContractTerms {
+//             text,
+//             media: attachment,
+//         };
+//         Self::Nia {
+//             spec,
+//             terms,
+//             issue_amounts,
+//         }
+//     }
 
-    pub fn uda(
-        ticker: &str,
-        name: &str,
-        details: Option<&str>,
-        terms_text: &str,
-        terms_media_fpath: Option<&str>,
-        token_data: TokenData,
-    ) -> AssetInfo {
-        let spec = AssetSpec::with(ticker, name, Precision::try_from(0).unwrap(), details).unwrap();
-        let text = RicardianContract::from_str(terms_text).unwrap();
-        let attachment = terms_media_fpath.map(attachment_from_fpath);
-        let terms = ContractTerms {
-            text,
-            media: attachment.clone(),
-        };
-        Self::Uda {
-            spec,
-            terms,
-            token_data,
-        }
-    }
+//     pub fn uda(
+//         ticker: &str,
+//         name: &str,
+//         details: Option<&str>,
+//         terms_text: &str,
+//         terms_media_fpath: Option<&str>,
+//         token_data: TokenData,
+//     ) -> AssetInfo {
+//         let spec = AssetSpec::with(ticker, name, Precision::try_from(0).unwrap(), details).unwrap();
+//         let text = RicardianContract::from_str(terms_text).unwrap();
+//         let attachment = terms_media_fpath.map(attachment_from_fpath);
+//         let terms = ContractTerms {
+//             text,
+//             media: attachment.clone(),
+//         };
+//         Self::Uda {
+//             spec,
+//             terms,
+//             token_data,
+//         }
+//     }
 
-    pub fn cfa(
-        name: &str,
-        precision: u8,
-        details: Option<&str>,
-        terms_text: &str,
-        terms_media_fpath: Option<&str>,
-        issue_amounts: Vec<u64>,
-    ) -> AssetInfo {
-        let text = RicardianContract::from_str(terms_text).unwrap();
-        let attachment = terms_media_fpath.map(attachment_from_fpath);
-        let terms = ContractTerms {
-            text,
-            media: attachment,
-        };
-        Self::Cfa {
-            name: Name::try_from(name.to_owned()).unwrap(),
-            precision: Precision::try_from(precision).unwrap(),
-            details: details.map(|d| Details::try_from(d.to_owned()).unwrap()),
-            terms,
-            issue_amounts,
-        }
-    }
+//     pub fn cfa(
+//         name: &str,
+//         precision: u8,
+//         details: Option<&str>,
+//         terms_text: &str,
+//         terms_media_fpath: Option<&str>,
+//         issue_amounts: Vec<u64>,
+//     ) -> AssetInfo {
+//         let text = RicardianContract::from_str(terms_text).unwrap();
+//         let attachment = terms_media_fpath.map(attachment_from_fpath);
+//         let terms = ContractTerms {
+//             text,
+//             media: attachment,
+//         };
+//         Self::Cfa {
+//             name: Name::try_from(name.to_owned()).unwrap(),
+//             precision: Precision::try_from(precision).unwrap(),
+//             details: details.map(|d| Details::try_from(d.to_owned()).unwrap()),
+//             terms,
+//             issue_amounts,
+//         }
+//     }
 
-    fn add_global_state(&self, mut builder: ContractBuilder) -> ContractBuilder {
-        match self {
-            Self::Nia {
-                spec,
-                terms,
-                issue_amounts,
-            } => builder
-                .add_global_state("spec", spec.clone())
-                .unwrap()
-                .add_global_state("terms", terms.clone())
-                .unwrap()
-                .add_global_state(
-                    "issuedSupply",
-                    Amount::from(issue_amounts.iter().sum::<u64>()),
-                )
-                .unwrap(),
-            Self::Uda {
-                spec,
-                terms,
-                token_data,
-            } => builder
-                .add_global_state("spec", spec.clone())
-                .unwrap()
-                .add_global_state("terms", terms.clone())
-                .unwrap()
-                .add_global_state("tokens", token_data.clone())
-                .unwrap(),
-            Self::Cfa {
-                name,
-                precision,
-                details,
-                terms,
-                issue_amounts: issued_supply,
-            } => {
-                builder = builder
-                    .add_global_state("name", name.clone())
-                    .unwrap()
-                    .add_global_state("precision", *precision)
-                    .unwrap()
-                    .add_global_state("terms", terms.clone())
-                    .unwrap()
-                    .add_global_state(
-                        "issuedSupply",
-                        Amount::from(issued_supply.iter().sum::<u64>()),
-                    )
-                    .unwrap();
-                if let Some(details) = details {
-                    builder = builder
-                        .add_global_state("details", details.clone())
-                        .unwrap()
-                }
-                builder
-            }
-        }
-    }
+//     fn add_global_state(&self, mut builder: ContractBuilder) -> ContractBuilder {
+//         match self {
+//             Self::Nia {
+//                 spec,
+//                 terms,
+//                 issue_amounts,
+//             } => builder
+//                 .add_global_state("spec", spec.clone())
+//                 .unwrap()
+//                 .add_global_state("terms", terms.clone())
+//                 .unwrap()
+//                 .add_global_state(
+//                     "issuedSupply",
+//                     Amount::from(issue_amounts.iter().sum::<u64>()),
+//                 )
+//                 .unwrap(),
+//             Self::Uda {
+//                 spec,
+//                 terms,
+//                 token_data,
+//             } => builder
+//                 .add_global_state("spec", spec.clone())
+//                 .unwrap()
+//                 .add_global_state("terms", terms.clone())
+//                 .unwrap()
+//                 .add_global_state("tokens", token_data.clone())
+//                 .unwrap(),
+//             Self::Cfa {
+//                 name,
+//                 precision,
+//                 details,
+//                 terms,
+//                 issue_amounts: issued_supply,
+//             } => {
+//                 builder = builder
+//                     .add_global_state("name", name.clone())
+//                     .unwrap()
+//                     .add_global_state("precision", *precision)
+//                     .unwrap()
+//                     .add_global_state("terms", terms.clone())
+//                     .unwrap()
+//                     .add_global_state(
+//                         "issuedSupply",
+//                         Amount::from(issued_supply.iter().sum::<u64>()),
+//                     )
+//                     .unwrap();
+//                 if let Some(details) = details {
+//                     builder = builder
+//                         .add_global_state("details", details.clone())
+//                         .unwrap()
+//                 }
+//                 builder
+//             }
+//         }
+//     }
 
-    fn add_asset_owner(
-        &self,
-        mut builder: ContractBuilder,
-        close_method: CloseMethod,
-        outpoints: Vec<Outpoint>,
-    ) -> ContractBuilder {
-        fn get_genesis_seal(
-            close_method: CloseMethod,
-            outpoint: Outpoint,
-        ) -> BuilderSeal<BlindSeal<Txid>> {
-            let blind_seal = match close_method {
-                CloseMethod::TapretFirst => {
-                    BlindSeal::tapret_first_rand(outpoint.txid, outpoint.vout)
-                }
-                CloseMethod::OpretFirst => {
-                    BlindSeal::opret_first_rand(outpoint.txid, outpoint.vout)
-                }
-            };
-            let genesis_seal = GenesisSeal::from(blind_seal);
-            let seal: XChain<BlindSeal<Txid>> = XChain::with(Layer1::Bitcoin, genesis_seal);
-            BuilderSeal::from(seal)
-        }
+//     fn add_asset_owner(
+//         &self,
+//         mut builder: ContractBuilder,
+//         close_method: CloseMethod,
+//         outpoints: Vec<Outpoint>,
+//     ) -> ContractBuilder {
+//         fn get_genesis_seal(
+//             close_method: CloseMethod,
+//             outpoint: Outpoint,
+//         ) -> BuilderSeal<BlindSeal<Txid>> {
+//             let blind_seal = match close_method {
+//                 CloseMethod::TapretFirst => {
+//                     BlindSeal::tapret_first_rand(outpoint.txid, outpoint.vout)
+//                 }
+//                 CloseMethod::OpretFirst => {
+//                     BlindSeal::opret_first_rand(outpoint.txid, outpoint.vout)
+//                 }
+//             };
+//             let genesis_seal = GenesisSeal::from(blind_seal);
+//             let seal: XChain<BlindSeal<Txid>> = XChain::with(Layer1::Bitcoin, genesis_seal);
+//             BuilderSeal::from(seal)
+//         }
 
-        match self {
-            Self::Nia { issue_amounts, .. } | Self::Cfa { issue_amounts, .. } => {
-                for (amt, outpoint) in issue_amounts.iter().zip(outpoints.iter().cycle()) {
-                    builder = builder
-                        .add_fungible_state(
-                            "assetOwner",
-                            get_genesis_seal(close_method, *outpoint),
-                            *amt,
-                        )
-                        .unwrap();
-                }
-                builder
-            }
-            Self::Uda { token_data, .. } => {
-                let fraction = OwnedFraction::from(1);
-                let allocation = Allocation::with(token_data.index, fraction);
-                builder
-                    .add_data(
-                        "assetOwner",
-                        get_genesis_seal(close_method, outpoints[0]),
-                        allocation,
-                    )
-                    .unwrap()
-            }
-        }
-    }
-}
+//         match self {
+//             Self::Nia { issue_amounts, .. } | Self::Cfa { issue_amounts, .. } => {
+//                 for (amt, outpoint) in issue_amounts.iter().zip(outpoints.iter().cycle()) {
+//                     builder = builder
+//                         .add_fungible_state(
+//                             "assetOwner",
+//                             get_genesis_seal(close_method, *outpoint),
+//                             *amt,
+//                         )
+//                         .unwrap();
+//                 }
+//                 builder
+//             }
+//             Self::Uda { token_data, .. } => {
+//                 let fraction = OwnedFraction::from(1);
+//                 let allocation = Allocation::with(token_data.index, fraction);
+//                 builder
+//                     .add_data(
+//                         "assetOwner",
+//                         get_genesis_seal(close_method, outpoints[0]),
+//                         allocation,
+//                     )
+//                     .unwrap()
+//             }
+//         }
+//     }
+// }
 
 pub struct Report {
     pub report_path: PathBuf,
@@ -529,41 +538,35 @@ fn _get_wallet(
     const OPRET_KEYCHAINS: [Keychain; 3] = [
         Keychain::INNER,
         Keychain::OUTER,
-        Keychain::with(RgbKeychain::Rgb as u8),
+        Keychain::with(KEY_CHAIN_RGB),
     ];
     const TAPRET_KEYCHAINS: [Keychain; 4] = [
         Keychain::INNER,
         Keychain::OUTER,
-        Keychain::with(RgbKeychain::Rgb as u8),
-        Keychain::with(RgbKeychain::Tapret as u8),
+        Keychain::with(KEY_CHAIN_RGB),
+        Keychain::with(KEY_CHAIN_TAPRET),
     ];
     let keychains: &[Keychain] = match *descriptor_type {
         DescriptorType::Tr => &TAPRET_KEYCHAINS[..],
         DescriptorType::Wpkh => &OPRET_KEYCHAINS[..],
     };
     let xpub_derivable = XpubDerivable::with(xpub_account.clone(), keychains);
+    let noise = xpub_derivable.xpub().chain_code().to_byte_array();
 
     let descriptor = match descriptor_type {
-        DescriptorType::Wpkh => RgbDescr::Wpkh(Wpkh::from(xpub_derivable)),
-        DescriptorType::Tr => RgbDescr::TapretKey(TapretKey::from(xpub_derivable)),
+        DescriptorType::Wpkh => RgbDescr::new_unfunded(Wpkh::from(xpub_derivable), noise),
+        DescriptorType::Tr => RgbDescr::key_only_unfunded(xpub_derivable, noise),
     };
 
     let name = "bp_wallet_name";
-    let mut bp_wallet = Wallet::new_layer1(descriptor.clone(), network);
-    bp_wallet.set_name(name.to_string());
-    let bp_dir = wallet_dir.join(name);
-    let bp_wallet_provider = FsTextStore::new(bp_dir).unwrap();
-    bp_wallet.make_persistent(bp_wallet_provider, true).unwrap();
+    let provider = FsTextStore::new(wallet_dir.join(name)).unwrap();
+    let wallet = RgbWallet::create(provider, descriptor.clone(), network, true)
+        .expect("Unable to create wallet");
 
-    let stock_provider = FsBinStore::new(wallet_dir.clone()).unwrap();
-    let mut stock = Stock::in_memory();
-    stock.make_persistent(stock_provider, true).unwrap();
-    let mut wallet = RgbWallet::new(stock, bp_wallet);
-
-    for asset_schema in AssetSchema::iter() {
-        let valid_kit = asset_schema.get_valid_kit();
-        wallet.stock_mut().import_kit(valid_kit).unwrap();
-    }
+    // for asset_schema in AssetSchema::iter() {
+    //     let valid_kit = asset_schema.get_valid_kit();
+    //     wallet.stock_mut().import_kit(valid_kit).unwrap();
+    // }
 
     let signer = match wallet_account {
         WalletAccount::Private(xpriv_account) => Some(TestnetSigner::new(xpriv_account)),
@@ -652,7 +655,7 @@ fn broadcast_tx(tx: &Tx, indexer_url: &str) {
             inner.transaction_broadcast(tx).unwrap();
         }
         AnyIndexer::Esplora(inner) => {
-            inner.publish(tx).unwrap();
+            inner.broadcast(tx).unwrap();
         }
         _ => unreachable!("unsupported indexer"),
     }
@@ -663,65 +666,65 @@ pub fn broadcast_tx_and_mine(tx: &Tx, instance: u8) {
     mine_custom(false, instance, 1);
 }
 
-pub fn attachment_from_fpath(fpath: &str) -> Attachment {
-    let file_bytes = std::fs::read(fpath).unwrap();
-    let file_hash: sha256::Hash = Hash::hash(&file_bytes[..]);
-    let digest = file_hash.to_byte_array().into();
-    let mime = FileFormat::from_file(fpath)
-        .unwrap()
-        .media_type()
-        .to_string();
-    let media_ty: &'static str = Box::leak(mime.clone().into_boxed_str());
-    let media_type = MediaType::with(media_ty);
-    Attachment {
-        ty: media_type,
-        digest,
-    }
-}
+// pub fn attachment_from_fpath(fpath: &str) -> Attachment {
+//     let file_bytes = std::fs::read(fpath).unwrap();
+//     let file_hash: sha256::Hash = Hash::hash(&file_bytes[..]);
+//     let digest = file_hash.to_byte_array().into();
+//     let mime = FileFormat::from_file(fpath)
+//         .unwrap()
+//         .media_type()
+//         .to_string();
+//     let media_ty: &'static str = Box::leak(mime.clone().into_boxed_str());
+//     let media_type = MediaType::with(media_ty);
+//     Attachment {
+//         ty: media_type,
+//         digest,
+//     }
+// }
 
-fn uda_token_data_minimal() -> TokenData {
-    TokenData {
-        index: TokenIndex::from(UDA_FIXED_INDEX),
-        ..Default::default()
-    }
-}
+// fn uda_token_data_minimal() -> TokenData {
+//     TokenData {
+//         index: TokenIndex::from(UDA_FIXED_INDEX),
+//         ..Default::default()
+//     }
+// }
 
-pub fn uda_token_data(
-    ticker: &str,
-    name: &str,
-    details: &str,
-    preview: EmbeddedMedia,
-    media: Attachment,
-    attachments: BTreeMap<u8, Attachment>,
-    reserves: ProofOfReserves,
-) -> TokenData {
-    let mut token_data = uda_token_data_minimal();
-    token_data.preview = Some(preview);
-    token_data.media = Some(media);
-    token_data.attachments = Confined::try_from(attachments.clone()).unwrap();
-    token_data.reserves = Some(reserves);
-    token_data.ticker = Some(Ticker::try_from(ticker.to_string()).unwrap());
-    token_data.name = Some(Name::try_from(name.to_string()).unwrap());
-    token_data.details = Some(Details::try_from(details.to_string()).unwrap());
-    token_data
-}
+// pub fn uda_token_data(
+//     ticker: &str,
+//     name: &str,
+//     details: &str,
+//     preview: EmbeddedMedia,
+//     media: Attachment,
+//     attachments: BTreeMap<u8, Attachment>,
+//     reserves: ProofOfReserves,
+// ) -> TokenData {
+//     let mut token_data = uda_token_data_minimal();
+//     token_data.preview = Some(preview);
+//     token_data.media = Some(media);
+//     token_data.attachments = Confined::try_from(attachments.clone()).unwrap();
+//     token_data.reserves = Some(reserves);
+//     token_data.ticker = Some(Ticker::try_from(ticker.to_string()).unwrap());
+//     token_data.name = Some(Name::try_from(name.to_string()).unwrap());
+//     token_data.details = Some(Details::try_from(details.to_string()).unwrap());
+//     token_data
+// }
 
 impl TestWallet {
     pub fn network(&self) -> Network {
-        self.wallet.wallet().network()
+        self.wallet.network()
     }
 
     pub fn testnet(&self) -> bool {
         self.network().is_testnet()
     }
 
-    pub fn keychain(&self) -> RgbKeychain {
-        RgbKeychain::for_method(self.close_method())
+    pub fn keychain(&self) -> Keychain {
+        // RgbKeychain::for_method(self.close_method())
+        todo!()
     }
 
     pub fn get_derived_address(&self) -> DerivedAddr {
         self.wallet
-            .wallet()
             .addresses(self.keychain())
             .next()
             .expect("no addresses left")
@@ -736,7 +739,7 @@ impl TestWallet {
         let txid = Txid::from_str(&fund_wallet(address.to_string(), sats, self.instance)).unwrap();
         self.sync();
         let mut vout = None;
-        let coins = self.wallet.wallet().address_coins();
+        let coins = self.wallet.address_coins();
         assert!(!coins.is_empty());
         for (_derived_addr, utxos) in coins {
             for utxo in utxos {
@@ -796,16 +799,12 @@ impl TestWallet {
 
     pub fn sync(&mut self) {
         let indexer = self.get_indexer();
-        self.wallet
-            .wallet_mut()
-            .update(&indexer)
-            .into_result()
-            .unwrap();
+        self.wallet.update(&indexer).into_result().unwrap();
     }
 
-    pub fn close_method(&self) -> CloseMethod {
-        self.wallet.wallet().seal_close_method()
-    }
+    // pub fn close_method(&self) -> CloseMethod {
+    //     self.wallet.wallet().seal_close_method()
+    // }
 
     pub fn mine_tx(&self, txid: &Txid, resume: bool) {
         let mut attempts = 10;
@@ -821,42 +820,60 @@ impl TestWallet {
         }
     }
 
+    pub fn runtime(&self) -> RgbDirRuntime {
+        let wallet = self.wallet.clone();
+        let mut runtime = RgbDirRuntime::from(DirBarrow::with(wallet, self.mound()));
+        runtime
+    }
+
+    pub fn mound(&self) -> BpDirMound {
+        if !self.network().is_testnet() {
+            panic!("Non-testnet networks are not yet supported");
+        }
+        BpDirMound::load_testnet(Consensus::Bitcoin, &self.wallet_dir, false)
+    }
+
     pub fn issue_with_info(
         &mut self,
-        asset_info: AssetInfo,
-        close_method: CloseMethod,
-        outpoints: Vec<Option<Outpoint>>,
-    ) -> (ContractId, TypeName) {
-        let outpoints = if outpoints.is_empty() {
-            vec![self.get_utxo(None)]
-        } else {
-            outpoints
-                .into_iter()
-                .map(|o| o.unwrap_or_else(|| self.get_utxo(None)))
-                .collect()
-        };
+        // asset_info: AssetInfo,
+        params: Option<PathBuf>,
+        // close_method: CloseMethod,
+        // outpoints: Vec<Option<Outpoint>>,
+    ) -> ContractId {
+        let mut runtime = self.runtime();
+        let file = File::open(params).expect("Unable to open parameters file");
+        let params = serde_yaml::from_reader::<_, CreateParams<Outpoint>>(file)?;
+        let contract_id = runtime.issue_to_file(params)?;
+        println!("A new contract issued with ID {contract_id}");
+        contract_id
+        // let outpoints = if outpoints.is_empty() {
+        //     vec![self.get_utxo(None)]
+        // } else {
+        //     outpoints
+        //         .into_iter()
+        //         .map(|o| o.unwrap_or_else(|| self.get_utxo(None)))
+        //         .collect()
+        // };
 
-        let mut builder = ContractBuilder::with(
-            Identity::default(),
-            asset_info.iface(),
-            asset_info.schema(),
-            asset_info.issue_impl(),
-            asset_info.types(),
-            asset_info.scripts(),
-        );
+        // let mut builder = ContractBuilder::with(
+        //     Identity::default(),
+        //     asset_info.iface(),
+        //     asset_info.schema(),
+        //     asset_info.issue_impl(),
+        //     asset_info.types(),
+        //     asset_info.scripts(),
+        // );
 
-        builder = asset_info.add_global_state(builder);
+        // builder = asset_info.add_global_state(builder);
 
-        builder = asset_info.add_asset_owner(builder, close_method, outpoints);
+        // builder = asset_info.add_asset_owner(builder, close_method, outpoints);
 
-        let contract = builder.issue_contract().expect("failure issuing contract");
-        let resolver = self.get_resolver();
-        self.wallet
-            .stock_mut()
-            .import_contract(contract.clone(), resolver)
-            .unwrap();
-
-        (contract.contract_id(), asset_info.iface_type_name())
+        // let contract = builder.issue_contract().expect("failure issuing contract");
+        // let resolver = self.get_resolver();
+        // self.wallet
+        //     .stock_mut()
+        //     .import_contract(contract.clone(), resolver)
+        //     .unwrap();
     }
 
     pub fn issue_nia(
