@@ -108,6 +108,7 @@ zk-aluvm = { path = "./zk-aluvm" }
 ## SONIC
 ultrasonic = { path = "./ultrasonic" }
 hypersonic = { path = "./sonic" }
+sonic-callreq = { path = "./sonic/callreq" }
 ## strict-encoding
 strict_encoding = { path = "./strict-encoding/rust" }
 strict_encoding_derive = { path = "./strict-encoding/rust/derive" }

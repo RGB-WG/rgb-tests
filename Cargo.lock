@@ -163,10 +163,16 @@ name = "baid64"
 version = "0.4.1"
 dependencies = [
  "amplify",
- "base64",
+ "base64 0.22.1",
  "mnemonic",
  "sha2",
 ]
+
+[[package]]
+name = "base64"
+version = "0.12.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3441f0f7b02788e948e47f457ca01f1d7e6d92c693bc132c22b087d3141c03ff"
 
 [[package]]
 name = "base64"
@@ -250,6 +256,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "borrow-or-share"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3eeab4423108c5d7c744f4d234de88d18d636100093ae04caf4825134b9c3a32"
+
+[[package]]
 name = "bp-consensus"
 version = "0.12.0-beta.4"
 dependencies = [
@@ -328,11 +340,12 @@ dependencies = [
  "amplify",
  "bp-std",
  "log",
+ "minreq",
  "reqwest",
  "serde",
- "serde_with",
+ "serde_with 3.11.0",
  "sha2",
- "ureq",
+ "tokio",
 ]
 
 [[package]]
@@ -344,6 +357,7 @@ dependencies = [
  "bp-consensus",
  "commit_verify",
  "serde",
+ "strict_encoding",
 ]
 
 [[package]]
@@ -387,7 +401,6 @@ dependencies = [
  "bp-esplora",
  "bp-std",
  "descriptors",
- "log",
  "nonasync",
  "psbt",
  "serde",
@@ -529,15 +542,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crc32fast"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3855a8a784b474f333699ef2bbca9db2c4a1f6d9088a90a2d25b1eb53111eaa"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "crypto-common"
 version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -549,12 +553,36 @@ dependencies = [
 
 [[package]]
 name = "darling"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a01d95850c592940db9b8194bc39f4bc0e89dee5c4265e4b1807c34a9aba453c"
+dependencies = [
+ "darling_core 0.13.4",
+ "darling_macro 0.13.4",
+]
+
+[[package]]
+name = "darling"
 version = "0.20.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54e36fcd13ed84ffdfda6f5be89b31287cbb80c439841fe69e04841435464391"
 dependencies = [
- "darling_core",
- "darling_macro",
+ "darling_core 0.20.8",
+ "darling_macro 0.20.8",
+]
+
+[[package]]
+name = "darling_core"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "859d65a907b6852c9361e3185c862aae7fafd2887876799fa55f5f99dc40d610"
+dependencies = [
+ "fnv",
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -573,11 +601,22 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c972679f83bdf9c42bd905396b6c3588a843a17f0f16dfcfa3e2c5d57441835"
+dependencies = [
+ "darling_core 0.13.4",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "darling_macro"
 version = "0.20.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a668eda54683121533a393014d8692171709ff57a7d61f187b6e782719f8933f"
 dependencies = [
- "darling_core",
+ "darling_core 0.20.8",
  "quote",
  "syn 2.0.95",
 ]
@@ -654,13 +693,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ffe3a660c3a1b10e96f304a9413d673b2118d62e4520f7ddf4a4faccfe8b9b9"
 
 [[package]]
-name = "flate2"
-version = "1.0.28"
+name = "fluent-uri"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46303f565772937ffe1d394a4fac6f411c6013172fadde9dcdb1e147a086940e"
+checksum = "1918b65d96df47d3591bed19c5cca17e3fa5d0707318e4b5ef2eae01764df7e5"
 dependencies = [
- "crc32fast",
- "miniz_oxide",
+ "borrow-or-share",
+ "ref-cast",
 ]
 
 [[package]]
@@ -989,10 +1028,9 @@ dependencies = [
  "amplify",
  "commit_verify",
  "getrandom",
- "indexmap 2.7.0",
  "serde",
- "serde_yaml",
  "sonic-api",
+ "sonic-callreq",
  "strict_encoding",
  "strict_types",
  "ultrasonic",
@@ -1174,6 +1212,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d811f3e15f28568be3407c8e7fdb6514c1cda3cb30683f15b6a1a1dc4ea14a7"
 dependencies = [
  "adler",
+]
+
+[[package]]
+name = "minreq"
+version = "2.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da0c420feb01b9fb5061f8c8f452534361dd783756dcf38ec45191ce55e7a161"
+dependencies = [
+ "base64 0.12.3",
+ "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1417,7 +1467,7 @@ name = "psbt"
 version = "0.12.0-beta.4"
 dependencies = [
  "amplify",
- "base64",
+ "base64 0.22.1",
  "bp-core",
  "bp-derive",
  "commit_verify",
@@ -1476,6 +1526,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "ref-cast"
+version = "1.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccf0a6f84d5f1d581da8b41b47ec8600871962f2a528115b542b362d4b744931"
+dependencies = [
+ "ref-cast-impl",
+]
+
+[[package]]
+name = "ref-cast-impl"
+version = "1.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bcc303e793d3734489387d205e9b186fac9c6cfacedd98cbb2e8a5943595f3e6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.95",
+]
+
+[[package]]
 name = "regex"
 version = "1.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1516,7 +1586,7 @@ version = "0.12.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a77c62af46e79de0a562e1a9849205ffcb7fc1238876e9bd743357570e04046f"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "bytes",
  "futures-core",
  "futures-util",
@@ -1566,12 +1636,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "rgb-invoice"
+version = "0.12.0-beta.4"
+dependencies = [
+ "amplify",
+ "baid64",
+ "bp-core",
+ "bp-invoice",
+ "commit_verify",
+ "hypersonic",
+ "rgb-core",
+ "serde",
+ "sonic-callreq",
+ "strict_encoding",
+]
+
+[[package]]
 name = "rgb-psbt"
 version = "0.12.0-beta.4"
 dependencies = [
  "amplify",
+ "bp-core",
  "bp-std",
- "commit_verify",
  "rgb-std",
 ]
 
@@ -1586,9 +1672,11 @@ dependencies = [
  "getrandom",
  "indexmap 2.7.0",
  "nonasync",
+ "rgb-psbt",
  "rgb-std",
  "serde",
  "serde_yaml",
+ "strict_types",
  "wasm-bindgen",
 ]
 
@@ -1598,12 +1686,15 @@ version = "0.12.0-beta.4"
 dependencies = [
  "amplify",
  "bp-core",
+ "bp-invoice",
  "chrono",
  "commit_verify",
  "getrandom",
  "hypersonic",
  "rgb-core",
+ "rgb-invoice",
  "serde",
+ "serde_with 1.14.0",
  "single_use_seals",
  "strict_encoding",
  "strict_types",
@@ -1749,7 +1840,6 @@ dependencies = [
  "aws-lc-rs",
  "log",
  "once_cell",
- "ring",
  "rustls-pki-types",
  "rustls-webpki",
  "subtle",
@@ -1762,7 +1852,7 @@ version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "29993a25686778eb88d4189742cd713c9bce943bc54251a33509dc63cbacf73d"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "rustls-pki-types",
 ]
 
@@ -1940,11 +2030,21 @@ dependencies = [
 
 [[package]]
 name = "serde_with"
+version = "1.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "678b5a069e50bf00ecd22d0cd8ddf7c236f68581b03db652061ed5eb13a312ff"
+dependencies = [
+ "serde",
+ "serde_with_macros 1.5.2",
+]
+
+[[package]]
+name = "serde_with"
 version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8e28bdad6db2b8340e449f7108f020b3b092e8583a9e3fb82713e1d4e71fe817"
 dependencies = [
- "base64",
+ "base64 0.22.1",
  "chrono",
  "hex",
  "indexmap 1.9.3",
@@ -1952,8 +2052,20 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "serde_with_macros",
+ "serde_with_macros 3.11.0",
  "time",
+]
+
+[[package]]
+name = "serde_with_macros"
+version = "1.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e182d6ec6f05393cc0e5ed1bf81ad6db3a8feedf8ee515ecdd369809bcce8082"
+dependencies = [
+ "darling 0.13.4",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1962,7 +2074,7 @@ version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d846214a9854ef724f3da161b426242d8de7c1fc7de2f89bb1efcb154dca79d"
 dependencies = [
- "darling",
+ "darling 0.20.8",
  "proc-macro2",
  "quote",
  "syn 2.0.95",
@@ -2057,17 +2169,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "socks"
-version = "0.3.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0c3dbbd9ae980613c6dd8e28a9407b50509d3803b57624d5dfe8315218cd58b"
-dependencies = [
- "byteorder",
- "libc",
- "winapi",
-]
-
-[[package]]
 name = "sonic-api"
 version = "0.12.0-beta.4"
 dependencies = [
@@ -2078,10 +2179,26 @@ dependencies = [
  "commit_verify",
  "getrandom",
  "serde",
+ "sonic-callreq",
  "strict_encoding",
  "strict_types",
  "ultrasonic",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "sonic-callreq"
+version = "0.12.0-beta.4"
+dependencies = [
+ "amplify",
+ "baid64",
+ "chrono",
+ "fluent-uri",
+ "indexmap 2.7.0",
+ "serde",
+ "strict_encoding",
+ "strict_types",
+ "ultrasonic",
 ]
 
 [[package]]
@@ -2456,25 +2573,6 @@ name = "untrusted"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
-
-[[package]]
-name = "ureq"
-version = "2.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b74fc6b57825be3373f7054754755f03ac3a8f5d70015ccad699ba2029956f4a"
-dependencies = [
- "base64",
- "flate2",
- "log",
- "once_cell",
- "rustls",
- "rustls-pki-types",
- "serde",
- "serde_json",
- "socks",
- "url",
- "webpki-roots",
-]
 
 [[package]]
 name = "url"
