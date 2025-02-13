@@ -3,9 +3,9 @@
 # script to run project tests and report code coverage
 # uses llvm-cov (https://github.com/taiki-e/cargo-llvm-cov)
 
-LLVM_COV_OPTS=()
-CARGO_TEST_OPTS=("--")
 COV="cargo llvm-cov"
+COV_OPTS="--html"
+CARGO_TEST_OPTS=("--")
 
 _die() {
     echo "err $*"
@@ -41,10 +41,8 @@ while [ -n "$1" ]; do
             shift
             ;;
         --ci)
-            COV_CI="$COV --lcov --output-path coverage.lcov"
-            INDEXER=esplora $COV_CI
-            INDEXER=electrum $COV_CI --no-clean
-            exit 0
+            COV_OPTS="--lcov --output-path coverage.lcov"
+            CI=1
             ;;
         *)
             help
@@ -54,14 +52,18 @@ while [ -n "$1" ]; do
     shift
 done
 
-_tit "installing requirements"
-rustup component add llvm-tools-preview
-cargo install cargo-llvm-cov
+if [ -z "$CI" ]; then
+    _tit "installing requirements"
+    rustup component add llvm-tools-preview
+    cargo install cargo-llvm-cov
+fi
 
 _tit "generating coverage report"
 # shellcheck disable=2086
-INDEXER=esplora $COV --html "${LLVM_COV_OPTS[@]}" "${CARGO_TEST_OPTS[@]}"
-INDEXER=electrum $COV --no-clean --html "${LLVM_COV_OPTS[@]}" "${CARGO_TEST_OPTS[@]}"
+INDEXER=electrum $COV $COV_OPTS "${CARGO_TEST_OPTS[@]}"
+INDEXER=esplora $COV $COV_OPTS --no-clean "${CARGO_TEST_OPTS[@]}"
 
-## show html report location
-echo "generated html report: target/llvm-cov/html/index.html"
+if [ -z "$CI" ]; then
+    ## show html report location
+    echo "generated html report: target/llvm-cov/html/index.html"
+fi

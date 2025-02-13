@@ -23,6 +23,7 @@ jobs:
         with:
           components: llvm-tools-preview
           toolchain: stable
+          rustflags: ""
 
       - name: Install llvm-cov
         env:
