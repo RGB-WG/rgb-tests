@@ -4,6 +4,12 @@ static INIT: Once = Once::new();
 
 pub static INDEXER: OnceLock<Indexer> = OnceLock::new();
 
+// Node addresses
+const NODE2_ADDR: &str = "172.30.2.205:18444";
+const NODE3_ADDR: &str = "172.30.2.206:18444";
+const NODE2_IP: &str = "172.30.2.205";
+const NODE3_IP: &str = "172.30.2.206";
+
 #[derive(Clone, Default, PartialEq, Eq, Debug)]
 pub enum Indexer {
     Electrum,
@@ -220,14 +226,18 @@ pub fn resume_mining() {
 
 fn _get_connection_tuple() -> Vec<(u8, String)> {
     vec![
-        (INSTANCE_3, format!("172.30.2.205:18444")),  // Node 2's IP and port
-        (INSTANCE_2, format!("172.30.2.206:18444")),  // Node 3's IP and port
+        (INSTANCE_3, NODE2_ADDR.to_string()),  // Node 2's address
+        (INSTANCE_2, NODE3_ADDR.to_string()),  // Node 3's address
     ]
 }
 
 pub fn connect_reorg_nodes() {
     for (instance, node_addr) in _get_connection_tuple() {
-        _bitcoin_cli_cmd(instance, vec!["addnode", &node_addr, "add"]);
+        let peers = _bitcoin_cli_cmd(instance, vec!["getpeerinfo"]);
+        // println!("connect_reorg_nodes:instance:{} peers: {}", instance, peers);
+        if !peers.contains(&node_addr) {
+            _bitcoin_cli_cmd(instance, vec!["addnode", &node_addr, "add"]);
+        }
     }
     
     let t_0 = OffsetDateTime::now_utc();
@@ -247,7 +257,7 @@ pub fn connect_reorg_nodes() {
             let peers_2 = _bitcoin_cli_cmd(INSTANCE_2, vec!["getpeerinfo"]);
             let peers_3 = _bitcoin_cli_cmd(INSTANCE_3, vec!["getpeerinfo"]);
             
-            if peers_2.contains("172.30.2.206") && peers_3.contains("172.30.2.205") {
+            if peers_2.contains(NODE3_IP) && peers_3.contains(NODE2_IP) {
                 break;
             }
         }
@@ -267,6 +277,12 @@ pub fn connect_reorg_nodes() {
 pub fn disconnect_reorg_nodes() {
     for (instance, node_addr) in _get_connection_tuple() {
         _bitcoin_cli_cmd(instance, vec!["disconnectnode", &node_addr]);
+    }
+
+    for (instance, _) in _get_connection_tuple() {
+        // dump peer info
+        let peers = _bitcoin_cli_cmd(instance, vec!["getpeerinfo"]);
+        println!("disconnect_reorg_nodes:instance:{} peers: {}", instance, peers);
     }
 }
 
