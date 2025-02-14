@@ -71,6 +71,7 @@ pub use file_format::FileFormat;
 //     rgb21::{EmbeddedMedia, TokenData},
 //     rgb25, IssuerWrapper, Rgb20, Rgb21, Rgb25,
 // };
+pub use helpers::DescriptorType;
 pub use once_cell::sync::Lazy;
 pub use psbt::{
     Beneficiary as PsbtBeneficiary, Payment, Prevout, Psbt, PsbtConstructor, PsbtMeta, PsbtVer,
@@ -89,11 +90,11 @@ pub use psbt::{
 //     BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
 //     RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
 // };
+use rgb::invoice::{RgbBeneficiary, RgbInvoice};
 use rgb::popls::bp::file::{BpDirMound, DirBarrow};
 use rgb::Consensus;
 use rgb::{CallScope, ContractId, CreateParams};
 use rgbp::{descriptor::RgbDescr, RgbDirRuntime, RgbRuntime, RgbWallet};
-
 // pub use rgbstd::{
 //     containers::{
 //         BuilderSeal, ConsignmentExt, Fascia, FileContent, IndexedConsignment, Kit, Transfer,

@@ -1,68 +1,67 @@
 pub mod utils;
 
 use rstest_reuse::{self, *};
-use utils::*;
+use utils::{chain::initialize, helpers::get_wallet, DescriptorType, *};
 
 const MEDIA_FPATH: &str = "tests/fixtures/rgb_logo.jpeg";
 
-// #[template]
-// #[rstest]
-// #[case(DescriptorType::Wpkh)]
-// #[case(DescriptorType::Wpkh)]
-// #[case(DescriptorType::Tr)]
-// #[case(DescriptorType::Tr)]
-// fn descriptor_and_close_method(
-//     #[case] wallet_desc: DescriptorType,
-// ) {
-// }
+#[template]
+#[rstest]
+#[case(DescriptorType::Wpkh)]
+#[case(DescriptorType::Wpkh)]
+#[case(DescriptorType::Tr)]
+#[case(DescriptorType::Tr)]
+fn descriptor_and_close_method(#[case] wallet_desc: DescriptorType) {}
 
-// #[apply(descriptor_and_close_method)]
-// fn issue_nia(wallet_desc: DescriptorType) {
-//     println!("wallet_desc {wallet_desc:?} ");
+#[apply(descriptor_and_close_method)]
+fn issue_nia(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?} ");
 
-//     initialize();
+    initialize();
 
-//     let mut wallet = get_wallet(&wallet_desc);
+    let mut wallet = get_wallet(&wallet_desc);
 
-//     let issued_supply = 999;
-//     let ticker = "TCKR";
-//     let name = "asset name";
-//     let precision = 2;
-//     let details = Some("some details");
-//     let terms_text = "Ricardian contract";
-//     let terms_media_fpath = Some(MEDIA_FPATH);
-//     let asset_info = AssetInfo::nia(
-//         ticker,
-//         name,
-//         precision,
-//         details,
-//         terms_text,
-//         terms_media_fpath,
-//         vec![issued_supply],
-//     );
-//     let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
+    // temporary comment out custom parameters, temporarily read from file
+    // let issued_supply = 999;
+    // let ticker = "TCKR";
+    // let name = "asset name";
+    // let precision = 2;
+    // let details = Some("some details");
+    // let terms_text = "Ricardian contract";
+    // let terms_media_fpath = Some(MEDIA_FPATH);
+    // let asset_info = AssetInfo::nia(
+    //     ticker,
+    //     name,
+    //     precision,
+    //     details,
+    //     terms_text,
+    //     terms_media_fpath,
+    //     vec![issued_supply],
+    // );
+    // let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
+    let contract_id = wallet.issue_nia(PathBuf::from("./tests/DemoToken.yaml"));
+    wallet.contract_states(Some(contract_id));
+    // let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
+    // let spec = contract.spec();
+    // assert_eq!(spec.ticker.to_string(), ticker.to_string());
+    // assert_eq!(spec.name.to_string(), name.to_string());
+    // assert_eq!(spec.precision.decimals(), precision);
+    // let terms = contract.contract_terms();
+    // assert_eq!(terms.text.to_string(), terms_text.to_string());
+    // let terms_media = terms.media.unwrap();
+    // assert_eq!(terms_media.ty.to_string(), "image/jpeg");
+    // assert_eq!(
+    //     terms_media.digest.to_string(),
+    //     "02d2cc5d7883885bb7472e4fe96a07344b1d7cf794cb06943e1cdb5c57754d8a"
+    // );
+    // assert_eq!(contract.total_issued_supply().value(), issued_supply);
 
-//     let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
-//     let spec = contract.spec();
-//     assert_eq!(spec.ticker.to_string(), ticker.to_string());
-//     assert_eq!(spec.name.to_string(), name.to_string());
-//     assert_eq!(spec.precision.decimals(), precision);
-//     let terms = contract.contract_terms();
-//     assert_eq!(terms.text.to_string(), terms_text.to_string());
-//     let terms_media = terms.media.unwrap();
-//     assert_eq!(terms_media.ty.to_string(), "image/jpeg");
-//     assert_eq!(
-//         terms_media.digest.to_string(),
-//         "02d2cc5d7883885bb7472e4fe96a07344b1d7cf794cb06943e1cdb5c57754d8a"
-//     );
-//     assert_eq!(contract.total_issued_supply().value(), issued_supply);
-
-//     let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
-//     assert_eq!(allocations.len(), 1);
-//     let allocation = allocations[0];
-//     // assert_eq!(allocation.seal.method(), close_method);
-//     assert_eq!(allocation.state, Amount::from(issued_supply));
-// }
+    // let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
+    // assert_eq!(allocations.len(), 1);
+    // let allocation = allocations[0];
+    // // assert_eq!(allocation.seal.method(), close_method);
+    // assert_eq!(allocation.state, Amount::from(issued_supply));
+}
 
 // #[apply(descriptor_and_close_method)]
 // fn issue_uda(wallet_desc: DescriptorType) {
