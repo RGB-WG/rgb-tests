@@ -1200,7 +1200,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     wlt_2.mine_tx(&tx.txid(), false);
 
     // consignment validation fails because it notices an unbroadcasted TX in the history
-    let res = consignment.validate(&wlt_3.get_resolver(), wlt_3.chain_net());
+    let res = consignment.validate(&wlt_3.get_resolver(), wlt_3.chain_net(), None);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -1874,7 +1874,53 @@ fn reorg_revert_multiple(#[case] history_type: HistoryType) {
                 amt_2,
                 InvoiceType::Blinded(Some(utxo_wlt_1_1)),
             );
-            let (_, tx_2) = wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
+            // sender checks if it's safe to merge allocations
+            let height_pre_transfer = get_height_custom(INSTANCE_2);
+            let allocations =
+                wlt_2.contract_fungible_allocations(contract_id, &iface_type_name, false);
+            let utxos: Vec<(Outpoint, Txid)> = allocations
+                .iter()
+                .map(|a| (a.seal.to_outpoint(), a.witness.unwrap()))
+                .collect();
+            let safe_height = height_pre_transfer - 6; // min 6 confirmations
+            for (utxo, txid) in utxos {
+                let height = if txid == tx_0.txid() {
+                    height_pre_transfer - 1
+                } else {
+                    height_pre_transfer
+                };
+                let assets_history =
+                    wlt_2.get_outpoint_unsafe_history(utxo, NonZeroU32::new(safe_height).unwrap());
+                let expected_history = HashMap::from([(
+                    contract_id,
+                    HashMap::from([(height, HashSet::from([txid]))]),
+                )]);
+                assert_eq!(assets_history, expected_history);
+            }
+            // sender proceeds with the tranfer even if there's unsafe history
+            let (consignment, tx_2) = wlt_2.transfer(invoice, None, None, true, None);
+            wlt_2.mine_tx(&tx_2.txid(), false);
+            // receiver checks if it's safe to receive allocations
+            let safe_height = height_pre_transfer; // min 1 confirmation
+            let validated_consignment = consignment
+                .clone()
+                .validate(
+                    &wlt_1.get_resolver(),
+                    wlt_1.chain_net(),
+                    Some(NonZeroU32::new(safe_height).unwrap()),
+                )
+                .map_err(|(status, _)| status)
+                .unwrap();
+            let validation_status = validated_consignment.clone().into_validation_status();
+            assert_eq!(validation_status.info.len(), 1);
+            let unsafe_height = height_pre_transfer + 1;
+            let unsafe_history_map = HashMap::from([(unsafe_height, HashSet::from([tx_2.txid()]))]);
+            assert!(
+                matches!(&validation_status.info[0], Info::UnsafeHistory(map) if *map == unsafe_history_map)
+            );
+            // receiver decides to accept the consignment even if there's unsafe history
+            wlt_1.accept_transfer(consignment.clone(), None);
+            wlt_2.sync();
 
             vec![tx_0, tx_1, tx_2]
         }
