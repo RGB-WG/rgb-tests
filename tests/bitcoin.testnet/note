@@ -1,0 +1,13 @@
+
+TODO: 
+
+Because `tests` is the `DirExcavator` directory of `BpDirMound`, 
+Rgb will search for `schemata` and `contracts` in this directory.
+
+When detecting `contracts`, it will search in `tests/bitcoin.testnet`,
+
+If this directory does not exist, it will report an error, 
+So you need to create this directory in advance.
+
+The corresponding code is `rgb-std/src/mound.rs#L311`   
+

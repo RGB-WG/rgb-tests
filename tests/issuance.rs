@@ -39,7 +39,7 @@ fn issue_nia(wallet_desc: DescriptorType) {
     //     vec![issued_supply],
     // );
     // let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
-    let contract_id = wallet.issue_nia(PathBuf::from("./tests/DemoToken.yaml"));
+    let contract_id = wallet.issue_nia();
     wallet.contract_states(Some(contract_id));
     // let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
     // let spec = contract.spec();
