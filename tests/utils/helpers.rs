@@ -995,8 +995,7 @@ impl TestWallet {
     }
 
     pub fn accept_transfer(&mut self, consignment: Transfer, report: Option<&Report>) {
-        let mut resolver = self.get_resolver();
-        resolver.add_consignment_txes(&consignment);
+        let resolver = self.get_resolver();
         self.accept_transfer_custom_resolver(consignment, report, &resolver);
     }
 
@@ -1009,7 +1008,7 @@ impl TestWallet {
         self.sync();
         let validate_start = Instant::now();
         let validated_consignment = consignment
-            .validate(&resolver, self.chain_net())
+            .validate(&resolver, self.chain_net(), None)
             .map_err(|(status, _)| status)
             .unwrap();
         let validate_duration = validate_start.elapsed();
@@ -1658,6 +1657,17 @@ impl TestWallet {
             .stock_mut()
             .update_witnesses(resolver, after_height, force_witnesses)
             .unwrap();
+    }
+
+    pub fn get_outpoint_unsafe_history(
+        &self,
+        outpoint: Outpoint,
+        safe_height: NonZeroU32,
+    ) -> HashMap<ContractId, HashMap<u32, HashSet<Txid>>> {
+        self.wallet
+            .stock()
+            .get_outpoint_unsafe_history(outpoint, safe_height)
+            .unwrap()
     }
 
     pub fn create_consignments(

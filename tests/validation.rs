@@ -221,7 +221,7 @@ fn validate_consignment_success() {
     for scenario in Scenario::iter() {
         let resolver = scenario.resolver();
         let consignment = get_consignment_from_yaml(&format!("consignment_{scenario}"));
-        let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
+        let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest, None);
         assert!(res.is_ok());
         let validation_status = match res {
             Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -243,7 +243,7 @@ fn validate_consignment_chain_fail() {
 
     // genesis chainNet: change from bitcoinRegtest to liquidTestnet
     let consignment = get_consignment_from_yaml("attack_chain");
-    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest, None);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -263,7 +263,7 @@ fn validate_consignment_genesis_fail() {
 
     // schema ID: change genesis[schemaId] with CFA schema ID
     let consignment = get_consignment_from_yaml("attack_genesis_schema_id");
-    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest, None);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -298,7 +298,7 @@ fn validate_consignment_genesis_fail() {
 
     // genesis chainNet: change from bitcoinRegtest to bitcoinMainnet
     let consignment = get_consignment_from_yaml("attack_genesis_testnet");
-    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest, None);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -323,7 +323,7 @@ fn validate_consignment_bundles_fail() {
 
     // bundles pubWitness data inputs[0] sequence: change from 0 to 1
     let consignment = get_consignment_from_yaml("attack_bundles_pubWitness_data_input_sequence");
-    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest, None);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -361,7 +361,7 @@ fn validate_consignment_resolver_error() {
     *resolver.pub_witnesses.get_mut(&txid).unwrap() =
         MockResolvePubWitness::Error(WitnessResolverError::Other(txid, s!("unexpected error")));
     let consignment = get_consignment_from_yaml("attack_resolver_error");
-    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest, None);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
@@ -382,7 +382,7 @@ fn validate_consignment_resolver_error() {
     *resolver.pub_witness_ords.get_mut(&txid).unwrap() =
         MockResolvePubWitnessOrd::Error(WitnessResolverError::Other(txid, s!("unexpected error")));
     let consignment = get_consignment_from_yaml("attack_resolver_error");
-    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest);
+    let res = consignment.validate(&resolver, ChainNet::BitcoinRegtest, None);
     assert!(res.is_err());
     let validation_status = match res {
         Ok(validated_consignment) => validated_consignment.validation_status().clone(),
