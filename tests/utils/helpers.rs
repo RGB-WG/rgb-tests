@@ -120,7 +120,8 @@ impl AssetParamsBuilder {
     }
 
     /// Update circulating state in global states
-    pub fn update_circulating_state(mut self, value: impl Into<StrictVal>) -> Self {
+    /// circulating type is "RGBContract.Amount" eq u64 in rust
+    pub fn update_circulating_state(mut self, value: u64) -> Self {
         if let Some(state) = self
             .params
             .global
@@ -132,8 +133,8 @@ impl AssetParamsBuilder {
         self
     }
 
-    /// Add or update owned state
-    pub fn add_owned_state(mut self, seal: Outpoint, val: impl Into<StrictVal>) -> Self {
+    /// Update owned state
+    pub fn update_owned_state(mut self, seal: Outpoint, val: u64) -> Self {
         // check if owned state exists
         if let Some(state) = self
             .params
@@ -154,6 +155,18 @@ impl AssetParamsBuilder {
                 },
             });
         }
+        self
+    }
+
+    /// Add owned state
+    pub fn add_owned_state(mut self, seal: Outpoint, val: u64) -> Self {
+        self.params.owned.push(NamedState {
+            name: "owned".into(),
+            state: Assignment {
+                seal: EitherSeal::Alt(seal),
+                data: val.into(),
+            },
+        });
         self
     }
 
@@ -596,7 +609,7 @@ impl TestWallet {
     pub fn runtime(&self) -> RgbDirRuntime {
         let wallet = self.wallet();
         let mound = self.mound();
-        dbg!(&mound.schemata().collect::<Vec<_>>());
+        // dbg!(&mound.schemata().collect::<Vec<_>>());
         let runtime = RgbDirRuntime::from(DirBarrow::with(wallet, mound));
         runtime
     }
@@ -619,8 +632,18 @@ impl TestWallet {
     }
 
     pub fn issue_nia(&mut self) -> ContractId {
-        let params = AssetParamsBuilder::default().name("USDT");
-        // .update_circulating_state("1000000");
+        let fake_outpoing_zero =
+            "0000000000000000000000000000000000000000000000000000000000000000:0";
+        let fake_outpoing_one =
+            "0000000000000000000000000000000000000000000000000000000000000001:0";
+        let params = AssetParamsBuilder::default()
+            .name("USDT")
+            .update_name_state("USD Tether")
+            .update_ticker_state("USDT")
+            .update_precision_state("centiMilli")
+            .update_circulating_state(1_000_000)
+            .add_owned_state(Outpoint::from_str(&fake_outpoing_zero).unwrap(), 10_000)
+            .add_owned_state(Outpoint::from_str(&fake_outpoing_one).unwrap(), 10_000);
         self.issue_with_params(params.build())
     }
 
