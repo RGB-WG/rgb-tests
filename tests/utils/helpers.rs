@@ -9,11 +9,12 @@ use rand::RngCore;
 use rgb::invoice::{RgbBeneficiary, RgbInvoice};
 use rgb::popls::bp::file::{BpDirMound, DirBarrow};
 use rgb::{
-    Assignment, CallScope, CodexId, Consensus, ContractId, ContractInfo, CreateParams, EitherSeal,
-    MethodName, NamedState, StateAtom,
+    Assignment, CallScope, CellAddr, CodexId, Consensus, ContractId, ContractInfo, CreateParams,
+    EitherSeal, MethodName, NamedState, StateAtom,
 };
 use rgbp::{descriptor::RgbDescr, RgbDirRuntime, RgbWallet};
-use strict_types::TypeName;
+use strict_types::value::EnumTag;
+use strict_types::{TypeName, VariantName};
 
 use crate::utils::chain::fund_wallet;
 
@@ -69,19 +70,19 @@ impl AssetParamsBuilder {
     }
 
     /// Set the contract method name
-    pub fn method(mut self, method: impl Into<MethodName>) -> Self {
-        self.params.method = method.into();
+    pub fn method(mut self, method: &str) -> Self {
+        self.params.method = VariantName::from_str(method).unwrap();
         self
     }
 
     /// Set the contract name
-    pub fn name(mut self, name: impl Into<TypeName>) -> Self {
-        self.params.name = name.into();
+    pub fn name(mut self, name: &str) -> Self {
+        self.params.name = TypeName::from_str(name).unwrap();
         self
     }
 
     /// Update name state in global states
-    pub fn update_name_state(mut self, value: impl Into<StrictVal>) -> Self {
+    pub fn update_name_state(mut self, value: &str) -> Self {
         if let Some(state) = self
             .params
             .global
@@ -94,7 +95,7 @@ impl AssetParamsBuilder {
     }
 
     /// Update ticker state in global states
-    pub fn update_ticker_state(mut self, value: impl Into<StrictVal>) -> Self {
+    pub fn update_ticker_state(mut self, value: &str) -> Self {
         if let Some(state) = self
             .params
             .global
@@ -107,7 +108,7 @@ impl AssetParamsBuilder {
     }
 
     /// Update precision state in global states
-    pub fn update_precision_state(mut self, value: impl Into<StrictVal>) -> Self {
+    pub fn update_precision_state(mut self, value: &str) -> Self {
         if let Some(state) = self
             .params
             .global
@@ -155,6 +156,11 @@ impl AssetParamsBuilder {
                 },
             });
         }
+        self
+    }
+
+    pub fn clear_owned_state(mut self) -> Self {
+        self.params.owned.clear();
         self
     }
 
@@ -625,27 +631,10 @@ impl TestWallet {
         self.mound().contracts_info().collect()
     }
 
-    pub fn contract_states(&self, contract_id: Option<ContractId>) {
-        let mut runtime = self.runtime();
-        let contract_states = runtime.state_all(contract_id).collect::<Vec<_>>();
-        dbg!(contract_states);
-    }
-
-    pub fn issue_nia(&mut self) -> ContractId {
-        let fake_outpoing_zero =
-            "0000000000000000000000000000000000000000000000000000000000000000:0";
-        let fake_outpoing_one =
-            "0000000000000000000000000000000000000000000000000000000000000001:0";
-        let params = AssetParamsBuilder::default()
-            .name("USDT")
-            .update_name_state("USD Tether")
-            .update_ticker_state("USDT")
-            .update_precision_state("centiMilli")
-            .update_circulating_state(1_000_000)
-            .add_owned_state(Outpoint::from_str(&fake_outpoing_zero).unwrap(), 10_000)
-            .add_owned_state(Outpoint::from_str(&fake_outpoing_one).unwrap(), 10_000);
-        self.issue_with_params(params.build())
-    }
+    // pub fn all_contract_states(&self) -> Vec<(ContractId, ContractState<Outpoint>)> {
+    //     let mut runtime = self.runtime();
+    //     runtime.state_all(None).collect()
+    // }
 
     pub fn issue_with_params(&mut self, params: CreateParams<Outpoint>) -> ContractId {
         let mut runtime = self.runtime();
@@ -659,5 +648,199 @@ impl TestWallet {
     pub fn issue_from_file(&mut self, params_path: impl AsRef<Path>) -> ContractId {
         let params = AssetParamsBuilder::from_file(params_path);
         self.issue_with_params(params)
+    }
+}
+
+/// Parameters for NIA (Non-Inflatable Asset) issuance
+#[derive(Clone)]
+pub struct NIAIssueParams {
+    pub name: String,
+    pub ticker: String,
+    pub precision: String,
+    pub circulating_supply: u64,
+    pub initial_allocations: Vec<(Outpoint, u64)>,
+}
+
+impl Default for NIAIssueParams {
+    fn default() -> Self {
+        Self {
+            name: "USD Tether".to_string(),
+            ticker: "USDT".to_string(),
+            precision: "centiMilli".to_string(),
+            circulating_supply: 1_000_000,
+            initial_allocations: vec![],
+        }
+    }
+}
+
+impl NIAIssueParams {
+    pub fn new(
+        name: impl Into<String>,
+        ticker: impl Into<String>,
+        precision: impl Into<String>,
+        circulating_supply: u64,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            ticker: ticker.into(),
+            precision: precision.into(),
+            circulating_supply,
+            initial_allocations: vec![],
+        }
+    }
+
+    pub fn add_allocation(&mut self, outpoint: Outpoint, amount: u64) -> &mut Self {
+        self.initial_allocations.push((outpoint, amount));
+        self
+    }
+}
+
+/// RGB Contract State representation
+#[derive(Debug)]
+pub struct ContractState {
+    /// Immutable state of the contract
+    pub immutable: ContractImmutableState,
+    /// Ownership state of the contract
+    pub owned: ContractOwnedState,
+}
+
+/// Contract's immutable state
+#[derive(Debug)]
+pub struct ContractImmutableState {
+    pub name: String,
+    pub ticker: String,
+    pub precision: String,
+    pub circulating_supply: u64,
+}
+
+/// Contract's ownership state
+#[derive(Debug)]
+pub struct ContractOwnedState {
+    pub allocations: Vec<(Outpoint, u64)>,
+}
+
+impl TestWallet {
+    pub fn issue_nia_with_params(&mut self, params: NIAIssueParams) -> ContractId {
+        let mut builder: AssetParamsBuilder = AssetParamsBuilder::default()
+            .name(params.name.as_str())
+            .update_name_state(params.name.as_str())
+            .update_ticker_state(params.ticker.as_str())
+            .update_precision_state(params.precision.as_str())
+            .update_circulating_state(params.circulating_supply)
+            .clear_owned_state();
+
+        for (outpoint, amount) in params.initial_allocations {
+            builder = builder.add_owned_state(outpoint, amount);
+        }
+
+        self.issue_with_params(builder.build())
+    }
+
+    pub fn issue_nia(&mut self) -> ContractId {
+        let fake_outpoint_zero = Outpoint::from_str(
+            "0000000000000000000000000000000000000000000000000000000000000000:0",
+        )
+        .unwrap();
+        let fake_outpoint_one = Outpoint::from_str(
+            "0000000000000000000000000000000000000000000000000000000000000001:0",
+        )
+        .unwrap();
+
+        let mut params = NIAIssueParams::default();
+        params
+            .add_allocation(fake_outpoint_zero, 10_000)
+            .add_allocation(fake_outpoint_one, 10_000);
+
+        self.issue_nia_with_params(params)
+    }
+
+    // FIXME:
+    // We should make a pr to sync with Maxim,
+    // `ContractState` is a public data structure,
+    // But it is not exported, so downstreams cannot use it (here we cannot specify the return type)
+    // pub fn contract_state_internal(&self, contract_id: ContractId) -> Option<ContractState<Outpoint>> {
+    //
+    // So we return the decomposed data structure here temporarily,
+    /// Get contract state (internal implementation)
+    fn contract_state_internal(
+        &self,
+        contract_id: ContractId,
+    ) -> Option<(
+        BTreeMap<VariantName, BTreeMap<CellAddr, StateAtom>>,
+        BTreeMap<VariantName, BTreeMap<CellAddr, Assignment<Outpoint>>>,
+        BTreeMap<VariantName, StrictVal>,
+    )> {
+        self.runtime()
+            .state_all(Some(contract_id))
+            .next()
+            .map(|(_, state)| {
+                (
+                    state.immutable.clone(),
+                    state.owned.clone(),
+                    state.computed.clone(),
+                )
+            })
+    }
+
+    /// Get contract state with parsed data structures
+    pub fn contract_state(&self, contract_id: ContractId) -> Option<ContractState> {
+        self.contract_state_internal(contract_id)
+            .map(|(immutable, owned, computed)| {
+                // Parse immutable state
+                let name = immutable
+                    .get(&VariantName::from_str("name").unwrap())
+                    .and_then(|m| m.values().next())
+                    .map(|v| v.verified.unwrap_string())
+                    .unwrap_or_default();
+
+                let ticker = immutable
+                    .get(&VariantName::from_str("ticker").unwrap())
+                    .and_then(|m| m.values().next())
+                    .map(|v| v.verified.unwrap_string())
+                    .unwrap_or_default();
+
+                let precision = immutable
+                    .get(&VariantName::from_str("precision").unwrap())
+                    .and_then(|m| m.values().next())
+                    .inspect(|v| {
+                        dbg!(&v.verified);
+                    })
+                    .map(|v| {
+                        let tag = v.verified.unwrap_enum_tag();
+                        if let EnumTag::Name(name) = tag {
+                            name.to_string()
+                        } else {
+                            "".to_string()
+                        }
+                    })
+                    .unwrap_or_default();
+
+                let circulating_supply = immutable
+                    .get(&VariantName::from_str("circulating").unwrap())
+                    .and_then(|m: &BTreeMap<CellAddr, StateAtom>| m.values().next())
+                    .and_then(|v| Some(v.verified.unwrap_num().unwrap_uint::<u64>()))
+                    .unwrap_or_default();
+
+                // Parse ownership state
+                let mut allocations = vec![];
+                if let Some(owned_map) = owned.get(&VariantName::from_str("owned").unwrap()) {
+                    for assignment in owned_map.values() {
+                        allocations.push((
+                            assignment.seal,
+                            assignment.data.unwrap_num().unwrap_uint::<u64>(),
+                        ));
+                    }
+                }
+
+                ContractState {
+                    immutable: ContractImmutableState {
+                        name,
+                        ticker,
+                        precision,
+                        circulating_supply,
+                    },
+                    owned: ContractOwnedState { allocations },
+                }
+            })
     }
 }

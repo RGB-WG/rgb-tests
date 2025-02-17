@@ -1,7 +1,11 @@
 pub mod utils;
 
 use rstest_reuse::{self, *};
-use utils::{chain::initialize, helpers::get_wallet, DescriptorType, *};
+use utils::{
+    chain::initialize,
+    helpers::{get_wallet, NIAIssueParams},
+    DescriptorType, *,
+};
 
 const MEDIA_FPATH: &str = "tests/fixtures/rgb_logo.jpeg";
 
@@ -15,52 +19,55 @@ fn descriptor_and_close_method(#[case] wallet_desc: DescriptorType) {}
 
 #[apply(descriptor_and_close_method)]
 fn issue_nia(wallet_desc: DescriptorType) {
-    println!("wallet_desc {wallet_desc:?} ");
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
     let mut wallet = get_wallet(&wallet_desc);
 
-    // temporary comment out custom parameters, temporarily read from file
-    // let issued_supply = 999;
-    // let ticker = "TCKR";
-    // let name = "asset name";
-    // let precision = 2;
-    // let details = Some("some details");
-    // let terms_text = "Ricardian contract";
-    // let terms_media_fpath = Some(MEDIA_FPATH);
-    // let asset_info = AssetInfo::nia(
-    //     ticker,
-    //     name,
-    //     precision,
-    //     details,
-    //     terms_text,
-    //     terms_media_fpath,
-    //     vec![issued_supply],
-    // );
-    // let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
-    let contract_id = wallet.issue_nia();
-    wallet.contract_states(Some(contract_id));
-    // let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
-    // let spec = contract.spec();
-    // assert_eq!(spec.ticker.to_string(), ticker.to_string());
-    // assert_eq!(spec.name.to_string(), name.to_string());
-    // assert_eq!(spec.precision.decimals(), precision);
-    // let terms = contract.contract_terms();
-    // assert_eq!(terms.text.to_string(), terms_text.to_string());
-    // let terms_media = terms.media.unwrap();
-    // assert_eq!(terms_media.ty.to_string(), "image/jpeg");
-    // assert_eq!(
-    //     terms_media.digest.to_string(),
-    //     "02d2cc5d7883885bb7472e4fe96a07344b1d7cf794cb06943e1cdb5c57754d8a"
-    // );
-    // assert_eq!(contract.total_issued_supply().value(), issued_supply);
+    // Create NIA issuance parameters
+    let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", 1_000_000);
 
-    // let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
-    // assert_eq!(allocations.len(), 1);
-    // let allocation = allocations[0];
-    // // assert_eq!(allocation.seal.method(), close_method);
-    // assert_eq!(allocation.state, Amount::from(issued_supply));
+    // Add initial allocations
+    let fake_outpoint_zero =
+        Outpoint::from_str("0000000000000000000000000000000000000000000000000000000000000000:0")
+            .unwrap();
+    let fake_outpoint_one =
+        Outpoint::from_str("0000000000000000000000000000000000000000000000000000000000000001:0")
+            .unwrap();
+    params
+        .add_allocation(fake_outpoint_zero, 500_000)
+        .add_allocation(fake_outpoint_one, 500_000);
+
+    // Issue the contract
+    let contract_id = wallet.issue_nia_with_params(params);
+
+    // Verify contract state
+    let state = wallet
+        .contract_state(contract_id)
+        .expect("Contract state does not exist");
+
+    // Verify immutable state
+    assert_eq!(state.immutable.name, "TestAsset");
+    assert_eq!(state.immutable.ticker, "TEST");
+    assert_eq!(state.immutable.precision, "centiMilli");
+
+    // Verify circulating supply
+    assert_eq!(state.immutable.circulating_supply, 1_000_000);
+
+    // Verify ownership state
+    dbg!(&state.owned.allocations);
+    assert_eq!(state.owned.allocations.len(), 2);
+    assert!(state
+        .owned
+        .allocations
+        .iter()
+        .any(|(outpoint, amount)| *outpoint == fake_outpoint_zero && *amount == 500_000));
+    assert!(state
+        .owned
+        .allocations
+        .iter()
+        .any(|(outpoint, amount)| *outpoint == fake_outpoint_one && *amount == 500_000));
 }
 
 // #[apply(descriptor_and_close_method)]
