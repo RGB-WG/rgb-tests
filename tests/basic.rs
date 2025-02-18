@@ -22,14 +22,17 @@ struct Context {
     seal: SealType,
     name: Option<String>,
 }
+
 fn build_wallet_file_path(context: Context) -> PathBuf {
     let path = context.data_dir.join(context.seal.to_string());
     path.join(context.name.unwrap_or("default".to_string()))
 }
+
 fn create_wallet_provider(context: Context) -> FsTextStore {
     let wallet_file_path = build_wallet_file_path(context);
     FsTextStore::new(wallet_file_path).expect("Broken directory structure")
 }
+
 fn create_wallet(context: Context, descriptor: &str, network: InvoiceNetwork) {
     let provider = create_wallet_provider(context.clone());
     let xpub = XpubDerivable::from_str(descriptor).expect("Invalid extended pubkey");
@@ -55,6 +58,7 @@ fn create_wallet(context: Context, descriptor: &str, network: InvoiceNetwork) {
         }
     }
 }
+
 fn mound(context: Context, init: bool) -> DirMound {
     if init {
         let _ = fs::create_dir_all(context.data_dir.join(SealType::BitcoinOpret.to_string()));
@@ -62,6 +66,7 @@ fn mound(context: Context, init: bool) -> DirMound {
     }
     DirMound::load(&context.data_dir)
 }
+
 fn runtime(context: Context, name: Option<String>) -> DirRuntime {
     let provider = create_wallet_provider(context.clone());
     let wallet = match context.seal {
