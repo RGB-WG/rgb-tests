@@ -2,6 +2,10 @@ pub mod chain;
 pub mod helpers;
 
 pub const TEST_DATA_DIR: &str = "test-data";
+pub const SCHEMATA_DIR: &str = "tests/templates/schemata";
+pub const ISSUANCE_DIR: &str = "tests/templates/issuance";
+pub const NON_INFLATABLE_ASSET_TEMPLATE_PATH: &str =
+    "tests/templates/issuance/NonInflatableAsset.yaml";
 pub const INTEGRATION_DATA_DIR: &str = "integration";
 pub const STRESS_DATA_DIR: &str = "stress";
 

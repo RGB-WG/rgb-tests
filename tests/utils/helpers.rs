@@ -32,7 +32,7 @@ pub struct AssetParamsBuilder {
 impl Default for AssetParamsBuilder {
     fn default() -> Self {
         Self {
-            params: Self::from_file("./tests/DemoToken.yaml"),
+            params: Self::from_file(NON_INFLATABLE_ASSET_TEMPLATE_PATH),
         }
     }
 }
@@ -397,6 +397,25 @@ fn _get_wallet(
     std::fs::create_dir_all(&wallet_dir).unwrap();
     println!("wallet dir: {wallet_dir:?}");
 
+    // create consensus_dir for managing RGB smart contracts
+    let mut consensus_dir = wallet_dir.join(Consensus::Bitcoin.to_string());
+    if network.is_testnet() {
+        consensus_dir.set_extension("testnet");
+    }
+    std::fs::create_dir_all(&consensus_dir).unwrap();
+
+    // copy schema files from template directory to wallet_dir
+    let schemata_dir = PathBuf::from(SCHEMATA_DIR);
+    if schemata_dir.exists() {
+        for entry in std::fs::read_dir(schemata_dir).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_file() {
+                std::fs::copy(&path, wallet_dir.join(path.file_name().unwrap())).unwrap();
+            }
+        }
+    }
+
     let xpub_account = match wallet_account {
         WalletAccount::Private(ref xpriv_account) => xpriv_account.to_xpub_account(),
         WalletAccount::Public(ref xpub_account) => xpub_account.clone(),
@@ -624,7 +643,7 @@ impl TestWallet {
         if !self.network().is_testnet() {
             panic!("Non-testnet networks are not yet supported");
         }
-        BpDirMound::load_testnet(Consensus::Bitcoin, "./tests", false)
+        BpDirMound::load_testnet(Consensus::Bitcoin, &self.wallet_dir, false)
     }
 
     pub fn contracts_info(&self) -> Vec<ContractInfo> {
