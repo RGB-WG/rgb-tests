@@ -109,6 +109,92 @@ fn issue_cfa(wallet_desc: DescriptorType) {
         .any(|(outpoint, amount)| *outpoint == fake_outpoint && *amount == 10_000));
 }
 
+#[apply(descriptor_and_close_method)]
+fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
+
+    initialize();
+
+    let mut wallet = get_wallet(&wallet_desc);
+
+    // Create CFA issuance parameters with multiple allocations
+    let mut params = CFAIssueParams::new("Multi_UTXO_CFA", "centiMilli", 999);
+
+    // Get multiple UTXOs and add allocations
+    let amounts = vec![222, 444, 333];
+    for amount in amounts.iter() {
+        let outpoint = wallet.get_utxo(None);
+        params.add_allocation(outpoint, *amount);
+    }
+
+    // Issue the contract
+    let contract_id = wallet.issue_cfa_with_params(params);
+
+    // Verify contract state
+    let state = wallet
+        .contract_state(contract_id)
+        .expect("Contract state does not exist");
+
+    // Verify immutable state
+    assert_eq!(state.immutable.name, "Multi_UTXO_CFA");
+    assert_eq!(state.immutable.precision, "centiMilli");
+    assert_eq!(state.immutable.circulating_supply, 999);
+
+    // Verify ownership state
+    assert_eq!(state.owned.allocations.len(), 3);
+    let total_allocated: u64 = state
+        .owned
+        .allocations
+        .iter()
+        .map(|(_, amount)| amount)
+        .sum();
+    assert_eq!(total_allocated, 999);
+}
+
+#[apply(descriptor_and_close_method)]
+fn issue_nia_multiple_utxos(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
+
+    initialize();
+
+    let mut wallet = get_wallet(&wallet_desc);
+
+    // Create NIA issuance parameters with multiple allocations
+    let mut params = NIAIssueParams::new("Multi_UTXO_NIA", "MUTX", "centiMilli", 999);
+
+    // Get multiple UTXOs and add allocations
+    let amounts = vec![333, 333, 333];
+    for amount in amounts.iter() {
+        let outpoint = wallet.get_utxo(None);
+        params.add_allocation(outpoint, *amount);
+    }
+
+    // Issue the contract
+    let contract_id = wallet.issue_nia_with_params(params);
+
+    // Verify contract state
+    let state = wallet
+        .contract_state(contract_id)
+        .expect("Contract state does not exist");
+
+    // Verify immutable state
+    assert_eq!(state.immutable.name, "Multi_UTXO_NIA");
+    assert_eq!(state.immutable.ticker, "MUTX");
+    assert_eq!(state.immutable.precision, "centiMilli");
+    assert_eq!(state.immutable.circulating_supply, 999);
+
+    // Verify ownership state
+    assert_eq!(state.owned.allocations.len(), 3);
+    let total_allocated: u64 = state
+        .owned
+        .allocations
+        .iter()
+        .map(|(_, amount)| amount)
+        .sum();
+    assert_eq!(total_allocated, 999);
+}
+
+// TODO: RGB official is improving the feature of uda asset, will add test after it's ready
 // #[apply(descriptor_and_close_method)]
 // fn issue_uda(wallet_desc: DescriptorType) {
 //     println!("wallet_desc {wallet_desc:?} ");
@@ -191,74 +277,4 @@ fn issue_cfa(wallet_desc: DescriptorType) {
 //     let allocation = &allocations[0];
 //     assert_eq!(allocation.seal.method(), close_method);
 //     assert_eq!(allocation.state.to_string(), "000000000100000000000000");
-// }
-
-// #[apply(descriptor_and_close_method)]
-// fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
-//     println!("wallet_desc {wallet_desc:?} ");
-
-//     initialize();
-
-//     let mut wallet = get_wallet(&wallet_desc);
-
-//     let amounts = vec![222, 444, 333];
-//     let outpoints: Vec<_> = (0..amounts.len())
-//         .map(|_| Some(wallet.get_utxo(None)))
-//         .collect();
-//     let asset_info = AssetInfo::default_nia(amounts.clone());
-//     let (contract_id, iface_type_name) =
-//         wallet.issue_with_info(asset_info, close_method, outpoints.clone());
-
-//     let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
-//     assert_eq!(
-//         contract.total_issued_supply().value(),
-//         amounts.iter().sum::<u64>()
-//     );
-
-//     let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
-//     assert_eq!(allocations.len(), amounts.len());
-//     for (amt, outpoint) in amounts.iter().zip(outpoints.into_iter()) {
-//         assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
-//             && a.seal
-//                 == XChain::Bitcoin(ExplicitSeal {
-//                     method: close_method,
-//                     txid: outpoint.unwrap().txid,
-//                     vout: outpoint.unwrap().vout
-//                 })))
-//     }
-// }
-
-// #[apply(descriptor_and_close_method)]
-// fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
-//     println!("wallet_desc {wallet_desc:?} ");
-
-//     initialize();
-
-//     let mut wallet = get_wallet(&wallet_desc);
-
-//     let amounts = vec![222, 444, 333];
-//     let outpoints: Vec<_> = (0..amounts.len())
-//         .map(|_| Some(wallet.get_utxo(None)))
-//         .collect();
-//     let asset_info = AssetInfo::default_cfa(amounts.clone());
-//     let (contract_id, iface_type_name) =
-//         wallet.issue_with_info(asset_info, close_method, outpoints.clone());
-
-//     let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
-//     assert_eq!(
-//         contract.total_issued_supply().value(),
-//         amounts.iter().sum::<u64>()
-//     );
-
-//     let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
-//     assert_eq!(allocations.len(), amounts.len());
-//     for (amt, outpoint) in amounts.iter().zip(outpoints.into_iter()) {
-//         assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
-//             && a.seal
-//                 == XChain::Bitcoin(ExplicitSeal {
-//                     method: close_method,
-//                     txid: outpoint.unwrap().txid,
-//                     vout: outpoint.unwrap().vout
-//                 })))
-//     }
 // }

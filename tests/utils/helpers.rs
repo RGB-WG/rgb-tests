@@ -555,8 +555,11 @@ impl TestWallet {
     }
 
     pub fn keychain(&self) -> Keychain {
-        // RgbKeychain::for_method(self.close_method())
-        todo!()
+        if self.wallet.descriptor().is_taproot() {
+            Keychain::with(KEY_CHAIN_TAPRET)
+        } else {
+            Keychain::with(KEY_CHAIN_RGB)
+        }
     }
 
     pub fn get_derived_address(&self) -> DerivedAddr {
