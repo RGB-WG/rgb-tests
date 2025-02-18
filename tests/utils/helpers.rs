@@ -29,18 +29,19 @@ pub struct AssetParamsBuilder {
     params: CreateParams<Outpoint>,
 }
 
-impl Default for AssetParamsBuilder {
-    fn default() -> Self {
+impl AssetParamsBuilder {
+    /// Create a new builder instance for non-inflatable asset
+    pub fn default_nia() -> Self {
         Self {
             params: Self::from_file(NON_INFLATABLE_ASSET_TEMPLATE_PATH),
         }
     }
-}
 
-impl AssetParamsBuilder {
-    /// Create a new builder instance
-    pub fn new() -> Self {
-        Self::default()
+    /// Create a new builder instance for collectible fungible asset
+    pub fn default_cfa() -> Self {
+        Self {
+            params: Self::from_file(COLLECTIBLE_FUNGIBLE_ASSET_TEMPLATE_PATH),
+        }
     }
 
     /// Load parameters from YAML file
@@ -740,7 +741,7 @@ pub struct ContractOwnedState {
 
 impl TestWallet {
     pub fn issue_nia_with_params(&mut self, params: NIAIssueParams) -> ContractId {
-        let mut builder: AssetParamsBuilder = AssetParamsBuilder::default()
+        let mut builder: AssetParamsBuilder = AssetParamsBuilder::default_nia()
             .name(params.name.as_str())
             .update_name_state(params.name.as_str())
             .update_ticker_state(params.ticker.as_str())
@@ -861,5 +862,70 @@ impl TestWallet {
                     owned: ContractOwnedState { allocations },
                 }
             })
+    }
+}
+
+/// Parameters for CFA (Collectible Fungible Asset) issuance
+#[derive(Clone)]
+pub struct CFAIssueParams {
+    /// Asset name
+    pub name: String,
+    /// Decimal precision for the asset
+    pub precision: String,
+    /// Total circulating supply
+    pub circulating_supply: u64,
+    /// Initial token allocations (outpoint, amount)
+    pub initial_allocations: Vec<(Outpoint, u64)>,
+}
+
+impl Default for CFAIssueParams {
+    fn default() -> Self {
+        Self {
+            name: "Demo CFA".to_string(),
+            precision: "centiMilli".to_string(),
+            circulating_supply: 10_000,
+            initial_allocations: vec![],
+        }
+    }
+}
+
+impl CFAIssueParams {
+    /// Create new CFA issuance parameters
+    pub fn new(
+        name: impl Into<String>,
+        precision: impl Into<String>,
+        circulating_supply: u64,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            precision: precision.into(),
+            circulating_supply,
+            initial_allocations: vec![],
+        }
+    }
+
+    /// Add a token allocation
+    pub fn add_allocation(&mut self, outpoint: Outpoint, amount: u64) -> &mut Self {
+        self.initial_allocations.push((outpoint, amount));
+        self
+    }
+}
+
+impl TestWallet {
+    /// Issue a CFA contract with custom parameters
+    pub fn issue_cfa_with_params(&mut self, params: CFAIssueParams) -> ContractId {
+        let mut builder = AssetParamsBuilder::default_cfa()
+            .name(params.name.as_str())
+            .update_name_state(params.name.as_str())
+            .update_precision_state(params.precision.as_str())
+            .update_circulating_state(params.circulating_supply)
+            .clear_owned_state();
+
+        // Add initial allocations
+        for (outpoint, amount) in params.initial_allocations {
+            builder = builder.add_owned_state(outpoint, amount);
+        }
+
+        self.issue_with_params(builder.build())
     }
 }
