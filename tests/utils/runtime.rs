@@ -55,7 +55,7 @@ impl TestRuntime {
 
     pub fn with(descriptor_type: &DescriptorType, instance: u8) -> Self {
         let mut seed = vec![0u8; 128];
-        rand::rng().fill_bytes(&mut seed);
+        rand::thread_rng().fill_bytes(&mut seed);
 
         let xpriv_account = XprivAccount::with_seed(true, &seed).derive(h![86, 1, 0]);
 
