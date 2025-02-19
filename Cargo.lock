@@ -301,20 +301,6 @@ dependencies = [
 
 [[package]]
 name = "bp-consensus"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a0725f41727d8176e1a3eceb0f7743b380db3ddedb940f38b1d62573cddc82b"
-dependencies = [
- "amplify",
- "chrono",
- "commit_verify",
- "secp256k1",
- "serde",
- "strict_encoding",
-]
-
-[[package]]
-name = "bp-consensus"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
@@ -328,30 +314,12 @@ dependencies = [
 
 [[package]]
 name = "bp-core"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8d66809d015a34fbde7711ac363270e998dfd923506867f88b01629017e39d6"
-dependencies = [
- "amplify",
- "bp-consensus 0.11.0",
- "bp-dbc 0.11.0",
- "bp-seals 0.11.0",
- "commit_verify",
- "getrandom 0.2.15",
- "serde",
- "single_use_seals",
- "strict_encoding",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "bp-core"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
- "bp-consensus 0.11.1-alpha.1",
- "bp-dbc 0.11.1-alpha.1",
- "bp-seals 0.11.1-alpha.1",
+ "bp-consensus",
+ "bp-dbc",
+ "bp-seals",
  "commit_verify",
  "getrandom 0.2.15",
  "serde",
@@ -363,26 +331,11 @@ dependencies = [
 
 [[package]]
 name = "bp-dbc"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf9bf09d1411bd95f7408b4293eac4e528a134c492d1c5d36f16b50cfd36cdb5"
-dependencies = [
- "amplify",
- "base85",
- "bp-consensus 0.11.0",
- "commit_verify",
- "secp256k1",
- "serde",
- "strict_encoding",
-]
-
-[[package]]
-name = "bp-dbc"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
  "base85",
- "bp-consensus 0.11.1-alpha.1",
+ "bp-consensus",
  "commit_verify",
  "secp256k1",
  "serde",
@@ -391,27 +344,11 @@ dependencies = [
 
 [[package]]
 name = "bp-derive"
-version = "0.11.0-beta.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65e52af1dc2c8c8efd82ae24e48a556cae7f35de9cb42745aae3a79b8fd8cd3d"
-dependencies = [
- "amplify",
- "bp-consensus 0.11.0",
- "bp-invoice 0.11.0-beta.9.1",
- "commit_verify",
- "hmac",
- "indexmap 2.7.1",
- "serde",
- "sha2",
-]
-
-[[package]]
-name = "bp-derive"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
- "bp-consensus 0.11.1-alpha.1",
- "bp-invoice 0.11.1-alpha.1",
+ "bp-consensus",
+ "bp-invoice",
  "commit_verify",
  "hmac",
  "indexmap 2.7.1",
@@ -421,10 +358,10 @@ dependencies = [
 
 [[package]]
 name = "bp-electrum"
-version = "0.11.0-beta.9.3"
+version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
- "bp-std 0.11.1-alpha.1",
+ "bp-std",
  "byteorder",
  "libc",
  "log",
@@ -438,10 +375,10 @@ dependencies = [
 
 [[package]]
 name = "bp-esplora"
-version = "0.11.0-beta.9"
+version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
- "bp-std 0.11.1-alpha.1",
+ "bp-std",
  "log",
  "minreq",
  "reqwest",
@@ -453,43 +390,13 @@ dependencies = [
 
 [[package]]
 name = "bp-invoice"
-version = "0.11.0-beta.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "929663905dd8447a01a14fe35b31e62a4763c77f0757899cb9442b6d906fe701"
-dependencies = [
- "amplify",
- "bech32",
- "bp-consensus 0.11.0",
- "commit_verify",
- "serde",
-]
-
-[[package]]
-name = "bp-invoice"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
  "bech32",
- "bp-consensus 0.11.1-alpha.1",
+ "bp-consensus",
  "commit_verify",
  "serde",
-]
-
-[[package]]
-name = "bp-seals"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "352c0c9828ecc99d8add907779ec09dad05cc85f5a4332764893cc09e5b8eb11"
-dependencies = [
- "amplify",
- "baid64",
- "bp-consensus 0.11.0",
- "bp-dbc 0.11.0",
- "commit_verify",
- "rand",
- "serde",
- "single_use_seals",
- "strict_encoding",
 ]
 
 [[package]]
@@ -498,8 +405,8 @@ version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
  "baid64",
- "bp-consensus 0.11.1-alpha.1",
- "bp-dbc 0.11.1-alpha.1",
+ "bp-consensus",
+ "bp-dbc",
  "commit_verify",
  "rand",
  "serde",
@@ -509,35 +416,16 @@ dependencies = [
 
 [[package]]
 name = "bp-std"
-version = "0.11.0-beta.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe06ed7abc1faf9b8dd7d2e6b08ca0b8dbaff0b0f487926b8e1724938628f31c"
-dependencies = [
- "amplify",
- "bp-consensus 0.11.0",
- "bp-core 0.11.0",
- "bp-derive 0.11.0-beta.9.1",
- "bp-invoice 0.11.0-beta.9.1",
- "descriptors 0.11.0-beta.9.1",
- "getrandom 0.2.15",
- "psbt 0.11.0-beta.9.1",
- "secp256k1",
- "serde",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "bp-std"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
- "bp-consensus 0.11.1-alpha.1",
- "bp-core 0.11.1-alpha.1",
- "bp-derive 0.11.1-alpha.1",
- "bp-invoice 0.11.1-alpha.1",
- "descriptors 0.11.1-alpha.1",
+ "bp-consensus",
+ "bp-core",
+ "bp-derive",
+ "bp-invoice",
+ "descriptors",
  "getrandom 0.2.15",
- "psbt 0.11.1-alpha.1",
+ "psbt",
  "secp256k1",
  "serde",
  "wasm-bindgen",
@@ -545,16 +433,16 @@ dependencies = [
 
 [[package]]
 name = "bp-wallet"
-version = "0.11.0-beta.9.1"
+version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
  "bp-electrum",
  "bp-esplora",
- "bp-std 0.11.1-alpha.1",
- "descriptors 0.11.1-alpha.1",
+ "bp-std",
+ "descriptors",
  "log",
  "nonasync",
- "psbt 0.11.1-alpha.1",
+ "psbt",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -762,22 +650,10 @@ dependencies = [
 
 [[package]]
 name = "descriptors"
-version = "0.11.0-beta.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "644bbfd06245939d6d61f937362c1870ef9e5af169aa85920452d70dd75b5993"
-dependencies = [
- "amplify",
- "bp-derive 0.11.0-beta.9.1",
- "indexmap 2.7.1",
- "serde",
-]
-
-[[package]]
-name = "descriptors"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
- "bp-derive 0.11.1-alpha.1",
+ "bp-derive",
  "indexmap 2.7.1",
  "serde",
 ]
@@ -1736,33 +1612,15 @@ dependencies = [
 
 [[package]]
 name = "psbt"
-version = "0.11.0-beta.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fc697c385d5829ae4d92ea388ebb6f5fa657f1e328a6a3320e06d75dac8a437"
-dependencies = [
- "amplify",
- "base64 0.22.1",
- "bp-core 0.11.0",
- "bp-derive 0.11.0-beta.9.1",
- "chrono",
- "commit_verify",
- "descriptors 0.11.0-beta.9.1",
- "indexmap 2.7.1",
- "serde",
- "strict_encoding",
-]
-
-[[package]]
-name = "psbt"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
  "base64 0.22.1",
- "bp-core 0.11.1-alpha.1",
- "bp-derive 0.11.1-alpha.1",
+ "bp-core",
+ "bp-derive",
  "chrono",
  "commit_verify",
- "descriptors 0.11.1-alpha.1",
+ "descriptors",
  "indexmap 2.7.1",
  "serde",
  "strict_encoding",
@@ -1894,12 +1752,12 @@ dependencies = [
 
 [[package]]
 name = "rgb-core"
-version = "0.11.0-beta.9"
+version = "0.11.1-alpha.1"
 dependencies = [
  "aluvm",
  "amplify",
  "baid64",
- "bp-core 0.11.1-alpha.1",
+ "bp-core",
  "chrono",
  "commit_verify",
  "getrandom 0.2.15",
@@ -1914,11 +1772,11 @@ dependencies = [
 
 [[package]]
 name = "rgb-interfaces"
-version = "0.11.0-beta.9"
+version = "0.11.1-alpha.1"
 dependencies = [
  "aluvm",
  "amplify",
- "bp-core 0.11.1-alpha.1",
+ "bp-core",
  "chrono",
  "getrandom 0.2.15",
  "rgb-std",
@@ -1931,12 +1789,12 @@ dependencies = [
 
 [[package]]
 name = "rgb-invoice"
-version = "0.11.0-beta.9.1"
+version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
  "baid64",
- "bp-core 0.11.1-alpha.1",
- "bp-invoice 0.11.1-alpha.1",
+ "bp-core",
+ "bp-invoice",
  "fast32",
  "fluent-uri",
  "indexmap 2.7.1",
@@ -1950,12 +1808,12 @@ dependencies = [
 
 [[package]]
 name = "rgb-psbt"
-version = "0.11.0-beta.9"
+version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
  "baid64",
- "bp-core 0.11.1-alpha.1",
- "bp-std 0.11.1-alpha.1",
+ "bp-core",
+ "bp-std",
  "commit_verify",
  "getrandom 0.2.15",
  "rgb-std",
@@ -1965,13 +1823,13 @@ dependencies = [
 
 [[package]]
 name = "rgb-psbt"
-version = "0.11.0-beta.9"
-source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#14df7f7df0b8099455a59c4a1f6428585b04fee4"
+version = "0.11.1-alpha.1"
+source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#aff6ea943922a48bd4b261b5b63a20f5b2ae8800"
 dependencies = [
  "amplify",
  "baid64",
- "bp-core 0.11.0",
- "bp-std 0.11.0-beta.9.1",
+ "bp-core",
+ "bp-std",
  "commit_verify",
  "getrandom 0.2.15",
  "rgb-std",
@@ -1981,21 +1839,21 @@ dependencies = [
 
 [[package]]
 name = "rgb-runtime"
-version = "0.11.0-beta.9"
+version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
  "baid64",
- "bp-core 0.11.1-alpha.1",
+ "bp-core",
  "bp-electrum",
  "bp-esplora",
- "bp-std 0.11.1-alpha.1",
+ "bp-std",
  "bp-wallet",
  "chrono",
  "commit_verify",
  "getrandom 0.2.15",
  "indexmap 2.7.1",
  "nonasync",
- "rgb-psbt 0.11.0-beta.9",
+ "rgb-psbt 0.11.1-alpha.1",
  "rgb-std",
  "serde",
  "serde_yaml",
@@ -2005,22 +1863,22 @@ dependencies = [
 
 [[package]]
 name = "rgb-runtime"
-version = "0.11.0-beta.9"
-source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#14df7f7df0b8099455a59c4a1f6428585b04fee4"
+version = "0.11.1-alpha.1"
+source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#aff6ea943922a48bd4b261b5b63a20f5b2ae8800"
 dependencies = [
  "amplify",
  "baid64",
- "bp-core 0.11.0",
+ "bp-core",
  "bp-electrum",
  "bp-esplora",
- "bp-std 0.11.0-beta.9.1",
+ "bp-std",
  "bp-wallet",
  "chrono",
  "commit_verify",
  "getrandom 0.2.15",
  "indexmap 2.7.1",
  "nonasync",
- "rgb-psbt 0.11.0-beta.9 (git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer)",
+ "rgb-psbt 0.11.1-alpha.1 (git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer)",
  "rgb-std",
  "serde",
  "serde_yaml",
@@ -2030,11 +1888,11 @@ dependencies = [
 
 [[package]]
 name = "rgb-schemata"
-version = "0.11.0-beta.9"
+version = "0.11.1-alpha.1"
 dependencies = [
  "aluvm",
  "amplify",
- "bp-core 0.11.1-alpha.1",
+ "bp-core",
  "chrono",
  "rgb-interfaces",
  "rgb-std",
@@ -2047,14 +1905,14 @@ dependencies = [
 
 [[package]]
 name = "rgb-std"
-version = "0.11.0-beta.9.1"
+version = "0.11.1-alpha.1"
 dependencies = [
  "aluvm",
  "amplify",
  "ascii-armor",
  "baid64",
  "base85",
- "bp-core 0.11.1-alpha.1",
+ "bp-core",
  "chrono",
  "commit_verify",
  "getrandom 0.2.15",
@@ -2075,22 +1933,22 @@ version = "0.1.0"
 dependencies = [
  "amplify",
  "bitcoin_hashes",
- "bp-core 0.11.1-alpha.1",
+ "bp-core",
  "bp-electrum",
  "bp-esplora",
- "bp-invoice 0.11.1-alpha.1",
- "bp-std 0.11.1-alpha.1",
+ "bp-invoice",
+ "bp-std",
  "bp-wallet",
- "descriptors 0.11.1-alpha.1",
+ "descriptors",
  "file-format",
  "once_cell",
- "psbt 0.11.1-alpha.1",
+ "psbt",
  "rand",
  "rgb-interfaces",
- "rgb-psbt 0.11.0-beta.9",
- "rgb-psbt 0.11.0-beta.9 (git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer)",
- "rgb-runtime 0.11.0-beta.9",
- "rgb-runtime 0.11.0-beta.9 (git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer)",
+ "rgb-psbt 0.11.1-alpha.1",
+ "rgb-psbt 0.11.1-alpha.1 (git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer)",
+ "rgb-runtime 0.11.1-alpha.1",
+ "rgb-runtime 0.11.1-alpha.1 (git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer)",
  "rgb-schemata",
  "rgb-std",
  "rstest",
