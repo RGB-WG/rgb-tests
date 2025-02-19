@@ -147,7 +147,7 @@ fn transfer_loop(
         true,
     );
 
-    // wlt_1 spends asset 1, moving the other with a blank transition
+    // wlt_1 spends asset 1, automatically moving the others
     let amount_1 = if asset_schema_1 == AssetSchema::Uda {
         1
     } else {
@@ -1354,6 +1354,64 @@ fn tapret_opret_same_utxo() {
         TransferType::Blinded,
         contract_id_2,
         &iface_type_name_2,
+        20,
+        1000,
+        None,
+    );
+}
+
+#[cfg(not(feature = "altered"))]
+#[test]
+fn multiple_transitions_per_vin() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let (contract_id_1, iface_type_name_1) = wlt_1.issue_nia(600, None);
+    let (contract_id_2, iface_type_name_2) = wlt_1.issue_nia(800, None);
+
+    let utxo = wlt_2.get_utxo(None);
+    mine(false);
+    let invoice = wlt_2.invoice(
+        contract_id_1,
+        &iface_type_name_1,
+        100,
+        InvoiceType::Blinded(Some(utxo)),
+    );
+    wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+    let invoice = wlt_2.invoice(
+        contract_id_1,
+        &iface_type_name_1,
+        200,
+        InvoiceType::Blinded(Some(utxo)),
+    );
+    wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+    let invoice = wlt_2.invoice(
+        contract_id_2,
+        &iface_type_name_2,
+        550,
+        InvoiceType::Blinded(Some(utxo)),
+    );
+    wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+
+    // this will create an input_map with a vin associated to 2 transitions when moving
+    // contract_id_1 automatically
+    wlt_2.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id_2,
+        &iface_type_name_2,
+        500,
+        1000,
+        None,
+    );
+
+    wlt_2.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id_1,
+        &iface_type_name_1,
         20,
         1000,
         None,

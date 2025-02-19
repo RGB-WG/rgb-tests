@@ -1834,7 +1834,7 @@ dependencies = [
 [[package]]
 name = "rgb-psbt"
 version = "0.11.1-alpha.1"
-source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#aff6ea943922a48bd4b261b5b63a20f5b2ae8800"
+source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#de95eef8fac1bb03af371214d584c548c57d5fb6"
 dependencies = [
  "amplify",
  "baid64",
@@ -1874,7 +1874,7 @@ dependencies = [
 [[package]]
 name = "rgb-runtime"
 version = "0.11.1-alpha.1"
-source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#aff6ea943922a48bd4b261b5b63a20f5b2ae8800"
+source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#de95eef8fac1bb03af371214d584c548c57d5fb6"
 dependencies = [
  "amplify",
  "baid64",
