@@ -1,50 +1,40 @@
-use super::*;
+use std::env::VarError;
+use std::path::PathBuf;
+use std::process::{Command, Stdio};
+use std::sync::{Once, OnceLock, RwLock};
+use std::time::Duration;
+
+use amplify::{s, Display};
+use bpstd::{Network, Sats, Tx, Txid};
+use bpwallet::indexers::esplora::Client as EsploraClient;
+use bpwallet::AnyIndexer;
+use electrum::{Client as ElectrumClient, ElectrumApi};
+use once_cell::sync::Lazy;
+use time::OffsetDateTime;
+
+pub const ELECTRUM_1_REGTEST_URL: &str = "127.0.0.1:50001";
+pub const ELECTRUM_2_REGTEST_URL: &str = "127.0.0.1:50002";
+pub const ELECTRUM_3_REGTEST_URL: &str = "127.0.0.1:50003";
+pub const ELECTRUM_MAINNET_URL: &str = "ssl://electrum.iriswallet.com:50003";
+pub const ESPLORA_1_REGTEST_URL: &str = "http://127.0.0.1:8094/regtest/api";
+pub const ESPLORA_2_REGTEST_URL: &str = "http://127.0.0.1:8095/regtest/api";
+pub const ESPLORA_3_REGTEST_URL: &str = "http://127.0.0.1:8096/regtest/api";
+pub const ESPLORA_MAINNET_URL: &str = "https://blockstream.info/api";
 
 static INIT: Once = Once::new();
-
 pub static INDEXER: OnceLock<Indexer> = OnceLock::new();
 
-#[derive(Clone, Default, PartialEq, Eq, Debug)]
+pub const INSTANCE_1: u8 = 1;
+pub const INSTANCE_2: u8 = 2;
+pub const INSTANCE_3: u8 = 3;
+
+#[derive(Clone, Default, PartialEq, Eq, Debug, Display)]
+#[display(lowercase)]
 pub enum Indexer {
     Electrum,
     #[default]
     Esplora,
 }
-
-impl fmt::Display for Indexer {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
-    }
-}
-
-pub fn initialize() {
-    INIT.call_once(|| {
-        INDEXER.get_or_init(|| match std::env::var("INDEXER") {
-            Ok(val) if val.to_lowercase() == Indexer::Esplora.to_string() => Indexer::Esplora,
-            Ok(val) if val.to_lowercase() == Indexer::Electrum.to_string() => Indexer::Electrum,
-            Err(VarError::NotPresent) => Indexer::Esplora,
-            _ => {
-                panic!("invalid indexer. possible values: `esplora` (default), `electrum`")
-            }
-        });
-        if std::env::var("SKIP_INIT").is_ok() {
-            println!("skipping services initialization");
-            return;
-        }
-        let start_services_file = PathBuf::from("tests").join("start_services.sh");
-        println!("starting test services...");
-        let output = Command::new(start_services_file)
-            .env("PROFILE", INDEXER.get().unwrap().to_string())
-            .output()
-            .expect("failed to start test services");
-        if !output.status.success() {
-            println!("{output:?}");
-            panic!("failed to start test services");
-        }
-        (INSTANCE_1..=INSTANCE_3).for_each(_wait_indexer_sync);
-    });
-}
-
 static MINER: Lazy<RwLock<Miner>> = Lazy::new(|| RwLock::new(Miner { no_mine_count: 0 }));
 
 #[derive(Clone, Debug)]
@@ -232,6 +222,34 @@ pub fn get_height_custom(instance: u8) -> u32 {
         .expect("could not parse blockcount")
 }
 
+pub fn initialize() {
+    INIT.call_once(|| {
+        INDEXER.get_or_init(|| match std::env::var("INDEXER") {
+            Ok(val) if val.to_lowercase() == Indexer::Esplora.to_string() => Indexer::Esplora,
+            Ok(val) if val.to_lowercase() == Indexer::Electrum.to_string() => Indexer::Electrum,
+            Err(VarError::NotPresent) => Indexer::Esplora,
+            _ => {
+                panic!("invalid indexer. possible values: `esplora` (default), `electrum`")
+            }
+        });
+        if std::env::var("SKIP_INIT").is_ok() {
+            println!("skipping services initialization");
+            return;
+        }
+        let start_services_file = PathBuf::from("tests").join("start_services.sh");
+        println!("starting test services...");
+        let output = Command::new(start_services_file)
+            .env("PROFILE", INDEXER.get().unwrap().to_string())
+            .output()
+            .expect("failed to start test services");
+        if !output.status.success() {
+            println!("{output:?}");
+            panic!("failed to start test services");
+        }
+        (INSTANCE_1..=INSTANCE_3).for_each(_wait_indexer_sync);
+    });
+}
+
 pub fn indexer_url(instance: u8, network: Network) -> String {
     match (INDEXER.get().unwrap(), network, instance) {
         (Indexer::Electrum, Network::Mainnet, _) => ELECTRUM_MAINNET_URL,
@@ -247,6 +265,59 @@ pub fn indexer_url(instance: u8, network: Network) -> String {
     .to_string()
 }
 
+pub fn get_indexer(indexer_url: &str) -> AnyIndexer {
+    match INDEXER.get().unwrap() {
+        Indexer::Electrum => {
+            AnyIndexer::Electrum(Box::new(ElectrumClient::new(indexer_url).unwrap()))
+        }
+        Indexer::Esplora => {
+            AnyIndexer::Esplora(Box::new(EsploraClient::new_esplora(indexer_url).unwrap()))
+        }
+    }
+}
+
+pub fn is_tx_mined(txid: Txid, indexer: &AnyIndexer) -> bool {
+    match indexer {
+        AnyIndexer::Electrum(indexer) => {
+            use electrum::Param;
+            let Ok(status) = indexer.raw_call(
+                "blockchain.transaction.get",
+                vec![Param::String(txid.to_string()), Param::Bool(true)],
+            ) else {
+                return false;
+            };
+            status
+                .get("confirmantions")
+                .and_then(|confs| confs.as_u64())
+                .map(|confs| confs > 0)
+                .unwrap_or_default()
+        }
+        AnyIndexer::Esplora(indexer) => {
+            let Ok(status) = indexer.tx_status(&txid) else {
+                return false;
+            };
+            status.confirmed
+        }
+        _ => unreachable!(),
+    }
+}
+
+pub fn broadcast_tx(tx: &Tx, indexer_url: &str) {
+    match get_indexer(indexer_url) {
+        AnyIndexer::Electrum(inner) => {
+            inner.transaction_broadcast(tx).unwrap();
+        }
+        AnyIndexer::Esplora(inner) => {
+            inner.broadcast(tx).unwrap();
+        }
+        _ => unreachable!("unsupported indexer"),
+    }
+}
+
+pub fn broadcast_tx_and_mine(tx: &Tx, instance: u8) {
+    broadcast_tx(tx, &indexer_url(instance, Network::Regtest));
+    mine_custom(false, instance, 1);
+}
 fn _wait_indexer_sync(instance: u8) {
     let t_0 = OffsetDateTime::now_utc();
     let blockcount = get_height_custom(instance);

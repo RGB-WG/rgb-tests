@@ -1,7 +1,7 @@
 use super::*;
 
 pub struct TestWallet {
-    wallet: RgbWallet<Wallet<XpubDerivable, RgbDescr>>,
+    wallet: OpretWallet,
     descriptor: RgbDescr,
     signer: Option<TestnetSigner>,
     wallet_dir: PathBuf,
@@ -22,9 +22,9 @@ pub enum AllocationFilter {
 
 enum Filter<'w> {
     NoWallet,
-    Wallet(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
-    WalletAll(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
-    WalletTentative(&'w RgbWallet<Wallet<XpubDerivable, RgbDescr>>),
+    Wallet(&'w OpretWallet),
+    WalletAll(&'w OpretWallet),
+    WalletTentative(&'w OpretWallet),
 }
 
 impl AssignmentsFilter for Filter<'_> {
@@ -558,7 +558,7 @@ fn _get_wallet(
     let stock_provider = FsBinStore::new(wallet_dir.clone()).unwrap();
     let mut stock = Stock::in_memory();
     stock.make_persistent(stock_provider, true).unwrap();
-    let mut wallet = RgbWallet::new(stock, bp_wallet);
+    let mut wallet = OpretWallet::new(stock, bp_wallet);
 
     for asset_schema in AssetSchema::iter() {
         let valid_kit = asset_schema.get_valid_kit();
