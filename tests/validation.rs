@@ -65,11 +65,11 @@ impl Scenario {
         match self {
             Self::A => {
                 let (tx_1, witness_id_1) =
-                    get_tx("3bda7cfcd64b4255dc8d86090a49497379bd61a5de108f88e50c9a3cda9fa20b");
+                    get_tx("9dab9fdbafbfddf765b451cc5c8cfd82ac935308b492249e353b6ecee2b5ee45");
                 let (tx_2, witness_id_2) =
-                    get_tx("2c033a3584f571a3b8146dc0f7f904cb421bda9880307ed38f5b7a28ae183eff");
+                    get_tx("8280d4351f5173f9ec63e8af9fdc52f6b122ae11a6e8510080d89aa36731fef8");
                 let (tx_3, witness_id_3) =
-                    get_tx("f71c8a732de7148cb01ce34c108a1c982dcfb65f4c3c033f52ff9fb0e4d4de87");
+                    get_tx("cf34cb8be0ea51e944caab5038e50f9cd21a29fa4c56b4e3363f5c7bb07e16c6");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -85,11 +85,11 @@ impl Scenario {
             }
             Self::B => {
                 let (tx_1, witness_id_1) =
-                    get_tx("82e491ecb9b7bb99714ec3a6ca4a896eedefc0460a741907c98338423eeebaf3");
+                    get_tx("b3ec3d7c90d0e0eaae634bd6f6376210c007a5231b3de704995a49309b26ec0b");
                 let (tx_2, witness_id_2) =
-                    get_tx("6788fec62a2e871cc6b5f250aeadf68b11560719bb986bc97c271b0505211d81");
+                    get_tx("06674c5e1b097b20f0ed17fa7819361397fe91a38b80c59b456d9d92ecff1024");
                 let (tx_3, witness_id_3) =
-                    get_tx("bae5df6d2943dc8c17bc913a3ff2c5572cdf175c35b8933c6655a46bd4e22ced");
+                    get_tx("c31534d535f4346a75d45bcd2b249f3eb71451e8b26435f1218d6e1ce187491c");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -140,7 +140,7 @@ fn get_consignment(scenario: Scenario) -> (Transfer, Vec<Tx>) {
     );
     txes.push(tx);
 
-    // spend asset moved with blank transition
+    // spend asset that was moved automatically
     let (_consignment, tx) = wlt_1.send(
         &mut wlt_2,
         transfer_type,
@@ -355,7 +355,7 @@ fn validate_consignment_resolver_error() {
     let scenario = Scenario::A;
     let mut resolver = scenario.resolver();
     let txid =
-        Txid::from_str("2c033a3584f571a3b8146dc0f7f904cb421bda9880307ed38f5b7a28ae183eff").unwrap();
+        Txid::from_str("8280d4351f5173f9ec63e8af9fdc52f6b122ae11a6e8510080d89aa36731fef8").unwrap();
 
     // resolve_pub_witness error
     *resolver.pub_witnesses.get_mut(&txid).unwrap() =
