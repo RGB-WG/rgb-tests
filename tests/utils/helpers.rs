@@ -2,9 +2,13 @@ use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 use std::fs::{File, OpenOptions};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::OnceLock;
 use std::time::Duration;
+use std::time::Instant;
 
 use bp::{seals::WTxoSeal, Outpoint};
+use psbt::TxParams;
 use rand::RngCore;
 use rgb::invoice::{RgbBeneficiary, RgbInvoice};
 use rgb::popls::bp::file::{BpDirMound, DirBarrow};
@@ -12,12 +16,14 @@ use rgb::{
     Assignment, CallScope, CellAddr, CodexId, Consensus, ContractId, ContractInfo, CreateParams,
     EitherSeal, MethodName, NamedState, StateAtom,
 };
+use rgbp::CoinselectStrategy;
 use rgbp::{descriptor::RgbDescr, RgbDirRuntime, RgbWallet};
 use strict_types::value::EnumTag;
 use strict_types::{TypeName, VariantName};
 
 use crate::utils::chain::fund_wallet;
 
+use super::chain::is_tx_confirmed;
 use super::{
     chain::{indexer_url, mine_custom, Indexer, INDEXER},
     *,
@@ -672,6 +678,202 @@ impl TestWallet {
         let params = AssetParamsBuilder::from_file(params_path);
         self.issue_with_params(params)
     }
+
+    pub fn mine_tx(&self, txid: &Txid, resume: bool) {
+        let mut attempts = 10;
+        loop {
+            mine_custom(resume, self.instance, 1);
+            if is_tx_confirmed(&txid.to_string(), self.instance) {
+                break;
+            }
+            attempts -= 1;
+            if attempts == 0 {
+                panic!("TX is not getting mined");
+            }
+        }
+    }
+
+    // send a contract to another wallet by copy contract dir to another wallet dir
+    pub fn send_contract(&mut self, contract_name: &str, to_wallet: &mut TestWallet) {
+        let mut src_consensus_dir = self.wallet_dir.join(Consensus::Bitcoin.to_string());
+        let mut dst_consensus_dir = to_wallet.wallet_dir.join(Consensus::Bitcoin.to_string());
+        if self.network().is_testnet() {
+            src_consensus_dir.set_extension("testnet");
+            dst_consensus_dir.set_extension("testnet");
+        }
+        let src_contract_dir = src_consensus_dir.join(format!("{contract_name}.contract"));
+        let dst_contract_dir = dst_consensus_dir.join(format!("{contract_name}.contract"));
+        std::fs::create_dir_all(&dst_contract_dir).unwrap();
+        let read_dir = std::fs::read_dir(&src_contract_dir).unwrap();
+        for entry in read_dir {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            let dst_path = dst_contract_dir.join(path.file_name().unwrap());
+            std::fs::copy(&path, &dst_path).unwrap();
+        }
+    }
+
+    /// Generate an invoice
+    pub fn invoice(
+        &mut self,
+        contract_id: ContractId,
+        amount: u64,
+        wout: bool,
+    ) -> RgbInvoice<ContractId> {
+        let mut runtime = self.runtime();
+        let beneficiary = if wout {
+            let wout = runtime.wout(None);
+            RgbBeneficiary::WitnessOut(wout)
+        } else {
+            let auth = runtime.auth_token(None).unwrap();
+            RgbBeneficiary::Token(auth)
+        };
+        let value = StrictVal::num(amount);
+        RgbInvoice::new(contract_id, beneficiary, Some(value))
+    }
+
+    /// Send assets to the specified invoice
+    pub fn send(
+        &mut self,
+        recv_wallet: &mut TestWallet,
+        wout: bool,
+        contract_id: ContractId,
+        amount: u64,
+        sats: u64,
+        report: Option<&Report>,
+    ) -> (PathBuf, Tx) {
+        let invoice = recv_wallet.invoice(contract_id, amount, wout);
+        self.send_to_invoice(recv_wallet, invoice, Some(sats), None, report)
+    }
+
+    /// Send assets to the specified invoice
+    pub fn send_to_invoice(
+        &mut self,
+        recv_wallet: &mut TestWallet,
+        invoice: RgbInvoice<ContractId>,
+        sats: Option<u64>,
+        fee: Option<u64>,
+        report: Option<&Report>,
+    ) -> (PathBuf, Tx) {
+        let (consignment, tx) = self.transfer(invoice, sats, fee, true, report);
+        broadcast_tx_and_mine(&tx, self.instance);
+        recv_wallet.accept_transfer(&consignment, report);
+        self.sync();
+        (consignment, tx)
+    }
+
+    /// Transfer assets and generate a transaction
+    pub fn transfer(
+        &mut self,
+        invoice: RgbInvoice<ContractId>,
+        sats: Option<u64>,
+        fee: Option<u64>,
+        broadcast: bool,
+        report: Option<&Report>,
+    ) -> (PathBuf, Tx) {
+        static COUNTER: OnceLock<AtomicU32> = OnceLock::new();
+        let counter = COUNTER.get_or_init(|| AtomicU32::new(0));
+        counter.fetch_add(1, Ordering::SeqCst);
+        let consignment_no = counter.load(Ordering::SeqCst);
+
+        self.sync();
+
+        let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
+        let sats = Sats::from_sats(sats.unwrap_or(2000));
+        let strategy = CoinselectStrategy::Aggregate;
+        let pay_start = Instant::now();
+        let params = TxParams::with(fee);
+        let (mut psbt, terminal) = self
+            .runtime()
+            .pay_invoice(&invoice, strategy, params, Some(sats))
+            .unwrap();
+
+        let pay_duration = pay_start.elapsed();
+        if let Some(report) = report {
+            report.write_duration(pay_duration);
+        }
+
+        let tx = self.sign_finalize_extract(&mut psbt);
+
+        println!(
+            "transfer txid: {}, consignment: {consignment_no}",
+            tx.txid()
+        );
+
+        if broadcast {
+            self.broadcast_tx(&tx);
+        }
+
+        let consignment = self
+            .wallet_dir
+            .join(format!("consignment-{consignment_no}"))
+            .with_extension("rgb");
+
+        self.mound()
+            .consign_to_file(invoice.scope, [terminal], &consignment)
+            .unwrap();
+
+        (consignment, tx)
+    }
+
+    /// Accept a transfer
+    pub fn accept_transfer(&mut self, consignment: &Path, report: Option<&Report>) {
+        self.sync();
+        let accept_start = Instant::now();
+        self.runtime().consume_from_file(consignment).unwrap();
+        let accept_duration = accept_start.elapsed();
+        if let Some(report) = report {
+            report.write_duration(accept_duration);
+        }
+    }
+
+    /// Check asset allocations
+    pub fn check_allocations(
+        &mut self,
+        contract_id: ContractId,
+        asset_schema: AssetSchema,
+        mut expected_fungible_allocations: Vec<u64>,
+        // nonfungible_allocation: bool,
+    ) {
+        match asset_schema {
+            AssetSchema::Nia | AssetSchema::Cfa => {
+                let state = self
+                    .runtime()
+                    .state_own(Some(contract_id))
+                    .next()
+                    .unwrap()
+                    .1;
+                let mut actual_fungible_allocations = state
+                    .owned
+                    .get("owned")
+                    .unwrap()
+                    .iter()
+                    .inspect(|(_, assignment)| {
+                        dbg!(assignment);
+                    })
+                    .map(|(_, assignment)| assignment.data.unwrap_num().unwrap_uint::<u64>())
+                    .collect::<Vec<_>>();
+                actual_fungible_allocations.sort();
+                expected_fungible_allocations.sort();
+                assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
+            }
+            AssetSchema::Uda => {
+                todo!()
+            }
+        }
+    }
+
+    /// Sign and finalize PSBT
+    pub fn sign_finalize(&self, psbt: &mut Psbt) {
+        let _sig_count = psbt.sign(self.signer.as_ref().unwrap()).unwrap();
+        psbt.finalize(self.wallet.descriptor());
+    }
+
+    /// Sign, finalize, and extract the transaction
+    pub fn sign_finalize_extract(&self, psbt: &mut Psbt) -> Tx {
+        self.sign_finalize(psbt);
+        psbt.extract().unwrap()
+    }
 }
 
 /// Parameters for NIA (Non-Inflatable Asset) issuance
@@ -757,24 +959,6 @@ impl TestWallet {
         }
 
         self.issue_with_params(builder.build())
-    }
-
-    pub fn issue_nia(&mut self) -> ContractId {
-        let fake_outpoint_zero = Outpoint::from_str(
-            "0000000000000000000000000000000000000000000000000000000000000000:0",
-        )
-        .unwrap();
-        let fake_outpoint_one = Outpoint::from_str(
-            "0000000000000000000000000000000000000000000000000000000000000001:0",
-        )
-        .unwrap();
-
-        let mut params = NIAIssueParams::default();
-        params
-            .add_allocation(fake_outpoint_zero, 10_000)
-            .add_allocation(fake_outpoint_one, 10_000);
-
-        self.issue_nia_with_params(params)
     }
 
     // FIXME:

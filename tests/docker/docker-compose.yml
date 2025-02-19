@@ -46,6 +46,7 @@ services:
         echo "fallbackfee=0.0002" >> /data/.bitcoin/bitcoin.conf
         echo "zmqpubrawblock=tcp://0.0.0.0:28332" >> /data/.bitcoin/bitcoin.conf
         echo "zmqpubrawtx=tcp://0.0.0.0:28333" >> /data/.bitcoin/bitcoin.conf
+        echo "txindex=1" >> /data/.bitcoin/bitcoin.conf
         echo "" >> /data/.bitcoin/bitcoin.conf
         echo "# Regtest settings" >> /data/.bitcoin/bitcoin.conf
         echo "[regtest]" >> /data/.bitcoin/bitcoin.conf
@@ -134,6 +135,7 @@ services:
         echo "fallbackfee=0.0002" >> /data/.bitcoin/bitcoin.conf
         echo "zmqpubrawblock=tcp://0.0.0.0:28332" >> /data/.bitcoin/bitcoin.conf
         echo "zmqpubrawtx=tcp://0.0.0.0:28333" >> /data/.bitcoin/bitcoin.conf
+        echo "txindex=1" >> /data/.bitcoin/bitcoin.conf
         echo "" >> /data/.bitcoin/bitcoin.conf
         echo "# Regtest settings" >> /data/.bitcoin/bitcoin.conf
         echo "[regtest]" >> /data/.bitcoin/bitcoin.conf
@@ -172,6 +174,7 @@ services:
         echo "fallbackfee=0.0002" >> /data/.bitcoin/bitcoin.conf
         echo "zmqpubrawblock=tcp://0.0.0.0:28332" >> /data/.bitcoin/bitcoin.conf
         echo "zmqpubrawtx=tcp://0.0.0.0:28333" >> /data/.bitcoin/bitcoin.conf
+        echo "txindex=1" >> /data/.bitcoin/bitcoin.conf
         echo "" >> /data/.bitcoin/bitcoin.conf
         echo "# Regtest settings" >> /data/.bitcoin/bitcoin.conf
         echo "[regtest]" >> /data/.bitcoin/bitcoin.conf

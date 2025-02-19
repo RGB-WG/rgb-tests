@@ -338,3 +338,16 @@ pub fn fund_wallet(address: String, sats: Option<u64>, instance: u8) -> String {
     mine_custom(false, instance, 1);
     txid
 }
+
+pub fn get_raw_transaction(txid: &str, instance: u8) -> serde_json::Value {
+    let raw_tx = _bitcoin_cli_cmd(instance, vec!["getrawtransaction", txid, "true"]);
+    serde_json::from_str(&raw_tx).unwrap()
+}
+
+pub fn is_tx_confirmed(txid: &str, instance: u8) -> bool {
+    let raw_tx = get_raw_transaction(txid, instance);
+    if raw_tx.get("confirmations").is_none() {
+        return false;
+    }
+    raw_tx.get("confirmations").unwrap().as_u64().unwrap() > 0
+}
