@@ -52,8 +52,12 @@ fn _service_base_name() -> String {
 
 fn _bitcoin_cli_cmd(instance: u8, args: Vec<&str>) -> String {
     let compose_file = PathBuf::from("tests").join("docker-compose.yml");
-    let mut bitcoin_cli =
-        vec![s!("-f"), compose_file.to_string_lossy().to_string(), s!("exec"), s!("-T")];
+    let mut bitcoin_cli = vec![
+        s!("-f"),
+        compose_file.to_string_lossy().to_string(),
+        s!("exec"),
+        s!("-T"),
+    ];
     let service_name = format!("{}_{instance}", _service_base_name());
     match INDEXER.get().unwrap() {
         Indexer::Electrum => bitcoin_cli.extend(vec![
@@ -89,12 +93,17 @@ impl Miner {
     }
 
     fn force_mine(&self, instance: u8, blocks: u32) -> bool {
-        _bitcoin_cli_cmd(instance, vec!["-rpcwallet=miner", "-generate", &blocks.to_string()]);
+        _bitcoin_cli_cmd(
+            instance,
+            vec!["-rpcwallet=miner", "-generate", &blocks.to_string()],
+        );
         _wait_indexer_sync(instance);
         true
     }
 
-    fn stop_mining(&mut self) { self.no_mine_count += 1; }
+    fn stop_mining(&mut self) {
+        self.no_mine_count += 1;
+    }
 
     fn resume_mining(&mut self) {
         if self.no_mine_count > 0 {
@@ -103,7 +112,9 @@ impl Miner {
     }
 }
 
-pub fn mine(resume: bool) { mine_custom(resume, INSTANCE_1, 1); }
+pub fn mine(resume: bool) {
+    mine_custom(resume, INSTANCE_1, 1);
+}
 
 pub fn mine_custom(resume: bool, instance: u8, blocks: u32) {
     let t_0 = OffsetDateTime::now_utc();
@@ -123,7 +134,9 @@ pub fn mine_custom(resume: bool, instance: u8, blocks: u32) {
     }
 }
 
-pub fn mine_but_no_resume() { mine_but_no_resume_custom(INSTANCE_1, 1); }
+pub fn mine_but_no_resume() {
+    mine_but_no_resume_custom(INSTANCE_1, 1);
+}
 
 pub fn mine_but_no_resume_custom(instance: u8, blocks: u32) {
     let t_0 = OffsetDateTime::now_utc();
@@ -142,7 +155,9 @@ pub fn mine_but_no_resume_custom(instance: u8, blocks: u32) {
     }
 }
 
-pub fn stop_mining() { MINER.write().unwrap().stop_mining() }
+pub fn stop_mining() {
+    MINER.write().unwrap().stop_mining()
+}
 
 pub fn stop_mining_when_alone() {
     let t_0 = OffsetDateTime::now_utc();
@@ -161,7 +176,9 @@ pub fn stop_mining_when_alone() {
     }
 }
 
-pub fn resume_mining() { MINER.write().unwrap().resume_mining() }
+pub fn resume_mining() {
+    MINER.write().unwrap().resume_mining()
+}
 
 fn _get_connection_tuple() -> Vec<(u8, String)> {
     let serive_base_name = _service_base_name();
@@ -195,7 +212,9 @@ pub fn disconnect_reorg_nodes() {
     }
 }
 
-pub fn get_height() -> u32 { get_height_custom(INSTANCE_1) }
+pub fn get_height() -> u32 {
+    get_height_custom(INSTANCE_1)
+}
 
 pub fn get_height_custom(instance: u8) -> u32 {
     _bitcoin_cli_cmd(instance, vec!["getblockcount"])
@@ -261,10 +280,10 @@ pub fn is_tx_mined(txid: Txid, indexer: &AnyIndexer) -> bool {
     match indexer {
         AnyIndexer::Electrum(indexer) => {
             use electrum::Param;
-            let Ok(status) = indexer.raw_call("blockchain.transaction.get", vec![
-                Param::String(txid.to_string()),
-                Param::Bool(true),
-            ]) else {
+            let Ok(status) = indexer.raw_call(
+                "blockchain.transaction.get",
+                vec![Param::String(txid.to_string()), Param::Bool(true)],
+            ) else {
                 return false;
             };
             status
@@ -273,7 +292,7 @@ pub fn is_tx_mined(txid: Txid, indexer: &AnyIndexer) -> bool {
                 .map(|confs| confs > 0)
                 .unwrap_or_default()
         }
-        AnyIndexer::Esplora(indexer) | AnyIndexer::Mempool(indexer) => {
+        AnyIndexer::Esplora(indexer) => {
             let Ok(status) = indexer.tx_status(&txid) else {
                 return false;
             };
@@ -328,7 +347,10 @@ fn _wait_indexer_sync(instance: u8) {
 fn _send_to_address(address: &str, sats: Option<u64>, instance: u8) -> String {
     let sats = Sats::from_sats(sats.unwrap_or(100_000_000));
     let btc = format!("{}.{:0>8}", sats.btc_floor(), sats.sats_rem());
-    _bitcoin_cli_cmd(instance, vec!["-rpcwallet=miner", "sendtoaddress", address, &btc])
+    _bitcoin_cli_cmd(
+        instance,
+        vec!["-rpcwallet=miner", "sendtoaddress", address, &btc],
+    )
 }
 
 pub fn fund_wallet(address: String, sats: Option<u64>, instance: u8) -> String {
