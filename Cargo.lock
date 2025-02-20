@@ -28,7 +28,7 @@ dependencies = [
 
 [[package]]
 name = "aluvm"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "baid64",
@@ -263,7 +263,7 @@ checksum = "3eeab4423108c5d7c744f4d234de88d18d636100093ae04caf4825134b9c3a32"
 
 [[package]]
 name = "bp-consensus"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "chrono",
@@ -275,7 +275,7 @@ dependencies = [
 
 [[package]]
 name = "bp-core"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-consensus",
@@ -291,7 +291,7 @@ dependencies = [
 
 [[package]]
 name = "bp-dbc"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "base85",
@@ -304,7 +304,7 @@ dependencies = [
 
 [[package]]
 name = "bp-derive"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-consensus",
@@ -318,7 +318,7 @@ dependencies = [
 
 [[package]]
 name = "bp-electrum"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-std",
@@ -335,7 +335,7 @@ dependencies = [
 
 [[package]]
 name = "bp-esplora"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-std",
@@ -349,8 +349,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "bp-esplora"
+version = "0.12.0-beta.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ec6536fdc52c7be3e5d1b5204e5276f7f782225fb6fc7080411039d32bc47f4"
+dependencies = [
+ "amplify",
+ "bp-std",
+ "log",
+ "minreq",
+ "serde",
+ "serde_with 3.11.0",
+ "sha2",
+]
+
+[[package]]
 name = "bp-invoice"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bech32",
@@ -362,7 +377,7 @@ dependencies = [
 
 [[package]]
 name = "bp-seals"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "baid64",
@@ -377,7 +392,7 @@ dependencies = [
 
 [[package]]
 name = "bp-std"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-consensus",
@@ -394,11 +409,11 @@ dependencies = [
 
 [[package]]
 name = "bp-wallet"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-electrum",
- "bp-esplora",
+ "bp-esplora 0.12.0-beta.5.1",
  "bp-std",
  "descriptors",
  "nonasync",
@@ -492,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "commit_encoding_derive"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "amplify_syn",
@@ -503,7 +518,7 @@ dependencies = [
 
 [[package]]
 name = "commit_verify"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "commit_encoding_derive",
@@ -633,7 +648,7 @@ dependencies = [
 
 [[package]]
 name = "descriptors"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-derive",
@@ -1022,7 +1037,7 @@ dependencies = [
 
 [[package]]
 name = "hypersonic"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "aluvm",
  "amplify",
@@ -1464,7 +1479,7 @@ dependencies = [
 
 [[package]]
 name = "psbt"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "base64 0.22.1",
@@ -1622,7 +1637,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-core"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-core",
@@ -1637,7 +1652,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-invoice"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "baid64",
@@ -1653,7 +1668,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-psbt"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-core",
@@ -1663,7 +1678,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-runtime"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-std",
@@ -1682,7 +1697,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-std"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "bp-core",
@@ -1709,7 +1724,7 @@ dependencies = [
  "bitcoin_hashes",
  "bp-core",
  "bp-electrum",
- "bp-esplora",
+ "bp-esplora 0.12.0-beta.5",
  "bp-invoice",
  "bp-std",
  "bp-wallet",
@@ -2138,7 +2153,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "single_use_seals"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "serde",
  "strict_encoding",
@@ -2171,7 +2186,7 @@ dependencies = [
 
 [[package]]
 name = "sonic-api"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "aluvm",
  "amplify",
@@ -2189,7 +2204,7 @@ dependencies = [
 
 [[package]]
 name = "sonic-callreq"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "baid64",
@@ -2231,7 +2246,7 @@ dependencies = [
 
 [[package]]
 name = "strict_types"
-version = "2.8.1"
+version = "2.8.2"
 dependencies = [
  "amplify",
  "baid64",
@@ -2530,7 +2545,7 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 
 [[package]]
 name = "ultrasonic"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "amplify",
  "baid64",
@@ -2951,7 +2966,7 @@ dependencies = [
 
 [[package]]
 name = "zk-aluvm"
-version = "0.12.0-beta.4"
+version = "0.12.0-beta.5"
 dependencies = [
  "aluvm",
  "amplify",

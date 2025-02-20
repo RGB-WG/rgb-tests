@@ -190,9 +190,7 @@ impl AssetParamsBuilder {
 }
 
 pub struct TestWallet {
-    // FIXME: should store runtime instead of wallet
-    // when need wallet, use runtime.defer.wallet
-    wallet: RgbWallet,
+    runtime: RgbDirRuntime,
     descriptor: RgbDescr,
     signer: Option<TestnetSigner>,
     wallet_dir: PathBuf,
@@ -300,66 +298,6 @@ impl fmt::Display for AssetSchema {
     }
 }
 
-impl AssetSchema {
-    // fn iface_type_name(&self) -> TypeName {
-    //     tn!(match self {
-    //         Self::Nia => "RGB20Fixed",
-    //         Self::Uda => "RGB21Unique",
-    //         Self::Cfa => "RGB25Base",
-    //     })
-    // }
-
-    // fn schema(&self) -> Schema {
-    //     match self {
-    //         Self::Nia => NonInflatableAsset::schema(),
-    //         Self::Uda => UniqueDigitalAsset::schema(),
-    //         Self::Cfa => CollectibleFungibleAsset::schema(),
-    //     }
-    // }
-
-    // fn issue_impl(&self) -> IfaceImpl {
-    //     match self {
-    //         Self::Nia => NonInflatableAsset::issue_impl(),
-    //         Self::Uda => UniqueDigitalAsset::issue_impl(),
-    //         Self::Cfa => CollectibleFungibleAsset::issue_impl(),
-    //     }
-    // }
-
-    // fn scripts(&self) -> Scripts {
-    //     match self {
-    //         Self::Nia => NonInflatableAsset::scripts(),
-    //         Self::Uda => UniqueDigitalAsset::scripts(),
-    //         Self::Cfa => CollectibleFungibleAsset::scripts(),
-    //     }
-    // }
-
-    // fn types(&self) -> TypeSystem {
-    //     match self {
-    //         Self::Nia => NonInflatableAsset::types(),
-    //         Self::Uda => UniqueDigitalAsset::types(),
-    //         Self::Cfa => CollectibleFungibleAsset::types(),
-    //     }
-    // }
-
-    // fn iface(&self) -> Iface {
-    //     match self {
-    //         Self::Nia => Rgb20::iface(&Rgb20::FIXED),
-    //         Self::Uda => Rgb21::iface(&Rgb21::NONE),
-    //         Self::Cfa => Rgb25::iface(&Rgb25::NONE),
-    //     }
-    // }
-
-    // fn get_valid_kit(&self) -> ValidKit {
-    //     let mut kit = Kit::default();
-    //     kit.schemata.push(self.schema()).unwrap();
-    //     kit.ifaces.push(self.iface()).unwrap();
-    //     kit.iimpls.push(self.issue_impl()).unwrap();
-    //     kit.scripts.extend(self.scripts().into_values()).unwrap();
-    //     kit.types = self.types();
-    //     kit.validate().unwrap()
-    // }
-}
-
 pub struct Report {
     pub report_path: PathBuf,
 }
@@ -427,21 +365,7 @@ fn _get_wallet(
         WalletAccount::Private(ref xpriv_account) => xpriv_account.to_xpub_account(),
         WalletAccount::Public(ref xpub_account) => xpub_account.clone(),
     };
-    const OPRET_KEYCHAINS: [Keychain; 3] = [
-        Keychain::INNER,
-        Keychain::OUTER,
-        Keychain::with(KEY_CHAIN_RGB),
-    ];
-    const TAPRET_KEYCHAINS: [Keychain; 4] = [
-        Keychain::INNER,
-        Keychain::OUTER,
-        Keychain::with(KEY_CHAIN_RGB),
-        Keychain::with(KEY_CHAIN_TAPRET),
-    ];
-    let keychains: &[Keychain] = match *descriptor_type {
-        DescriptorType::Tr => &TAPRET_KEYCHAINS[..],
-        DescriptorType::Wpkh => &OPRET_KEYCHAINS[..],
-    };
+    let keychains: &[Keychain] = &[Keychain::INNER, Keychain::OUTER];
     let xpub_derivable = XpubDerivable::with(xpub_account.clone(), keychains);
     let noise = xpub_derivable.xpub().chain_code().to_byte_array();
 
@@ -450,23 +374,14 @@ fn _get_wallet(
         DescriptorType::Tr => RgbDescr::key_only_unfunded(xpub_derivable, noise),
     };
 
-    let name = "bp_wallet_name";
-    let provider = FsTextStore::new(wallet_dir.join(name)).unwrap();
-    let wallet = RgbWallet::create(provider, descriptor.clone(), network, true)
-        .expect("Unable to create wallet");
-
-    // for asset_schema in AssetSchema::iter() {
-    //     let valid_kit = asset_schema.get_valid_kit();
-    //     wallet.stock_mut().import_kit(valid_kit).unwrap();
-    // }
-
     let signer = match wallet_account {
         WalletAccount::Private(xpriv_account) => Some(TestnetSigner::new(xpriv_account)),
         WalletAccount::Public(_) => None,
     };
 
-    let mut wallet = TestWallet {
-        wallet,
+    let runtime = make_runtime(&descriptor, network, &wallet_dir);
+    let mut test_wallet = TestWallet {
+        runtime,
         descriptor,
         signer,
         wallet_dir,
@@ -475,10 +390,20 @@ fn _get_wallet(
 
     // TODO: remove if once found solution for esplora 'Too many requests' error
     if network.is_testnet() {
-        wallet.sync();
+        test_wallet.sync();
     }
 
-    wallet
+    test_wallet
+}
+
+fn make_runtime(descriptor: &RgbDescr, network: Network, wallet_dir: &PathBuf) -> RgbDirRuntime {
+    let name = "bp_wallet.wallet";
+    let provider = FsTextStore::new(wallet_dir.join(name)).unwrap();
+    let wallet = RgbWallet::create(provider, descriptor.clone(), network, true)
+        .expect("Unable to create wallet");
+
+    let mound = BpDirMound::load_testnet(Consensus::Bitcoin, &wallet_dir, false);
+    RgbDirRuntime::from(DirBarrow::with(wallet, mound))
 }
 
 pub fn get_wallet(descriptor_type: &DescriptorType) -> TestWallet {
@@ -553,24 +478,17 @@ pub fn broadcast_tx_and_mine(tx: &Tx, instance: u8) {
 
 impl TestWallet {
     pub fn network(&self) -> Network {
-        self.wallet.network()
+        self.runtime.wallet.network()
     }
 
     pub fn testnet(&self) -> bool {
         self.network().is_testnet()
     }
 
-    pub fn keychain(&self) -> Keychain {
-        if self.wallet.descriptor().is_taproot() {
-            Keychain::with(KEY_CHAIN_TAPRET)
-        } else {
-            Keychain::with(KEY_CHAIN_RGB)
-        }
-    }
-
     pub fn get_derived_address(&self) -> DerivedAddr {
-        self.wallet
-            .addresses(self.keychain())
+        self.runtime
+            .wallet
+            .addresses(Keychain::OUTER)
             .next()
             .expect("no addresses left")
     }
@@ -584,7 +502,7 @@ impl TestWallet {
         let txid = Txid::from_str(&fund_wallet(address.to_string(), sats, self.instance)).unwrap();
         self.sync();
         let mut vout = None;
-        let coins = self.wallet.address_coins();
+        let coins = self.runtime.wallet.address_coins();
         assert!(!coins.is_empty());
         for (_derived_addr, utxos) in coins {
             for utxo in utxos {
@@ -599,13 +517,18 @@ impl TestWallet {
         }
     }
 
+    // TODO: Because the RGB mound currently cannot dynamically load contracts,
+    // It needs to be reloaded at a special time, and consider submitting a PR to RGB
+    pub fn reload_runtime(&mut self) {
+        self.runtime = make_runtime(&self.descriptor, self.network(), &self.wallet_dir);
+    }
+
     pub fn change_instance(&mut self, instance: u8) {
         self.instance = instance;
     }
 
     pub fn switch_to_instance(&mut self, instance: u8) {
         self.change_instance(instance);
-        // self.sync_and_update_witnesses(None);
     }
 
     pub fn indexer_url(&self) -> String {
@@ -622,52 +545,20 @@ impl TestWallet {
 
     pub fn sync(&mut self) {
         let indexer = self.get_indexer();
-        self.wallet.update(&indexer).into_result().unwrap();
+        self.runtime.wallet.update(&indexer).into_result().unwrap();
     }
 
-    pub fn wallet_provider(&self) -> FsTextStore {
-        let name: &str = "bp_wallet_name";
-        let provider = FsTextStore::new(self.wallet_dir.join(name)).unwrap();
-        provider
-    }
-
-    pub fn wallet(&self) -> RgbWallet {
-        let provider = self.wallet_provider();
-        RgbWallet::load(provider, true).unwrap_or_else(|_| {
-            panic!(
-                "Error: unable to load wallet from path `{}`",
-                self.wallet_dir.display()
-            )
-        })
-    }
-
-    pub fn runtime(&self) -> RgbDirRuntime {
-        let wallet = self.wallet();
-        let mound = self.mound();
-        // dbg!(&mound.schemata().collect::<Vec<_>>());
-        let runtime = RgbDirRuntime::from(DirBarrow::with(wallet, mound));
-        runtime
-    }
-
-    pub fn mound(&self) -> BpDirMound {
-        if !self.network().is_testnet() {
-            panic!("Non-testnet networks are not yet supported");
-        }
-        BpDirMound::load_testnet(Consensus::Bitcoin, &self.wallet_dir, false)
+    pub fn runtime(&mut self) -> &mut RgbDirRuntime {
+        &mut self.runtime
     }
 
     pub fn contracts_info(&self) -> Vec<ContractInfo> {
-        self.mound().contracts_info().collect()
+        self.runtime.mound.contracts_info().collect()
     }
 
-    // pub fn all_contract_states(&self) -> Vec<(ContractId, ContractState<Outpoint>)> {
-    //     let mut runtime = self.runtime();
-    //     runtime.state_all(None).collect()
-    // }
-
     pub fn issue_with_params(&mut self, params: CreateParams<Outpoint>) -> ContractId {
-        let mut runtime = self.runtime();
-        let contract_id = runtime
+        let contract_id = self
+            .runtime
             .issue_to_file(params)
             .expect("failed to issue contract");
         println!("A new contract issued with ID {contract_id}");
@@ -693,7 +584,6 @@ impl TestWallet {
         }
     }
 
-    // send a contract to another wallet by copy contract dir to another wallet dir
     pub fn send_contract(&mut self, contract_name: &str, to_wallet: &mut TestWallet) {
         let mut src_consensus_dir = self.wallet_dir.join(Consensus::Bitcoin.to_string());
         let mut dst_consensus_dir = to_wallet.wallet_dir.join(Consensus::Bitcoin.to_string());
@@ -713,26 +603,27 @@ impl TestWallet {
         }
     }
 
-    /// Generate an invoice
     pub fn invoice(
         &mut self,
         contract_id: ContractId,
         amount: u64,
         wout: bool,
+        nonce: Option<u64>,
     ) -> RgbInvoice<ContractId> {
-        let mut runtime = self.runtime();
         let beneficiary = if wout {
-            let wout = runtime.wout(None);
+            let wout = self.runtime.wout(nonce);
             RgbBeneficiary::WitnessOut(wout)
         } else {
-            let auth = runtime.auth_token(None).unwrap();
+            // funding wallet
+            let _ = self.get_utxo(None);
+            // dbg!(self.runtime.wallet.utxos().collect::<Vec<_>>());
+            let auth = self.runtime.auth_token(nonce).unwrap();
             RgbBeneficiary::Token(auth)
         };
         let value = StrictVal::num(amount);
         RgbInvoice::new(contract_id, beneficiary, Some(value))
     }
 
-    /// Send assets to the specified invoice
     pub fn send(
         &mut self,
         recv_wallet: &mut TestWallet,
@@ -740,13 +631,13 @@ impl TestWallet {
         contract_id: ContractId,
         amount: u64,
         sats: u64,
+        nonce: Option<u64>,
         report: Option<&Report>,
     ) -> (PathBuf, Tx) {
-        let invoice = recv_wallet.invoice(contract_id, amount, wout);
+        let invoice = recv_wallet.invoice(contract_id, amount, wout, nonce);
         self.send_to_invoice(recv_wallet, invoice, Some(sats), None, report)
     }
 
-    /// Send assets to the specified invoice
     pub fn send_to_invoice(
         &mut self,
         recv_wallet: &mut TestWallet,
@@ -762,7 +653,6 @@ impl TestWallet {
         (consignment, tx)
     }
 
-    /// Transfer assets and generate a transaction
     pub fn transfer(
         &mut self,
         invoice: RgbInvoice<ContractId>,
@@ -784,7 +674,7 @@ impl TestWallet {
         let pay_start = Instant::now();
         let params = TxParams::with(fee);
         let (mut psbt, terminal) = self
-            .runtime()
+            .runtime
             .pay_invoice(&invoice, strategy, params, Some(sats))
             .unwrap();
 
@@ -809,40 +699,33 @@ impl TestWallet {
             .join(format!("consignment-{consignment_no}"))
             .with_extension("rgb");
 
-        self.mound()
+        self.runtime
+            .mound
             .consign_to_file(invoice.scope, [terminal], &consignment)
             .unwrap();
 
         (consignment, tx)
     }
 
-    /// Accept a transfer
     pub fn accept_transfer(&mut self, consignment: &Path, report: Option<&Report>) {
         self.sync();
         let accept_start = Instant::now();
-        self.runtime().consume_from_file(consignment).unwrap();
+        self.runtime.consume_from_file(consignment).unwrap();
         let accept_duration = accept_start.elapsed();
         if let Some(report) = report {
             report.write_duration(accept_duration);
         }
     }
 
-    /// Check asset allocations
     pub fn check_allocations(
         &mut self,
         contract_id: ContractId,
         asset_schema: AssetSchema,
         mut expected_fungible_allocations: Vec<u64>,
-        // nonfungible_allocation: bool,
     ) {
         match asset_schema {
             AssetSchema::Nia | AssetSchema::Cfa => {
-                let state = self
-                    .runtime()
-                    .state_own(Some(contract_id))
-                    .next()
-                    .unwrap()
-                    .1;
+                let state = self.runtime.state_own(Some(contract_id)).next().unwrap().1;
                 let mut actual_fungible_allocations = state
                     .owned
                     .get("owned")
@@ -863,13 +746,11 @@ impl TestWallet {
         }
     }
 
-    /// Sign and finalize PSBT
     pub fn sign_finalize(&self, psbt: &mut Psbt) {
         let _sig_count = psbt.sign(self.signer.as_ref().unwrap()).unwrap();
-        psbt.finalize(self.wallet.descriptor());
+        psbt.finalize(self.runtime.wallet.descriptor());
     }
 
-    /// Sign, finalize, and extract the transaction
     pub fn sign_finalize_extract(&self, psbt: &mut Psbt) -> Tx {
         self.sign_finalize(psbt);
         psbt.extract().unwrap()
@@ -961,16 +842,9 @@ impl TestWallet {
         self.issue_with_params(builder.build())
     }
 
-    // FIXME:
-    // We should make a pr to sync with Maxim,
-    // `ContractState` is a public data structure,
-    // But it is not exported, so downstreams cannot use it (here we cannot specify the return type)
-    // pub fn contract_state_internal(&self, contract_id: ContractId) -> Option<ContractState<Outpoint>> {
-    //
-    // So we return the decomposed data structure here temporarily,
     /// Get contract state (internal implementation)
     fn contract_state_internal(
-        &self,
+        &mut self,
         contract_id: ContractId,
     ) -> Option<(
         BTreeMap<VariantName, BTreeMap<CellAddr, StateAtom>>,
@@ -990,7 +864,7 @@ impl TestWallet {
     }
 
     /// Get contract state with parsed data structures
-    pub fn contract_state(&self, contract_id: ContractId) -> Option<ContractState> {
+    pub fn contract_state(&mut self, contract_id: ContractId) -> Option<ContractState> {
         self.contract_state_internal(contract_id)
             .map(|(immutable, owned, computed)| {
                 // Parse immutable state
