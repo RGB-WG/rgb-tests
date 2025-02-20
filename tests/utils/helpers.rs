@@ -617,6 +617,7 @@ impl TestWallet {
             // funding wallet
             let _ = self.get_utxo(None);
             // dbg!(self.runtime.wallet.utxos().collect::<Vec<_>>());
+            // because auth_token needs a UTXO, so we need to fund `(send+mine)` the wallet first
             let auth = self.runtime.auth_token(nonce).unwrap();
             RgbBeneficiary::Token(auth)
         };
@@ -665,11 +666,11 @@ impl TestWallet {
         let counter = COUNTER.get_or_init(|| AtomicU32::new(0));
         counter.fetch_add(1, Ordering::SeqCst);
         let consignment_no = counter.load(Ordering::SeqCst);
-
         self.sync();
 
         let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
         let sats = Sats::from_sats(sats.unwrap_or(2000));
+
         let strategy = CoinselectStrategy::Aggregate;
         let pay_start = Instant::now();
         let params = TxParams::with(fee);
@@ -731,9 +732,6 @@ impl TestWallet {
                     .get("owned")
                     .unwrap()
                     .iter()
-                    .inspect(|(_, assignment)| {
-                        dbg!(assignment);
-                    })
                     .map(|(_, assignment)| assignment.data.unwrap_num().unwrap_uint::<u64>())
                     .collect::<Vec<_>>();
                 actual_fungible_allocations.sort();
