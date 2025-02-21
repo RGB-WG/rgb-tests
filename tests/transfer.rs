@@ -3,9 +3,13 @@ pub mod utils;
 use rstest_reuse::{self, *};
 use utils::{
     chain::{get_height, initialize, stop_mining},
-    helpers::{get_wallet, AssetSchema, NIAIssueParams},
+    helpers::{get_wallet, AssetSchema, CFAIssueParams, NIAIssueParams, TransferType},
     DescriptorType, *,
 };
+
+type TT = TransferType;
+type DT = DescriptorType;
+type AS = AssetSchema;
 
 #[template]
 #[rstest]
@@ -151,4 +155,181 @@ fn rbf_transfer() {
 
     // Transfer assets back to sender
     wlt_2.send(&mut wlt_1, false, contract_id, 400, 2000, Some(0), None);
+}
+
+#[rstest]
+// blinded: nia - nia
+#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::Nia, AS::Nia)]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::Nia, AS::Nia)]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::Nia, AS::Nia)]
+#[case(TT::Blinded, DT::Tr, DT::Tr, AS::Nia, AS::Nia)]
+// blinded: nia - cfa
+#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::Nia, AS::Cfa)]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::Nia, AS::Cfa)]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::Nia, AS::Cfa)]
+#[case(TT::Blinded, DT::Tr, DT::Tr, AS::Nia, AS::Cfa)]
+// blinded: cfa - cfa
+#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::Cfa, AS::Cfa)]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::Cfa, AS::Cfa)]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::Cfa, AS::Cfa)]
+#[case(TT::Blinded, DT::Tr, DT::Tr, AS::Cfa, AS::Cfa)]
+// FIXME: `calling to method absent in Codex API`
+// When using the same utxo for issue, the transfer will report an error
+// should sync issue to doctor
+//
+// TODO: UDA related asset feature, RGB core library is being improved,
+// And the test case for UDA assets will be added later
+fn transfer_loop(
+    #[case] transfer_type: TransferType,
+    #[case] wlt_1_desc: DescriptorType,
+    #[case] wlt_2_desc: DescriptorType,
+    #[case] asset_schema_1: AssetSchema,
+    #[case] asset_schema_2: AssetSchema,
+) {
+    println!(
+        "transfer_type {transfer_type:?} wlt_1_desc {wlt_1_desc:?} wlt_2_desc {wlt_2_desc:?} \
+        asset_schema_1 {asset_schema_1:?} asset_schema_2 {asset_schema_2:?}"
+    );
+
+    initialize();
+
+    let mut wlt_1 = get_wallet(&wlt_1_desc);
+    let mut wlt_2 = get_wallet(&wlt_2_desc);
+
+    let issued_supply_1 = 999;
+    let issued_supply_2 = 666;
+
+    let sats = 9000;
+
+    // wlt_1 issues 2 assets on the same UTXO
+    let utxo = wlt_1.get_utxo(None);
+
+    // Issue first asset
+    let contract_id_1 = match asset_schema_1 {
+        AssetSchema::Nia => {
+            let mut params =
+                NIAIssueParams::new("TestAsset1", "TEST1", "centiMilli", issued_supply_1);
+            params.add_allocation(utxo, issued_supply_1);
+            wlt_1.issue_nia_with_params(params)
+        }
+        AssetSchema::Cfa => {
+            let mut params = CFAIssueParams::new("TestAsset1", "centiMilli", issued_supply_1);
+            params.add_allocation(utxo, issued_supply_1);
+            wlt_1.issue_cfa_with_params(params)
+        }
+        AssetSchema::Uda => {
+            // TODO: UDA is not supported yet
+            panic!("UDA is not supported yet");
+        }
+    };
+
+    // Issue second asset
+    let contract_id_2 = match asset_schema_2 {
+        AssetSchema::Nia => {
+            let mut params =
+                NIAIssueParams::new("TestAsset2", "TEST2", "centiMilli", issued_supply_2);
+            params.add_allocation(utxo, issued_supply_2);
+            wlt_1.issue_nia_with_params(params)
+        }
+        AssetSchema::Cfa => {
+            let mut params = CFAIssueParams::new("TestAsset2", "centiMilli", issued_supply_2);
+            params.add_allocation(utxo, issued_supply_2);
+            wlt_1.issue_cfa_with_params(params)
+        }
+        AssetSchema::Uda => {
+            // TODO: UDA is not supported yet
+            panic!("UDA is not supported yet");
+        }
+    };
+
+    // Share contract info with wallet 2
+    wlt_1.send_contract("TestAsset1", &mut wlt_2);
+    wlt_1.send_contract("TestAsset2", &mut wlt_2);
+    wlt_2.reload_runtime();
+
+    // Verify initial allocations
+    wlt_1.check_allocations(contract_id_1, asset_schema_1, vec![issued_supply_1]);
+    wlt_1.check_allocations(contract_id_2, asset_schema_2, vec![issued_supply_2]);
+
+    // wlt_1 spends asset 1
+    let amount_1 = if asset_schema_1 == AssetSchema::Uda {
+        1
+    } else {
+        99
+    };
+    let wout = match transfer_type {
+        TransferType::Blinded => false,
+        TransferType::Witness => true,
+    };
+    wlt_1.send(
+        &mut wlt_2,
+        wout,
+        contract_id_1,
+        amount_1,
+        sats,
+        Some(0),
+        None,
+    );
+
+    // Verify allocations after first transfer
+    wlt_1.check_allocations(
+        contract_id_1,
+        asset_schema_1,
+        vec![issued_supply_1 - amount_1],
+    );
+    wlt_1.check_allocations(contract_id_2, asset_schema_2, vec![issued_supply_2]);
+    wlt_2.check_allocations(contract_id_1, asset_schema_1, vec![amount_1]);
+
+    // wlt_1 spends asset 1 change (only if possible)
+    if asset_schema_1 != AssetSchema::Uda {
+        let amount_2 = 33;
+        wlt_1.send(
+            &mut wlt_2,
+            wout,
+            contract_id_1,
+            amount_2,
+            sats,
+            Some(0),
+            None,
+        );
+
+        // Verify allocations after second transfer
+        wlt_1.check_allocations(
+            contract_id_1,
+            asset_schema_1,
+            vec![issued_supply_1 - amount_1 - amount_2],
+        );
+        wlt_1.check_allocations(contract_id_2, asset_schema_2, vec![issued_supply_2]);
+        wlt_2.check_allocations(contract_id_1, asset_schema_1, vec![amount_1, amount_2]);
+    }
+
+    // wlt_1 spends asset 2
+    let amount_3 = if asset_schema_2 == AssetSchema::Uda {
+        1
+    } else {
+        22
+    };
+    wlt_1.send(&mut wlt_2, wout, contract_id_2, amount_3, sats, None, None);
+
+    // Verify final allocations
+    if asset_schema_1 != AssetSchema::Uda {
+        let amount_2 = 33;
+        wlt_1.check_allocations(
+            contract_id_1,
+            asset_schema_1,
+            vec![issued_supply_1 - amount_1 - amount_2],
+        );
+    } else {
+        wlt_1.check_allocations(
+            contract_id_1,
+            asset_schema_1,
+            vec![issued_supply_1 - amount_1],
+        );
+    }
+    wlt_1.check_allocations(
+        contract_id_2,
+        asset_schema_2,
+        vec![issued_supply_2 - amount_3],
+    );
+    wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3]);
 }
