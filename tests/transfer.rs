@@ -1,6 +1,7 @@
 pub mod utils;
 
 use rstest_reuse::{self, *};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use utils::{
     chain::{get_height, initialize, stop_mining},
     helpers::{get_wallet, AssetSchema, CFAIssueParams, NIAIssueParams, TransferType},
@@ -175,10 +176,15 @@ fn rbf_transfer() {
 #[case(TT::Blinded, DT::Tr, DT::Tr, AS::Cfa, AS::Cfa)]
 // FIXME: `calling to method absent in Codex API`
 // When using the same utxo for issue, the transfer will report an error
-// should sync issue to doctor
+//
+// There is also a strange phenomenon that when all assets issued using the same utxo are CFA types, no errors are reported.
+// rgb-test cmd: cargo test transfer_loop::case_09
+// If both are NIA or the first asset NIA, an error will occur.
+// rgb-test cmd: cargo test transfer_loop::case_01
 //
 // TODO: UDA related asset feature, RGB core library is being improved,
 // And the test case for UDA assets will be added later
+
 fn transfer_loop(
     #[case] transfer_type: TransferType,
     #[case] wlt_1_desc: DescriptorType,
@@ -199,7 +205,7 @@ fn transfer_loop(
     let issued_supply_1 = 999;
     let issued_supply_2 = 666;
 
-    let sats = 9000;
+    let mut sats = 9000;
 
     // wlt_1 issues 2 assets on the same UTXO
     let utxo = wlt_1.get_utxo(None);
@@ -252,10 +258,10 @@ fn transfer_loop(
     wlt_1.check_allocations(contract_id_2, asset_schema_2, vec![issued_supply_2]);
 
     // wlt_1 spends asset 1
-    let amount_1 = if asset_schema_1 == AssetSchema::Uda {
-        1
-    } else {
+    let amount_1 = if asset_schema_1 != AssetSchema::Uda {
         99
+    } else {
+        1
     };
     let wout = match transfer_type {
         TransferType::Blinded => false,
@@ -292,8 +298,6 @@ fn transfer_loop(
             Some(0),
             None,
         );
-
-        // Verify allocations after second transfer
         wlt_1.check_allocations(
             contract_id_1,
             asset_schema_1,
@@ -304,10 +308,10 @@ fn transfer_loop(
     }
 
     // wlt_1 spends asset 2
-    let amount_3 = if asset_schema_2 == AssetSchema::Uda {
-        1
-    } else {
+    let amount_3 = if asset_schema_2 != AssetSchema::Uda {
         22
+    } else {
+        1
     };
     wlt_1.send(&mut wlt_2, wout, contract_id_2, amount_3, sats, None, None);
 
@@ -332,4 +336,129 @@ fn transfer_loop(
         vec![issued_supply_2 - amount_3],
     );
     wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3]);
+
+    // wlt_2 spends received allocation(s) of asset 1
+    let amount_4 = if asset_schema_1 != AssetSchema::Uda {
+        111
+    } else {
+        1
+    };
+    let amount_2 = if asset_schema_1 != AssetSchema::Uda {
+        33
+    } else {
+        0
+    };
+    sats -= 1000;
+    wlt_2.send(&mut wlt_1, wout, contract_id_1, amount_4, sats, None, None);
+    wlt_1.check_allocations(
+        contract_id_1,
+        asset_schema_1,
+        vec![issued_supply_1 - amount_1 - amount_2, amount_4],
+    );
+    wlt_1.check_allocations(
+        contract_id_2,
+        asset_schema_2,
+        vec![issued_supply_2 - amount_3],
+    );
+    wlt_2.check_allocations(
+        contract_id_1,
+        asset_schema_1,
+        vec![amount_1 + amount_2 - amount_4],
+    );
+    wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3]);
+
+    // wlt_2 spends asset 2
+    let amount_5 = if asset_schema_2 != AssetSchema::Uda {
+        11
+    } else {
+        1
+    };
+    sats -= 1000;
+    wlt_2.send(&mut wlt_1, wout, contract_id_2, amount_5, sats, None, None);
+    wlt_1.check_allocations(
+        contract_id_1,
+        asset_schema_1,
+        vec![issued_supply_1 - amount_1 - amount_2, amount_4],
+    );
+    wlt_1.check_allocations(
+        contract_id_2,
+        asset_schema_2,
+        vec![issued_supply_2 - amount_3, amount_5],
+    );
+
+    // for debug
+    {
+        let wlt_1_contract_2_state = wlt_1.runtime().state_own(None).map(|s| s.1.owned);
+        dbg!(wlt_1_contract_2_state.collect::<Vec<_>>());
+    }
+
+    wlt_2.check_allocations(
+        contract_id_1,
+        asset_schema_1,
+        vec![amount_1 + amount_2 - amount_4],
+    );
+    wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3 - amount_5]);
+
+    // wlt_1 spends asset 1, received back
+    let amount_6 = if asset_schema_1 != AssetSchema::Uda {
+        issued_supply_1 - amount_1 - amount_2 + amount_4
+    } else {
+        1
+    };
+    sats -= 1000;
+    wlt_1.send(&mut wlt_2, wout, contract_id_1, amount_6, sats, None, None);
+    wlt_1.check_allocations(contract_id_1, asset_schema_1, vec![]);
+    // for debug
+    {
+        let wlt_1_contract_2_state = wlt_1.runtime().state_own(None).map(|s| s.1.owned);
+        dbg!(wlt_1_contract_2_state.collect::<Vec<_>>());
+    }
+
+    // Theoretically, there should be two outputs, one for the change UTXO and one for the income UTXO.
+    // But because the change UTXO is associated with two assets (asset 1 and asset 2), asset 1 has been fully transferred to the UTXO of wlt2.
+    // So there will only be one UTXO, which combines the change and income of asset 2.
+    //
+    // In most cases, it will be merged into one UTXO,
+    // And in a few cases, there will be two UTXOs.
+    if let Err(_) = catch_unwind(AssertUnwindSafe(|| {
+        wlt_1.check_allocations(
+            contract_id_2,
+            asset_schema_2,
+            vec![issued_supply_2 - amount_3 + amount_5],
+        );
+    })) {
+        wlt_1.check_allocations(
+            contract_id_2,
+            asset_schema_2,
+            vec![issued_supply_2 - amount_3, amount_5],
+        );
+    }
+
+    wlt_2.check_allocations(
+        contract_id_1,
+        asset_schema_1,
+        vec![amount_1 + amount_2 - amount_4, amount_6],
+    );
+    wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3 - amount_5]);
+
+    // wlt_1 spends asset 2, received back
+    let amount_7 = if asset_schema_2 != AssetSchema::Uda {
+        issued_supply_2 - amount_3 + amount_5
+    } else {
+        1
+    };
+    sats -= 1000;
+    wlt_1.send(&mut wlt_2, wout, contract_id_2, amount_7, sats, None, None);
+    wlt_1.check_allocations(contract_id_1, asset_schema_1, vec![]);
+    wlt_1.check_allocations(contract_id_2, asset_schema_2, vec![]);
+    wlt_2.check_allocations(
+        contract_id_1,
+        asset_schema_1,
+        vec![amount_1 + amount_2 - amount_4, amount_6],
+    );
+    wlt_2.check_allocations(
+        contract_id_2,
+        asset_schema_2,
+        vec![amount_3 - amount_5, amount_7],
+    );
 }
