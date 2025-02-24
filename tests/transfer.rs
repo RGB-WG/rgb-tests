@@ -601,3 +601,113 @@ fn accept_0conf() {
     wlt_1.sync();
     wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_change_amt]);
 }
+
+#[test]
+fn tapret_wlt_receiving_opret() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Tr);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", 600);
+    let outpoint = wlt_1.get_utxo(None);
+    params.add_allocation(outpoint, 600);
+    let contract_id = wlt_1.issue_nia_with_params(params);
+    wlt_1.send_contract("TestAsset", &mut wlt_2);
+    wlt_2.reload_runtime();
+
+    // First transfer: wlt_1 -> wlt_2, transfer 400
+    wlt_1.send(&mut wlt_2, false, contract_id, 400, 5000, None, None);
+
+    // Second transfer: wlt_2 -> wlt_1, transfer 100
+    let invoice = wlt_1.invoice(contract_id, 100, true, Some(0));
+    wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
+
+    // Third transfer: wlt_1 -> wlt_2, transfer 290
+    wlt_1.send(&mut wlt_2, true, contract_id, 290, 1000, None, None);
+
+    // Fourth transfer: wlt_2 -> wlt_1, transfer 560
+    wlt_2.send(&mut wlt_1, false, contract_id, 560, 1000, None, None);
+
+    // Fifth transfer: wlt_1 -> wlt_2, transfer 570
+    wlt_1.send(&mut wlt_2, false, contract_id, 570, 1000, None, None);
+
+    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![30, 570]);
+}
+
+#[test]
+fn check_fungible_history() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let issue_supply = 600;
+    let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", issue_supply);
+    let outpoint = wlt_1.get_utxo(None);
+    params.add_allocation(outpoint, issue_supply);
+    let contract_id = wlt_1.issue_nia_with_params(params);
+    wlt_1.send_contract("TestAsset", &mut wlt_2);
+    wlt_2.reload_runtime();
+
+    // debug contract info
+    dbg!(wlt_1.contracts_info());
+    dbg!(wlt_1
+        .runtime()
+        .state_own(Some(contract_id))
+        .map(|s| { s.1.owned })
+        .collect::<Vec<_>>());
+
+    // transfer
+    let amt = 200;
+    let (_, tx) = wlt_1.send(&mut wlt_2, true, contract_id, amt, 1000, None, None);
+    let _txid = tx.txid();
+
+    // debug contract state
+    dbg!(wlt_1
+        .runtime()
+        .state_own(Some(contract_id))
+        .map(|s| { s.1.owned })
+        .collect::<Vec<_>>());
+    dbg!(wlt_2
+        .runtime()
+        .state_own(Some(contract_id))
+        .map(|s| { s.1.owned })
+        .collect::<Vec<_>>());
+
+    // check allocations
+    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![issue_supply - amt]);
+    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![amt]);
+}
+
+#[test]
+fn send_to_oneself() {
+    initialize();
+
+    let mut wlt = get_wallet(&DescriptorType::Wpkh);
+
+    let issue_supply = 600;
+    let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", issue_supply);
+    let outpoint = wlt.get_utxo(None);
+    params.add_allocation(outpoint, issue_supply);
+    let contract_id = wlt.issue_nia_with_params(params);
+
+    // Transfer 200 to yourself
+    let amt = 200;
+    let invoice = wlt.invoice(contract_id, amt, true, Some(0));
+    let (consignment, tx) = wlt.transfer(invoice.clone(), None, None, true, None);
+    wlt.mine_tx(&tx.txid(), false);
+    wlt.accept_transfer(&consignment, None);
+    wlt.sync();
+
+    // debug contract state
+    dbg!(wlt
+        .runtime()
+        .state_own(None)
+        .map(|s| s.1.owned)
+        .collect::<Vec<_>>());
+
+    // check allocations
+    wlt.check_allocations(contract_id, AssetSchema::Nia, vec![amt, issue_supply - amt]);
+}
