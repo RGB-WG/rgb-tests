@@ -45,7 +45,7 @@ pub use amplify::{
 use bitcoin_hashes::{sha256, Hash};
 pub use bp::{
     seals::txout::{BlindSeal, CloseMethod, ExplicitSeal},
-    ConsensusDecode, Outpoint, Sats, ScriptPubkey, SeqNo, Tx, Txid, Vout,
+    ConsensusDecode, LockTime, Outpoint, Sats, ScriptPubkey, SeqNo, Tx, Txid, Vout,
 };
 pub use bpstd::{
     h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, DerivedAddr, Descriptor,
@@ -75,7 +75,7 @@ pub use psrgbt_altered::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 #[cfg(not(feature = "altered"))]
 pub use rgb::{
-    containers::ValidContract,
+    containers::{PubWitness, ValidContract},
     info::ContractInfo,
     interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
@@ -89,7 +89,7 @@ pub use rgb::{
 };
 #[cfg(feature = "altered")]
 pub use rgb_altered::{
-    containers::ValidContract,
+    containers::{PubWitness, ValidContract},
     info::ContractInfo,
     interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
