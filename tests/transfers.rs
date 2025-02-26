@@ -739,7 +739,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
 
     let utxo_1 = wlt_1.get_utxo(Some(10_000));
     let utxo_2 = wlt_1.get_utxo(Some(20_000));
-    let amounts = vec![600, 600];
+    let amounts = vec![600, 300];
     let outpoints = vec![Some(utxo_1), Some(utxo_2)];
     let asset_info = AssetInfo::default_nia(amounts.clone());
     let (contract_id, iface_type_name) = wlt_1.issue_with_info(asset_info, outpoints);
@@ -779,6 +779,8 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info.clone());
     wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
+    let txid_same_bundle_1 = psbt.txid();
+    let coloring_info_same_bundle = coloring_info;
 
     let htlc_vout = 2;
     let htlc_rgb_amt = 200;
@@ -848,22 +850,20 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
         (wlt_1.get_address(), None),
     ];
     let (mut psbt, _meta) = wlt_1.construct_psbt(vec![utxo_1], beneficiaries, None);
-    let coloring_info = ColoringInfo {
-        asset_info_map: HashMap::from([(
-            contract_id,
-            AssetColoringInfo {
-                iface: iface_type_name.clone(),
-                input_outpoints: vec![utxo_1],
-                output_map: HashMap::from([(0, 100), (1, 500)]),
-                static_blinding: Some(666),
-            },
-        )]),
-        static_blinding: Some(666),
-        nonce: Some(u64::MAX - 1),
-    };
-    let (fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
-    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
+    let coloring_info = coloring_info_same_bundle;
+    let (mut fascia, _asset_beneficiaries) = wlt_1.color_psbt(&mut psbt, coloring_info);
     wlt_1.debug_logs(contract_id, &iface_type_name, AllocationFilter::WalletAll);
+    let mut txid_same_bundle_2 = psbt.txid();
+    let mut offset = 0;
+    // this will make sure that in select_valid_witness the first TXID will be the one with
+    // WitnessOrd::Ignored, when we want the one with WitnessOrd::Mined to be selected instead
+    while txid_same_bundle_1 > txid_same_bundle_2 {
+        psbt.fallback_locktime = LockTime::from_height(offset);
+        txid_same_bundle_2 = psbt.txid();
+        offset += 1;
+    }
+    fascia.witness = PubWitness::with(psbt.to_unsigned_tx().into());
+    wlt_1.consume_fascia_custom_resolver(fascia.clone(), LNFasciaResolver {});
     let mut old_psbt = psbt.clone();
 
     println!("\n5. fake commitment TX (1 HTLC)");
@@ -925,6 +925,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
 
     println!("\n7. fake commitment TX (1 HTLC) on 2nd channel");
+    let htlc_rgb_amt_2nd_chan = 10;
     let beneficiaries = vec![
         (wlt_2.get_address(), Some(2000)),
         (wlt_1.get_address(), None),
@@ -937,7 +938,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
                 input_outpoints: vec![utxo_2],
-                output_map: HashMap::from([(0, 100), (1, 300), (htlc_vout, htlc_rgb_amt)]),
+                output_map: HashMap::from([(0, 20), (1, 270), (htlc_vout, htlc_rgb_amt_2nd_chan)]),
                 static_blinding: Some(666),
             },
         )]),
@@ -981,7 +982,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
             AssetColoringInfo {
                 iface: iface_type_name.clone(),
                 input_outpoints: vec![input_outpoint],
-                output_map: HashMap::from([(0, htlc_rgb_amt)]),
+                output_map: HashMap::from([(0, htlc_rgb_amt_2nd_chan)]),
                 static_blinding: Some(666),
             },
         )]),
