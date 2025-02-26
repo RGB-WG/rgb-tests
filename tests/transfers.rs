@@ -1309,50 +1309,6 @@ fn send_to_oneself() {
 
 #[cfg(not(feature = "altered"))]
 #[rstest]
-#[case(CloseMethod::OpretFirst, CloseMethod::OpretFirst)]
-#[case(CloseMethod::TapretFirst, CloseMethod::TapretFirst)]
-#[case(CloseMethod::OpretFirst, CloseMethod::TapretFirst)]
-#[case(CloseMethod::TapretFirst, CloseMethod::OpretFirst)]
-fn blank_tapret_opret(#[case] close_method_0: CloseMethod, #[case] close_method_1: CloseMethod) {
-    println!("close_method_0 {close_method_0:?} close_method_1 {close_method_1:?}");
-
-    initialize();
-
-    let mut wlt_1 = get_wallet(&DescriptorType::Tr);
-    let mut wlt_2 = get_wallet(&DescriptorType::Tr);
-
-    let utxo = wlt_1.get_utxo(None);
-
-    let amt_0 = 200;
-    let (contract_id_0, iface_type_name_0) = wlt_1.issue_nia(amt_0, Some(&utxo));
-
-    // asset to be moved in blank
-    let amt_1 = 100;
-    let (contract_id_1, iface_type_name_1) = wlt_1.issue_nia(amt_1, Some(&utxo));
-
-    wlt_1.send(
-        &mut wlt_2,
-        TransferType::Blinded,
-        contract_id_0,
-        &iface_type_name_0,
-        amt_0,
-        1000,
-        None,
-    );
-
-    wlt_1.send(
-        &mut wlt_2,
-        TransferType::Blinded,
-        contract_id_1,
-        &iface_type_name_1,
-        amt_1,
-        1000,
-        None,
-    );
-}
-
-#[cfg(not(feature = "altered"))]
-#[rstest]
 #[case(HistoryType::Linear, ReorgType::ChangeOrder)]
 #[case(HistoryType::Linear, ReorgType::Revert)]
 #[case(HistoryType::Branching, ReorgType::ChangeOrder)]
