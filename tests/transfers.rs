@@ -1308,6 +1308,58 @@ fn send_to_oneself() {
 }
 
 #[cfg(not(feature = "altered"))]
+#[test]
+fn tapret_opret_same_utxo() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Tr);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
+
+    let (contract_id_1, iface_type_name_1) = wlt_1.issue_nia(600, None);
+    let (contract_id_2, iface_type_name_2) = wlt_2.issue_nia(800, None);
+
+    let utxo = wlt_3.get_utxo(None);
+    mine(false);
+
+    let invoice = wlt_3.invoice(
+        contract_id_1,
+        &iface_type_name_1,
+        100,
+        InvoiceType::Blinded(Some(utxo)),
+    );
+    wlt_1.send_to_invoice(&mut wlt_3, invoice, Some(1000), None, None);
+
+    let invoice = wlt_3.invoice(
+        contract_id_2,
+        &iface_type_name_2,
+        550,
+        InvoiceType::Blinded(Some(utxo)),
+    );
+    wlt_2.send_to_invoice(&mut wlt_3, invoice, Some(1000), None, None);
+
+    wlt_3.send(
+        &mut wlt_2,
+        TransferType::Blinded,
+        contract_id_1,
+        &iface_type_name_1,
+        70,
+        1000,
+        None,
+    );
+
+    wlt_3.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id_2,
+        &iface_type_name_2,
+        20,
+        1000,
+        None,
+    );
+}
+
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(HistoryType::Linear, ReorgType::ChangeOrder)]
 #[case(HistoryType::Linear, ReorgType::Revert)]
