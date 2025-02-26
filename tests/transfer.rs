@@ -1,3 +1,26 @@
+// RGB v0.12 Migration Notes:
+// 1. Seal Type Unification (RFC: https://github.com/RGB-WG/RFC/issues/16)
+//    - Unified seal type replaces distinct opret and tapret seals
+//    - Seal type is automatically determined by wallet type (Taproot/WPKH)
+//    - CloseMethod parameter has been removed from contract genesis
+//    - Contract no longer commits to specific seal types
+//
+// 2. API Changes and Migration Strategy:
+//    - Removed APIs:
+//      * update_witnesses: Will be replaced with new rollback procedure
+//      * CloseMethod related parameters: No longer needed due to seal unification
+//    - Test Case Handling:
+//      * Existing tests dependent on removed APIs: Marked as #[ignore] with tracking issues
+//      * New tests: Focus on wallet type interactions rather than seal types
+//      * Complex test cases will be implemented after evaluating:
+//        - RGB protocol documentation and examples
+//        - Implementation approaches for Lightning Network, multi-sig and interactive transactions
+//
+// 3. Implementation Notes:
+//    - Test cases focus on wallet type (Taproot/WPKH) interactions
+//    - Complex test scenarios are defined but implementation deferred
+//    - Ignored tests will be updated once new APIs are available
+
 pub mod utils;
 
 use rstest_reuse::{self, *};
@@ -36,9 +59,6 @@ fn simple_transfer(wout: bool) {
     // TODO: Because the RGB mound currently cannot dynamically load contracts,
     // It needs to be reloaded at a special time, and consider submitting a PR to RGB
     wlt_2.reload_runtime();
-
-    // pub type DirMound<SealDef> = Mound<FileSupply, FilePile<SealDef>, DirExcavator<SealDef>>;
-    //  let mound: &mut rgb::Mound<rgb::FileSupply, rgb::FilePile<bp::seals::WTxoSeal>, rgb::DirExcavator<bp::seals::WTxoSeal>> = &mut wlt_1.runtime().mound;
 
     let assign = 400;
     // recive asset by utxo
@@ -82,10 +102,12 @@ fn simple_transfer(wout: bool) {
     dbg!(wlt_1
         .runtime()
         .state_own(Some(contract_id))
+        .map(|s| { s.1.owned })
         .collect::<Vec<_>>());
     dbg!(wlt_2
         .runtime()
         .state_own(Some(contract_id))
+        .map(|s| { s.1.owned })
         .collect::<Vec<_>>());
 
     wlt_1.check_allocations(
@@ -463,14 +485,34 @@ fn transfer_loop(
     );
 }
 
-// TODO: The `update_witnesses` method has been removed in RGB V0.12,
-// So this test case may need to be removed or redesigned
-// Need to sync with Dr. Maxim
+// Test case pending new rollback procedure API
+// Will be updated once the high-level API for rollback handling is available
 #[rstest]
-#[ignore = "fix needed"]
+#[ignore = "Awaiting new rollback procedure API in RGB v0.12"]
 #[case(TransferType::Blinded)]
 #[case(TransferType::Witness)]
 fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {}
+
+// Complex test cases - Implementation deferred to final phase
+// These test cases will be implemented last, after evaluating:
+// 1. Available documentation and examples from RGB protocol
+// 2. If no official examples exist, Bitlight will explore implementation approaches for:
+//    - Lightning Network test-cases integration
+//    - Multi-signature operations  
+//    - Interactive transaction construction
+// Reference: https://github.com/RGB-WG/rgb/blob/v0.12/doc/Payments.md
+
+#[test]
+#[ignore = "Pending Lightning Network integration documentation"]
+fn ln_transfers() {
+    // TODO: Implement Lightning Network transfer tests
+}
+
+#[test]
+#[ignore = "Pending multi-signature workflow documentation"]
+fn collaborative_transfer() {
+    // TODO: Implement multi-signature transfer tests
+}
 
 #[rstest]
 #[case(TransferType::Blinded)]
@@ -710,4 +752,48 @@ fn send_to_oneself() {
 
     // check allocations
     wlt.check_allocations(contract_id, AssetSchema::Nia, vec![amt, issue_supply - amt]);
+}
+
+#[rstest]
+#[ignore = "fix needed (calling to method absent in Codex API)"]
+#[case(DescriptorType::Tr, DescriptorType::Tr)]
+#[ignore = "fix needed (calling to method absent in Codex API)"]
+#[case(DescriptorType::Tr, DescriptorType::Wpkh)]
+#[ignore = "fix needed (calling to method absent in Codex API)"]
+#[case(DescriptorType::Wpkh, DescriptorType::Tr)]
+#[ignore = "fix needed (calling to method absent in Codex API)"]
+#[case(DescriptorType::Wpkh, DescriptorType::Wpkh)]
+fn blank_tapret_opret(#[case] descriptor_type_0: DescriptorType, #[case] descriptor_type_1: DescriptorType) {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&descriptor_type_0);
+    let mut wlt_2 = get_wallet(&descriptor_type_1);
+
+    // Create and issue first NIA asset
+    let mut params_0 = NIAIssueParams::new("TestAsset1", "TEST1", "centiMilli", 200);
+    let outpoint = wlt_1.get_utxo(None);
+    params_0.add_allocation(outpoint, 200);
+    let contract_id_0 = wlt_1.issue_nia_with_params(params_0);
+    wlt_1.send_contract("TestAsset1", &mut wlt_2);
+    wlt_2.reload_runtime();
+
+    // Create and issue second NIA asset (to be moved in blank)
+    let mut params_1 = NIAIssueParams::new("TestAsset2", "TEST2", "centiMilli", 100);
+    params_1.add_allocation(outpoint, 100);
+    let contract_id_1 = wlt_1.issue_nia_with_params(params_1);
+    wlt_1.send_contract("TestAsset2", &mut wlt_2);
+    wlt_2.reload_runtime();
+
+    // First transfer: wlt_1 -> wlt_2, transfer 200 of first asset
+    wlt_1.send(&mut wlt_2, false, contract_id_0, 200, 1000, None, None);
+
+    // Second transfer: wlt_1 -> wlt_2, transfer 100 of second asset
+    // This tests the blank transfer functionality with different descriptor types
+    wlt_1.send(&mut wlt_2, false, contract_id_1, 100, 1000, None, None);
+
+    // Verify final allocations
+    wlt_1.check_allocations(contract_id_0, AssetSchema::Nia, vec![]);
+    wlt_1.check_allocations(contract_id_1, AssetSchema::Nia, vec![]);
+    wlt_2.check_allocations(contract_id_0, AssetSchema::Nia, vec![200]);
+    wlt_2.check_allocations(contract_id_1, AssetSchema::Nia, vec![100]);
 }
