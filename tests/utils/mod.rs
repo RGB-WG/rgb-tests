@@ -49,8 +49,8 @@ pub use bp::{
 };
 pub use bpstd::{
     h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, DerivedAddr, Descriptor,
-    HardenedIndex, Keychain, Network, Terminal, XkeyOrigin, Xpriv, XprivAccount, Xpub, XpubAccount,
-    XpubDerivable, XpubFp,
+    HardenedIndex, IdxBase, Keychain, Network, NormalIndex, Terminal, XkeyOrigin, Xpriv,
+    XprivAccount, Xpub, XpubAccount, XpubDerivable, XpubFp,
 };
 pub use bpwallet::{
     fs::FsTextStore, indexers::esplora::Client as EsploraClient, AnyIndexer, Indexer as BpIndexer,

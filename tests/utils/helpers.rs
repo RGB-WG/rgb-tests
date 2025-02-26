@@ -701,16 +701,24 @@ impl TestWallet {
         RgbKeychain::for_method(self.close_method())
     }
 
-    pub fn get_derived_address(&self) -> DerivedAddr {
+    fn get_next_index(&mut self, keychain: impl Into<Keychain>, shift: bool) -> NormalIndex {
         self.wallet
-            .wallet()
-            .addresses(self.keychain())
-            .next()
-            .expect("no addresses left")
+            .wallet_mut()
+            .next_derivation_index(keychain, shift)
     }
 
-    pub fn get_address(&self) -> Address {
-        self.get_derived_address().addr
+    pub fn get_derived_address(&mut self, shift: bool) -> DerivedAddr {
+        let keychain = self.keychain();
+        let index = self.get_next_index(keychain, shift);
+        self.wallet
+            .wallet()
+            .addresses(keychain)
+            .nth(index.index() as usize)
+            .expect("address iterator always can produce address")
+    }
+
+    pub fn get_address(&mut self) -> Address {
+        self.get_derived_address(true).addr
     }
 
     pub fn get_utxo(&mut self, sats: Option<u64>) -> Outpoint {
@@ -1377,10 +1385,8 @@ impl TestWallet {
         }
 
         let (change_vout, change_terminal) = if remaining_value > Sats::from(546u64) {
-            let change_index = self
-                .wallet
-                .wallet_mut()
-                .next_derivation_index(tx_params.change_keychain, tx_params.change_shift);
+            let change_index =
+                self.get_next_index(tx_params.change_keychain, tx_params.change_shift);
             let change_terminal = Terminal::new(tx_params.change_keychain, change_index);
             let change_vout = psbt
                 .construct_change_expect(

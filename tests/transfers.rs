@@ -734,7 +734,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     initialize();
 
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
-    let wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
     let pre_funding_height = get_height();
 
     let utxo_1 = wlt_1.get_utxo(Some(10_000));
@@ -783,7 +783,7 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     let htlc_vout = 2;
     let htlc_rgb_amt = 200;
     let htlc_btc_amt = 4000;
-    let htlc_derived_addr = wlt_1.get_derived_address();
+    let htlc_derived_addr = wlt_1.get_derived_address(true);
 
     // no problem: since there's no htlc for this commitment
     wlt_1.sync_and_update_witnesses(Some(pre_funding_height));
