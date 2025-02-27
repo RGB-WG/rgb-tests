@@ -82,7 +82,7 @@ pub use rgb::{
     persistence::{MemContract, MemContractState, Stock},
     resolvers::AnyResolver,
     stl::ContractTerms,
-    validation::{Failure, Info, ResolveWitness, Scripts, Validity, WitnessResolverError},
+    validation::{Failure, ResolveWitness, Scripts, Validity, Warning, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos},
     DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
     TapretKey, TransferParams, Transition, WalletProvider,

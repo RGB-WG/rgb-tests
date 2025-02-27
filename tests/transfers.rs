@@ -1912,11 +1912,11 @@ fn reorg_revert_multiple(#[case] history_type: HistoryType) {
                 .map_err(|(status, _)| status)
                 .unwrap();
             let validation_status = validated_consignment.clone().into_validation_status();
-            assert_eq!(validation_status.info.len(), 1);
+            assert_eq!(validation_status.warnings.len(), 1);
             let unsafe_height = height_pre_transfer + 1;
             let unsafe_history_map = HashMap::from([(unsafe_height, HashSet::from([tx_2.txid()]))]);
             assert!(
-                matches!(&validation_status.info[0], Info::UnsafeHistory(map) if *map == unsafe_history_map)
+                matches!(&validation_status.warnings[0], Warning::UnsafeHistory(map) if *map == unsafe_history_map)
             );
             // receiver decides to accept the consignment even if there's unsafe history
             wlt_1.accept_transfer(consignment.clone(), None);
