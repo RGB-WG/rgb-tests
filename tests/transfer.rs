@@ -24,11 +24,18 @@
 pub mod utils;
 
 use rstest_reuse::{self, *};
+use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use utils::{
-    chain::{get_height, initialize, stop_mining},
-    helpers::{get_wallet, AssetSchema, CFAIssueParams, NIAIssueParams, TransferType},
-    DescriptorType, *,
+    chain::{
+        connect_reorg_nodes, disconnect_reorg_nodes, get_height, get_height_custom, initialize,
+        mine_custom, stop_mining,
+    },
+    helpers::{
+        broadcast_tx_and_mine, get_wallet, get_wallet_custom, AssetSchema, CFAIssueParams,
+        HistoryType, NIAIssueParams, ReorgType, TransferType,
+    },
+    DescriptorType, INSTANCE_2, INSTANCE_3, *,
 };
 
 type TT = TransferType;
@@ -62,7 +69,7 @@ fn simple_transfer(wout: bool) {
 
     let assign = 400;
     // recive asset by utxo
-    let invoice = wlt_2.invoice(contract_id, assign, wout, Some(0));
+    let invoice = wlt_2.invoice(contract_id, assign, wout, Some(0), true);
 
     // send asset to wlt2
     // if `wout` is true (WitnessOut),
@@ -83,7 +90,7 @@ fn simple_transfer(wout: bool) {
     wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![assign]);
 
     let assign_wlt1 = 200;
-    let invoice = wlt_1.invoice(contract_id, assign_wlt1, wout, Some(0));
+    let invoice = wlt_1.invoice(contract_id, assign_wlt1, wout, Some(0), true);
     dbg!(
         "wlt2",
         wlt_2.runtime().wallet.balance(),
@@ -139,7 +146,7 @@ fn rbf_transfer() {
     wlt_1.send_contract("RBFTestAsset", &mut wlt_2);
     wlt_2.reload_runtime();
 
-    let invoice = wlt_2.invoice(contract_id, 400, false, Some(0));
+    let invoice = wlt_2.invoice(contract_id, 400, false, Some(0), true);
 
     // Stop mining to test RBF
     stop_mining();
@@ -498,7 +505,7 @@ fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {}
 // 1. Available documentation and examples from RGB protocol
 // 2. If no official examples exist, Bitlight will explore implementation approaches for:
 //    - Lightning Network test-cases integration
-//    - Multi-signature operations  
+//    - Multi-signature operations
 //    - Interactive transaction construction
 // Reference: https://github.com/RGB-WG/rgb/blob/v0.12/doc/Payments.md
 
@@ -547,7 +554,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
         TransferType::Blinded => false,
         TransferType::Witness => true,
     };
-    let invoice = wlt_2.invoice(contract_id, amount, wout, Some(0));
+    let invoice = wlt_2.invoice(contract_id, amount, wout, Some(0), true);
     let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
 
     dbg!(wlt_1
@@ -621,7 +628,7 @@ fn accept_0conf() {
     wlt_2.reload_runtime();
 
     let amt = 200;
-    let invoice = wlt_2.invoice(contract_id, amt, true, Some(0));
+    let invoice = wlt_2.invoice(contract_id, amt, true, Some(0), true);
     let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, None, true, None);
     let txid = tx.txid();
 
@@ -662,7 +669,7 @@ fn tapret_wlt_receiving_opret() {
     wlt_1.send(&mut wlt_2, false, contract_id, 400, 5000, None, None);
 
     // Second transfer: wlt_2 -> wlt_1, transfer 100
-    let invoice = wlt_1.invoice(contract_id, 100, true, Some(0));
+    let invoice = wlt_1.invoice(contract_id, 100, true, Some(0), true);
     wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
 
     // Third transfer: wlt_1 -> wlt_2, transfer 290
@@ -737,7 +744,7 @@ fn send_to_oneself() {
 
     // Transfer 200 to yourself
     let amt = 200;
-    let invoice = wlt.invoice(contract_id, amt, true, Some(0));
+    let invoice = wlt.invoice(contract_id, amt, true, Some(0), true);
     let (consignment, tx) = wlt.transfer(invoice.clone(), None, None, true, None);
     wlt.mine_tx(&tx.txid(), false);
     wlt.accept_transfer(&consignment, None);
@@ -763,7 +770,10 @@ fn send_to_oneself() {
 #[case(DescriptorType::Wpkh, DescriptorType::Tr)]
 #[ignore = "fix needed (calling to method absent in Codex API)"]
 #[case(DescriptorType::Wpkh, DescriptorType::Wpkh)]
-fn blank_tapret_opret(#[case] descriptor_type_0: DescriptorType, #[case] descriptor_type_1: DescriptorType) {
+fn blank_tapret_opret(
+    #[case] descriptor_type_0: DescriptorType,
+    #[case] descriptor_type_1: DescriptorType,
+) {
     initialize();
 
     let mut wlt_1 = get_wallet(&descriptor_type_0);
@@ -796,4 +806,309 @@ fn blank_tapret_opret(#[case] descriptor_type_0: DescriptorType, #[case] descrip
     wlt_1.check_allocations(contract_id_1, AssetSchema::Nia, vec![]);
     wlt_2.check_allocations(contract_id_0, AssetSchema::Nia, vec![200]);
     wlt_2.check_allocations(contract_id_1, AssetSchema::Nia, vec![100]);
+}
+
+#[rstest]
+// Unable to accept a consignment: unknown seal definition for cell address qMWtQjXCWjJAXdrg7npyI2KZz3vXNVyZhoomqF7v8z4:0.
+#[case(HistoryType::Linear, ReorgType::ChangeOrder)]
+// #[ignore = "fix needed"]
+#[case(HistoryType::Linear, ReorgType::Revert)]
+#[case(HistoryType::Branching, ReorgType::ChangeOrder)]
+// #[ignore = "fix needed"]
+#[case(HistoryType::Branching, ReorgType::Revert)]
+#[case(HistoryType::Merging, ReorgType::ChangeOrder)]
+// #[ignore = "fix needed"]
+#[case(HistoryType::Merging, ReorgType::Revert)]
+#[serial]
+fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgType) {
+    println!("history_type {history_type:?} reorg_type {reorg_type:?}");
+
+    initialize();
+    connect_reorg_nodes();
+
+    let mut wlt_1 = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
+    let mut wlt_2 = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
+
+    let issued_supply = 600;
+
+    // Initialize contract based on history type
+    let contract_id = match history_type {
+        HistoryType::Linear | HistoryType::Branching => {
+            let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", issued_supply);
+            let outpoint = wlt_1.get_utxo(None);
+            params.add_allocation(outpoint, issued_supply);
+            wlt_1.issue_nia_with_params(params)
+        }
+        HistoryType::Merging => {
+            // For merging, we create a contract with multiple allocations
+            let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", 600);
+            params.add_allocation(wlt_1.get_utxo(None), 400);
+            // Adding a second allocation to the same outpoint
+            params.add_allocation(wlt_1.get_utxo(None), 200);
+            wlt_1.issue_nia_with_params(params)
+        }
+    };
+
+    wlt_1.send_contract("TestAsset", &mut wlt_2);
+    wlt_2.reload_runtime();
+
+    // Generate UTXOs before asset transfer to avoid mining blocks during transfer, affecting the test
+    let _utxo_wlt_1_1 = wlt_1.get_utxo(None);
+    let _utxo_wlt_1_2 = wlt_1.get_utxo(None);
+    let _utxo_wlt_2_1 = wlt_2.get_utxo(None);
+    let _utxo_wlt_2_2 = wlt_2.get_utxo(None);
+    mine_custom(false, INSTANCE_2, 6);
+
+    dbg!(get_height_custom(INSTANCE_2));
+    dbg!(get_height_custom(INSTANCE_3));
+
+    disconnect_reorg_nodes();
+
+    // Create transactions based on history type
+    let txs = match history_type {
+        HistoryType::Linear => {
+            let amt_0 = 590;
+            // Create blinded invoice with specific UTXO
+            let invoice = wlt_2.invoice(contract_id, amt_0, false, Some(0), false);
+            let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+            dbg!(wlt_1
+                .runtime()
+                .state_own(Some(contract_id))
+                .map(|s| { s.1.owned })
+                .collect::<Vec<_>>());
+
+            let amt_1 = 100;
+            let invoice = wlt_1.invoice(contract_id, amt_1, false, Some(0), false);
+            let (_, tx_1) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
+            dbg!(wlt_1
+                .runtime()
+                .state_own(Some(contract_id))
+                .map(|s| { s.1.owned })
+                .collect::<Vec<_>>());
+
+            let amt_2 = 80;
+            let invoice = wlt_2.invoice(contract_id, amt_2, false, Some(0), false);
+            let (_, tx_2) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+
+            vec![tx_0, tx_1, tx_2]
+        }
+        HistoryType::Branching => {
+            let amt_0 = 600;
+            let invoice = wlt_2.invoice(contract_id, amt_0, false, Some(0), false);
+            let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+
+            let amt_1 = 200;
+            let invoice = wlt_1.invoice(contract_id, amt_1, false, Some(0), false);
+            let (_, tx_1) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
+
+            let amt_2 = amt_0 - amt_1 - 1;
+            let invoice = wlt_1.invoice(contract_id, amt_2, false, Some(0), false);
+            let (_, tx_2) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
+
+            vec![tx_0, tx_1, tx_2]
+        }
+        HistoryType::Merging => {
+            let amt_0 = 400;
+            let invoice = wlt_2.invoice(contract_id, amt_0, false, Some(0), false);
+            let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
+
+            let amt_1 = 200;
+            let invoice = wlt_2.invoice(contract_id, amt_1, false, Some(0), false);
+            let (_, tx_1) = wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
+
+            let amt_2 = amt_0 + amt_1 - 1;
+            let invoice = wlt_1.invoice(contract_id, amt_2, false, Some(0), false);
+            let (_, tx_2) = wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
+
+            vec![tx_0, tx_1, tx_2]
+        }
+    };
+
+    dbg!(wlt_1
+        .runtime()
+        .state_own(Some(contract_id))
+        .map(|s| { s.1.owned })
+        .collect::<Vec<_>>());
+    dbg!(wlt_2
+        .runtime()
+        .state_own(Some(contract_id))
+        .map(|s| { s.1.owned })
+        .collect::<Vec<_>>());
+
+    // Test different reorg scenarios
+    match (history_type, reorg_type) {
+        (HistoryType::Linear, ReorgType::ChangeOrder) => {
+            broadcast_tx_and_mine(&txs[2], INSTANCE_3);
+            broadcast_tx_and_mine(&txs[1], INSTANCE_3);
+            broadcast_tx_and_mine(&txs[0], INSTANCE_3);
+            wlt_1.switch_to_instance(INSTANCE_3);
+            wlt_2.switch_to_instance(INSTANCE_3);
+            let wlt_1_alloc_1 = 10;
+            let wlt_1_alloc_2 = 20;
+            let wlt_2_alloc_1 = 490;
+            let wlt_2_alloc_2 = 80;
+            wlt_1.check_allocations(
+                contract_id,
+                AssetSchema::Nia,
+                vec![wlt_1_alloc_1, wlt_1_alloc_2],
+            );
+            wlt_2.check_allocations(
+                contract_id,
+                AssetSchema::Nia,
+                vec![wlt_2_alloc_1, wlt_2_alloc_2],
+            );
+        }
+        (HistoryType::Linear | HistoryType::Branching, ReorgType::Revert) => {
+            broadcast_tx_and_mine(&txs[1], INSTANCE_3);
+            broadcast_tx_and_mine(&txs[2], INSTANCE_3);
+            wlt_1.switch_to_instance(INSTANCE_3);
+            wlt_2.switch_to_instance(INSTANCE_3);
+            let wlt_1_alloc_1 = 600;
+            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+        }
+        (HistoryType::Branching, ReorgType::ChangeOrder) => {
+            broadcast_tx_and_mine(&txs[1], INSTANCE_3);
+            broadcast_tx_and_mine(&txs[2], INSTANCE_3);
+            broadcast_tx_and_mine(&txs[0], INSTANCE_3);
+            wlt_1.switch_to_instance(INSTANCE_3);
+            wlt_2.switch_to_instance(INSTANCE_3);
+            let wlt_1_alloc_1 = 200;
+            let wlt_1_alloc_2 = 399;
+            let wlt_2_alloc_1 = 1;
+            wlt_1.check_allocations(
+                contract_id,
+                AssetSchema::Nia,
+                vec![wlt_1_alloc_1, wlt_1_alloc_2],
+            );
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+        }
+        (HistoryType::Merging, ReorgType::ChangeOrder) => {
+            broadcast_tx_and_mine(&txs[1], INSTANCE_3);
+            broadcast_tx_and_mine(&txs[0], INSTANCE_3);
+            broadcast_tx_and_mine(&txs[2], INSTANCE_3);
+            wlt_1.switch_to_instance(INSTANCE_3);
+            wlt_2.switch_to_instance(INSTANCE_3);
+            let wlt_1_alloc_1 = 599;
+            let wlt_2_alloc_1 = 1;
+            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+        }
+        (HistoryType::Merging, ReorgType::Revert) => {
+            broadcast_tx_and_mine(&txs[1], INSTANCE_3);
+            broadcast_tx_and_mine(&txs[2], INSTANCE_3);
+            wlt_1.switch_to_instance(INSTANCE_3);
+            wlt_2.switch_to_instance(INSTANCE_3);
+            let wlt_1_alloc_1 = 400;
+            let wlt_2_alloc_1 = 200;
+            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+        }
+    }
+
+    mine_custom(false, INSTANCE_3, 3);
+    connect_reorg_nodes();
+    wlt_1.switch_to_instance(INSTANCE_2);
+    wlt_2.switch_to_instance(INSTANCE_2);
+
+    let mut wlt_3 = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
+
+    // Verify final state based on history type
+    match history_type {
+        HistoryType::Linear => {
+            let wlt_1_alloc_1 = 10;
+            let wlt_1_alloc_2 = 20;
+            let wlt_1_amt = wlt_1_alloc_1 + wlt_1_alloc_2;
+            let wlt_2_alloc_1 = 490;
+            let wlt_2_alloc_2 = 80;
+            let wlt_2_amt = wlt_2_alloc_1 + wlt_2_alloc_2;
+            wlt_1.check_allocations(
+                contract_id,
+                AssetSchema::Nia,
+                vec![wlt_1_alloc_1, wlt_1_alloc_2],
+            );
+            wlt_2.check_allocations(
+                contract_id,
+                AssetSchema::Nia,
+                vec![wlt_2_alloc_1, wlt_2_alloc_2],
+            );
+
+            // Test spending the final allocations
+            wlt_1.send_contract("TestAsset", &mut wlt_3);
+            wlt_3.reload_runtime();
+            wlt_1.send(&mut wlt_3, false, contract_id, wlt_1_amt, 1000, None, None);
+            wlt_2.send(&mut wlt_3, false, contract_id, wlt_2_amt, 1000, None, None);
+            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_3.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_amt, wlt_2_amt]);
+        }
+        HistoryType::Branching => {
+            let wlt_1_alloc_1 = 200;
+            let wlt_1_alloc_2 = 399;
+            let wlt_1_amt = wlt_1_alloc_1 + wlt_1_alloc_2;
+            let wlt_2_alloc_1 = 1;
+            wlt_1.check_allocations(
+                contract_id,
+                AssetSchema::Nia,
+                vec![wlt_1_alloc_1, wlt_1_alloc_2],
+            );
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+
+            // Test spending the final allocations
+            wlt_1.send_contract("TestAsset", &mut wlt_3);
+            wlt_3.reload_runtime();
+            wlt_1.send(&mut wlt_3, false, contract_id, wlt_1_amt, 1000, None, None);
+            wlt_2.send(
+                &mut wlt_3,
+                false,
+                contract_id,
+                wlt_2_alloc_1,
+                1000,
+                None,
+                None,
+            );
+            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_3.check_allocations(
+                contract_id,
+                AssetSchema::Nia,
+                vec![wlt_1_amt, wlt_2_alloc_1],
+            );
+        }
+        HistoryType::Merging => {
+            let wlt_1_alloc_1 = 599;
+            let wlt_2_alloc_1 = 1;
+            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+
+            // Test spending the final allocations
+            wlt_1.send_contract("TestAsset", &mut wlt_3);
+            wlt_3.reload_runtime();
+            wlt_1.send(
+                &mut wlt_3,
+                false,
+                contract_id,
+                wlt_1_alloc_1,
+                1000,
+                None,
+                None,
+            );
+            wlt_2.send(
+                &mut wlt_3,
+                false,
+                contract_id,
+                wlt_2_alloc_1,
+                1000,
+                None,
+                None,
+            );
+            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_3.check_allocations(
+                contract_id,
+                AssetSchema::Nia,
+                vec![wlt_1_alloc_1, wlt_2_alloc_1],
+            );
+        }
+    }
 }

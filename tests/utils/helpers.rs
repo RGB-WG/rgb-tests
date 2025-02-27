@@ -465,7 +465,16 @@ fn broadcast_tx(tx: &Tx, indexer_url: &str) {
             inner.transaction_broadcast(tx).unwrap();
         }
         AnyIndexer::Esplora(inner) => {
-            inner.broadcast(tx).unwrap();
+            inner
+                .broadcast(tx)
+                .map_err(|e| {
+                    dbg!(
+                        tx.inputs.iter().map(|i| i.prev_output).collect::<Vec<_>>(),
+                        &e
+                    );
+                    e
+                })
+                .unwrap();
         }
         _ => unreachable!("unsupported indexer"),
     }
@@ -603,21 +612,28 @@ impl TestWallet {
         }
     }
 
+    // force_create_utxo: Whether to force create a new UTXO.
+    // Note: This will mine a block.
     pub fn invoice(
         &mut self,
         contract_id: ContractId,
         amount: u64,
         wout: bool,
         nonce: Option<u64>,
+        force_create_utxo: bool,
     ) -> RgbInvoice<ContractId> {
         let beneficiary = if wout {
             let wout = self.runtime.wout(nonce);
             RgbBeneficiary::WitnessOut(wout)
         } else {
-            // funding wallet
-            let _ = self.get_utxo(None);
+            if force_create_utxo {
+                // Create a new UTXO if requested.
+                // Required for auth token generation when wout=false.
+                let _ = self.get_utxo(None);
+            }
             // dbg!(self.runtime.wallet.utxos().collect::<Vec<_>>());
             // because auth_token needs a UTXO, so we need to fund `(send+mine)` the wallet first
+            // FIXME: Design an `auth_token` that can customize the UTXO
             let auth = self.runtime.auth_token(nonce).unwrap();
             RgbBeneficiary::Token(auth)
         };
@@ -635,7 +651,7 @@ impl TestWallet {
         nonce: Option<u64>,
         report: Option<&Report>,
     ) -> (PathBuf, Tx) {
-        let invoice = recv_wallet.invoice(contract_id, amount, wout, nonce);
+        let invoice = recv_wallet.invoice(contract_id, amount, wout, nonce, true);
         self.send_to_invoice(recv_wallet, invoice, Some(sats), None, report)
     }
 
