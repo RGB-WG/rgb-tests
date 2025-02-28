@@ -26,14 +26,15 @@ pub mod utils;
 use rstest_reuse::{self, *};
 use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::str::FromStr;
 use utils::{
     chain::{
         connect_reorg_nodes, disconnect_reorg_nodes, get_height, get_height_custom, initialize,
         mine_custom, stop_mining,
     },
     helpers::{
-        broadcast_tx_and_mine, get_wallet, get_wallet_custom, AssetSchema, CFAIssueParams,
-        HistoryType, NIAIssueParams, ReorgType, TransferType,
+        broadcast_tx_and_mine, get_mainnet_wallet, get_wallet, get_wallet_custom, AssetSchema,
+        CFAIssueParams, HistoryType, NIAIssueParams, ReorgType, TransferType,
     },
     DescriptorType, INSTANCE_2, INSTANCE_3, *,
 };
@@ -817,7 +818,6 @@ fn blank_tapret_opret(
 // assertion `left == right` failed
 //   left: [10, 20]
 //  right: [600]
-// #[ignore = "fix needed"]
 #[ignore = "fix needed"]
 #[case(HistoryType::Linear, ReorgType::Revert)]
 // Unable to accept a consignment: unknown seal definition for cell address c6z0I0hYqaO6dV9qOjrP1lK4PJprjVAaAOdGCoqAdOY:0.
@@ -1136,5 +1136,88 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 vec![wlt_1_alloc_1, wlt_2_alloc_1],
             );
         }
+    }
+}
+
+// TODO: Awaiting new rollback procedure API in RGB v0.12
+#[rstest]
+#[case(false)]
+#[case(true)]
+#[serial]
+fn revert_genesis(#[case] with_transfers: bool) {
+    println!("with_transfers {with_transfers}");
+
+    initialize();
+    // connecting before disconnecting since disconnect is not idempotent
+    connect_reorg_nodes();
+    disconnect_reorg_nodes();
+
+    let mut wlt = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
+
+    let issued_supply = 600;
+    let utxo = wlt.get_utxo(None);
+
+    // Create and issue NIA asset
+    let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", issued_supply);
+    params.add_allocation(utxo, issued_supply);
+    let contract_id = wlt.issue_nia_with_params(params);
+
+    wlt.check_allocations(contract_id, AssetSchema::Nia, vec![issued_supply]);
+
+    if with_transfers {
+        let mut recv_wlt = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
+        let amt = 200;
+        wlt.send_contract("TestAsset", &mut recv_wlt);
+        recv_wlt.reload_runtime();
+        wlt.send(&mut recv_wlt, false, contract_id, amt, 1000, None, None);
+        wlt.check_allocations(contract_id, AssetSchema::Nia, vec![issued_supply - amt]);
+    }
+
+    // TODO: The following code uses APIs that have been removed in RGB v0.12
+    // Need to implement new rollback procedure once the API is available
+    //
+    // assert!(matches!(
+    //     wlt.get_witness_ord(&utxo.txid),
+    //     WitnessOrd::Mined(_)
+    // ));
+    // wlt.switch_to_instance(INSTANCE_3);
+    // assert_eq!(wlt.get_witness_ord(&utxo.txid), WitnessOrd::Archived);
+    //
+    // wlt.check_allocations(
+    //     contract_id,
+    //     AssetSchema::Nia,
+    //     vec![],
+    // );
+}
+
+#[test]
+#[ignore = "fix needed"]
+fn mainnet_wlt_receiving_test_asset() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    // FIXME: Because the latest `Mound` structure in rgb does not support setting the mainnet,
+    // The default `Mound.testnet` is eq true, which cannot correctly initialize the mainnet wallet,
+    // So this test case cannot be executed temporarily
+    let mut wlt_2 = get_mainnet_wallet();
+
+    // Create and issue NIA asset
+    let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", 700);
+    let outpoint = wlt_1.get_utxo(None);
+    params.add_allocation(outpoint, 700);
+    let contract_id = wlt_1.issue_nia_with_params(params);
+
+    let utxo =
+        Outpoint::from_str("bebcfcb200a17763f6932a6d6fca9448a4b46c5b737cc3810769a7403ef79ce6:0")
+            .unwrap();
+    let invoice = wlt_2.invoice(contract_id, 150, false, None, Some(utxo));
+
+    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
+    wlt_1.mine_tx(&tx.txid(), false);
+    match wlt_2.accept_transfer(&consignment, None) {
+        Err(e) => {
+            dbg!(e);
+        }
+        _ => panic!("validation must fail"),
     }
 }

@@ -793,7 +793,7 @@ impl TestWallet {
     ) -> (PathBuf, Tx) {
         let (consignment, tx) = self.transfer(invoice, sats, fee, true, report);
         broadcast_tx_and_mine(&tx, self.instance);
-        recv_wallet.accept_transfer(&consignment, report);
+        recv_wallet.accept_transfer(&consignment, report).unwrap();
         self.sync();
         (consignment, tx)
     }
@@ -878,14 +878,19 @@ impl TestWallet {
         (consignment, tx)
     }
 
-    pub fn accept_transfer(&mut self, consignment: &Path, report: Option<&Report>) {
+    pub fn accept_transfer(
+        &mut self,
+        consignment: &Path,
+        report: Option<&Report>,
+    ) -> std::io::Result<()> {
         self.sync();
         let accept_start = Instant::now();
-        self.runtime.consume_from_file(consignment).unwrap();
+        self.runtime.consume_from_file(consignment)?;
         let accept_duration = accept_start.elapsed();
         if let Some(report) = report {
             report.write_duration(accept_duration);
         }
+        Ok(())
     }
 
     pub fn check_allocations(
