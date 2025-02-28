@@ -1728,6 +1728,7 @@ dependencies = [
  "bp-invoice",
  "bp-std",
  "bp-wallet",
+ "commit_verify",
  "descriptors",
  "file-format",
  "once_cell",

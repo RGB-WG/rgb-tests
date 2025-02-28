@@ -61,6 +61,9 @@ amplify = { path = "./rust-amplify" }
 strict_encoding = { path = "./strict-encoding/rust" }
 ## strict-types
 strict_types = { path = "./strict-types" }
+## commit_verify
+commit_verify = { path = "./client_side_validation/commit_verify" }
+
 
 [patch.crates-io]
 # patching all RGB-related deps, to measure code coverage

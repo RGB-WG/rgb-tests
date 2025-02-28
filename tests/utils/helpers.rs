@@ -8,16 +8,19 @@ use std::time::Duration;
 use std::time::Instant;
 
 use bp::{seals::WTxoSeal, Outpoint};
+use commit_verify::{Digest, DigestExt, Sha256};
 use psbt::TxParams;
 use rand::RngCore;
 use rgb::invoice::{RgbBeneficiary, RgbInvoice};
 use rgb::popls::bp::file::{BpDirMound, DirBarrow};
+use rgb::popls::bp::{Coinselect, OpRequestSet, WalletProvider};
 use rgb::{
-    Assignment, CallScope, CellAddr, CodexId, Consensus, ContractId, ContractInfo, CreateParams,
-    EitherSeal, MethodName, NamedState, StateAtom,
+    Assignment, AuthToken, CallScope, CellAddr, CodexId, Consensus, ContractId, ContractInfo,
+    CreateParams, EitherSeal, MethodName, NamedState, RgbSealDef, StateAtom, StateCalc,
 };
-use rgbp::CoinselectStrategy;
 use rgbp::{descriptor::RgbDescr, RgbDirRuntime, RgbWallet};
+use rgbp::{CoinselectStrategy, PayError};
+use rgpsbt::ScriptResolver;
 use strict_types::value::EnumTag;
 use strict_types::{TypeName, VariantName};
 
@@ -195,6 +198,7 @@ pub struct TestWallet {
     signer: Option<TestnetSigner>,
     wallet_dir: PathBuf,
     instance: u8,
+    coinselect_strategy: CustomCoinselectStrategy,
 }
 
 enum WalletAccount {
@@ -332,6 +336,98 @@ impl Report {
     }
 }
 
+/// Custom RGB coinselection strategy for more precise control over UTXO selection
+///
+/// # Usage Example
+///
+/// ```
+/// // Create wallet
+/// let mut wallet = get_wallet(&DescriptorType::Wpkh);
+///
+/// // Set to true small size strategy (selects UTXOs with maximum values)
+/// wallet.set_coinselect_strategy(CustomCoinselectStrategy::TrueSmallSize);
+///
+/// // Or use standard strategies
+/// wallet.set_coinselect_strategy(CustomCoinselectStrategy::Standard(CoinselectStrategy::Aggregate));
+/// wallet.set_coinselect_strategy(CustomCoinselectStrategy::Standard(CoinselectStrategy::SmallSize));
+///
+/// // For transfers requiring specific UTXOs (like testing reorganization history), use:
+/// let (consignment, tx) = wallet.transfer_with_specific_utxo(invoice, specific_utxo, sats, fee, broadcast, report);
+/// ```
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum CustomCoinselectStrategy {
+    /// Use standard RGB coinselection strategies
+    /// - Aggregate: Collects many small outputs until target amount is reached
+    /// - SmallSize: Collects minimum number of outputs but without proper value sorting
+    Standard(CoinselectStrategy),
+
+    /// Enhanced coinselection strategy that truly minimizes transaction size
+    /// by selecting the minimum number of UTXOs with largest asset values.
+    /// This strategy:
+    /// 1. First sorts all available colored UTXOs by their asset amount
+    /// 2. Selects the minimum number of largest-value UTXOs needed to satisfy the transfer
+    /// 3. Results in smallest possible transaction size by using fewer inputs
+    TrueSmallSize,
+}
+
+impl Default for CustomCoinselectStrategy {
+    fn default() -> Self {
+        Self::Standard(CoinselectStrategy::default())
+    }
+}
+
+/// Implementation of the Coinselect trait for our custom strategy
+impl Coinselect for CustomCoinselectStrategy {
+    fn coinselect(
+        &mut self,
+        invoiced_state: &StrictVal,
+        calc: &mut (impl StateCalc + ?Sized),
+        // Sorted vector by values
+        owned_state: Vec<(CellAddr, &StrictVal)>,
+    ) -> Option<Vec<CellAddr>> {
+        match self {
+            // For standard strategies, delegate to the original implementation
+            CustomCoinselectStrategy::Standard(strategy) => {
+                strategy.coinselect(invoiced_state, calc, owned_state)
+            }
+
+            // True small size implementation - sort by value before selection
+            CustomCoinselectStrategy::TrueSmallSize => {
+                // Clone the state to allow sorting (we need to own the data)
+                let mut value_sorted_state: Vec<(CellAddr, &StrictVal, u64)> = owned_state
+                    .iter()
+                    .filter_map(|(addr, val)| {
+                        // Extract numeric value (assuming we're dealing with u64 values)
+                        let amount: u64 = val.unwrap_num().unwrap_uint();
+                        Some((*addr, *val, amount))
+                    })
+                    .collect();
+
+                // Sort by value in descending order (largest first)
+                value_sorted_state.sort_by(|a, b| b.2.cmp(&a.2));
+
+                // Now use the sorted state for iteration
+                let res = value_sorted_state
+                    .into_iter()
+                    .take_while(|(_, val, _)| {
+                        if calc.is_satisfied(invoiced_state) {
+                            return false;
+                        }
+                        calc.accumulate(val).is_ok()
+                    })
+                    .map(|(addr, _, _)| addr)
+                    .collect();
+
+                if !calc.is_satisfied(invoiced_state) {
+                    return None;
+                };
+
+                Some(res)
+            }
+        }
+    }
+}
+
 fn _get_wallet(
     descriptor_type: &DescriptorType,
     network: Network,
@@ -386,6 +482,7 @@ fn _get_wallet(
         signer,
         wallet_dir,
         instance,
+        coinselect_strategy: CustomCoinselectStrategy::default(),
     };
 
     // TODO: remove if once found solution for esplora 'Too many requests' error
@@ -612,33 +709,64 @@ impl TestWallet {
         }
     }
 
-    // force_create_utxo: Whether to force create a new UTXO.
-    // Note: This will mine a block.
+    /// Creates an RGB invoice with either a witness output or auth token beneficiary
+    ///
+    /// # Arguments
+    /// * `contract_id` - ID of the RGB contract
+    /// * `amount` - Amount of RGB asset to transfer
+    /// * `wout` - Whether to use witness output (true) or auth token (false)
+    /// * `nonce` - Optional nonce for seal generation
+    /// * `utxo` - Optional UTXO to use for auth token. If None and wout=false, a new UTXO will be created
     pub fn invoice(
         &mut self,
         contract_id: ContractId,
         amount: u64,
         wout: bool,
         nonce: Option<u64>,
-        force_create_utxo: bool,
+        mut utxo: Option<Outpoint>,
     ) -> RgbInvoice<ContractId> {
         let beneficiary = if wout {
             let wout = self.runtime.wout(nonce);
             RgbBeneficiary::WitnessOut(wout)
         } else {
-            if force_create_utxo {
-                // Create a new UTXO if requested.
-                // Required for auth token generation when wout=false.
-                let _ = self.get_utxo(None);
+            if utxo.is_none() {
+                // Create new UTXO for auth token if none provided
+                utxo = Some(self.get_utxo(None));
             }
-            // dbg!(self.runtime.wallet.utxos().collect::<Vec<_>>());
-            // because auth_token needs a UTXO, so we need to fund `(send+mine)` the wallet first
-            // FIXME: Design an `auth_token` that can customize the UTXO
-            let auth = self.runtime.auth_token(nonce).unwrap();
-            RgbBeneficiary::Token(auth)
+
+            let auth = self.create_auth_token_with_utxo(nonce, utxo.unwrap());
+
+            RgbBeneficiary::Token(auth.unwrap())
         };
         let value = StrictVal::num(amount);
         RgbInvoice::new(contract_id, beneficiary, Some(value))
+    }
+
+    /// Generates a noise engine for seal randomization
+    /// This is a clone of the internal noise_engine implementation from rgb-std,
+    /// since the original is not public and we need it for custom UTXO selection
+    fn noise_engine(&self) -> Sha256 {
+        let noise_seed = self.runtime.wallet.noise_seed();
+        let mut noise_engine = Sha256::new();
+        noise_engine.input_raw(noise_seed.as_ref());
+        noise_engine
+    }
+
+    /// Creates an auth token for a specific UTXO
+    ///
+    /// This is a custom implementation that allows specifying the UTXO to use,
+    /// unlike the standard rgb-std auth_token which automatically selects a UTXO.
+    /// We need this to support custom UTXO selection for auth tokens.
+    pub fn create_auth_token_with_utxo(
+        &mut self,
+        nonce: Option<u64>,
+        outpoint: Outpoint,
+    ) -> Option<AuthToken> {
+        let nonce = nonce.unwrap_or_else(|| self.runtime.wallet.next_nonce());
+        let seal = WTxoSeal::no_fallback(outpoint, self.noise_engine(), nonce);
+        let auth = seal.auth_token();
+        self.runtime.wallet.register_seal(seal);
+        Some(auth)
     }
 
     pub fn send(
@@ -651,7 +779,7 @@ impl TestWallet {
         nonce: Option<u64>,
         report: Option<&Report>,
     ) -> (PathBuf, Tx) {
-        let invoice = recv_wallet.invoice(contract_id, amount, wout, nonce, true);
+        let invoice = recv_wallet.invoice(contract_id, amount, wout, nonce, None);
         self.send_to_invoice(recv_wallet, invoice, Some(sats), None, report)
     }
 
@@ -668,6 +796,33 @@ impl TestWallet {
         recv_wallet.accept_transfer(&consignment, report);
         self.sync();
         (consignment, tx)
+    }
+
+    /// Pay an invoice producing PSBT ready to be signed.
+    ///
+    /// This is a custom implementation of rgb-runtime's pay_invoice that supports
+    /// custom coinselection strategies.
+    ///
+    /// TODO: Keep this implementation in sync with the official rgb-runtime pay_invoice
+    /// method to ensure consistent behavior and avoid divergence.
+    pub fn pay_invoice(
+        &mut self,
+        invoice: &RgbInvoice<ContractId>,
+        strategy: impl Coinselect,
+        params: TxParams,
+        giveaway: Option<Sats>,
+    ) -> Result<(Psbt, AuthToken), PayError> {
+        let request = self.runtime.fulfill(invoice, strategy, giveaway)?;
+        let script = OpRequestSet::with(request.clone());
+        let psbt = self.runtime.transfer(script, params)?;
+        let terminal = match invoice.auth {
+            RgbBeneficiary::Token(auth) => auth,
+            RgbBeneficiary::WitnessOut(wout) => request
+                .resolve_seal(wout, psbt.script_resolver())
+                .expect("witness out must be present in the PSBT")
+                .auth_token(),
+        };
+        Ok((psbt, terminal))
     }
 
     pub fn transfer(
@@ -687,11 +842,10 @@ impl TestWallet {
         let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
         let sats = Sats::from_sats(sats.unwrap_or(2000));
 
-        let strategy = CoinselectStrategy::Aggregate;
+        let strategy = self.coinselect_strategy;
         let pay_start = Instant::now();
         let params = TxParams::with(fee);
         let (mut psbt, terminal) = self
-            .runtime
             .pay_invoice(&invoice, strategy, params, Some(sats))
             .unwrap();
 
@@ -768,6 +922,17 @@ impl TestWallet {
     pub fn sign_finalize_extract(&self, psbt: &mut Psbt) -> Tx {
         self.sign_finalize(psbt);
         psbt.extract().unwrap()
+    }
+
+    /// Set the coin selection strategy
+    pub fn set_coinselect_strategy(&mut self, strategy: CustomCoinselectStrategy) -> &mut Self {
+        self.coinselect_strategy = strategy;
+        self
+    }
+
+    /// Get the current coin selection strategy
+    pub fn coinselect_strategy(&self) -> CustomCoinselectStrategy {
+        self.coinselect_strategy
     }
 }
 
