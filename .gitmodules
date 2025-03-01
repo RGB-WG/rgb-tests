@@ -6,7 +6,7 @@
 	url = https://github.com/aluvm/rust-aluvm
 [submodule "rgb-interfaces"]
 	path = rgb-interfaces
-	url = https://github.com/RGB-WG/rgb-interfaces
+	url = https://github.com/zoedberg/rgb-interfaces
 [submodule "client_side_validation"]
 	path = client_side_validation
 	url = https://github.com/LNP-BP/client_side_validation/

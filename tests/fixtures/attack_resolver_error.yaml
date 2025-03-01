@@ -331,7 +331,6 @@ ifaces:
       name: issuedMismatch
       reserved: null
     developer: ssi:LZS1ux-gjD9nXPF-OcetUUkW-6r3uSCS6-aQhs9W5f-8JE7w
-supplements: []
 types:
   0af65fd62581de85cbd14e23e2db9a92bbef8b7974ffe1b50c4c74db8f86e751: !List
   - 5f5e26e5c5053c1b4544515bc6a0653da02a0791fb31116d71a4fad916e15355
