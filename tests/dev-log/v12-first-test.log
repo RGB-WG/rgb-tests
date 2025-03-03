@@ -1,0 +1,1351 @@
+warning: `rgb-tests` (test "transfer") generated 20 warnings (10 duplicates) (run `cargo fix --test "transfer"` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.50s
+     Running tests/issuance.rs (target/debug/deps/issuance-14bf51e9d8ee949c)
+
+running 16 tests
+wallet_desc Tr
+wallet_desc Wpkh
+wallet_desc Wpkh
+wallet_desc Tr
+wallet_desc Wpkh
+wallet_desc Tr
+wallet_desc Wpkh
+wallet_desc Tr
+starting test services...
+wallet dir: "test-data/integration/c3b8a9ca"
+wallet dir: "test-data/integration/6ecd7b84"
+wallet dir: "test-data/integration/b81c5451"
+wallet dir: "test-data/integration/47e4d839"
+wallet dir: "test-data/integration/723288fe"
+wallet dir: "test-data/integration/62c37ee1"
+wallet dir: "test-data/integration/53483baa"
+wallet dir: "test-data/integration/1212899d"
+A new contract issued with ID contract:4Z0OzxrC-GdteSzh-2cgWzc6-PawIvI~-WyCnX2m-HxtV_Vg
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+test issue_cfa::case_2 ... ok
+wallet_desc Wpkh
+wallet dir: "test-data/integration/b45df1e5"
+A new contract issued with ID contract:qr23Xxof-Fzsy8rd-oZ8Y4wc-BaaZvuJ-MBKh2qR-D~H4bek
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+test issue_cfa::case_1 ... ok
+wallet_desc Wpkh
+wallet dir: "test-data/integration/691426a9"
+A new contract issued with ID contract:NQO8p0vd-JWYcCy5-Og6TXi9-yTxcvlg-AGAIY_9-gSLHulQ
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+test issue_cfa::case_4 ... ok
+wallet_desc Tr
+wallet dir: "test-data/integration/f8d53132"
+A new contract issued with ID contract:mJIFRnZ4-y_zit8M-GY9u3UF-fdaHct0-MUy3USS-4yLvo6I
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+test issue_cfa::case_3 ... ok
+wallet_desc Tr
+wallet dir: "test-data/integration/529b7132"
+A new contract issued with ID contract:Eb13C_xq-U29y1Wc-iJ6PcoQ-V~xRU74-QG7Y1J8-VxZID4E
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+[tests/issuance.rs:59:5] &state.owned.allocations = [
+    (
+        Outpoint {
+            txid: Array<32>(0000000000000000000000000000000000000000000000000000000000000000),
+            vout: Vout(
+                0,
+            ),
+        },
+        500000,
+    ),
+    (
+        Outpoint {
+            txid: Array<32>(0000000000000000000000000000000000000000000000000000000000000001),
+            vout: Vout(
+                0,
+            ),
+        },
+        500000,
+    ),
+]
+test issue_nia::case_1 ... ok
+wallet_desc Wpkh
+wallet dir: "test-data/integration/c9f37b64"
+A new contract issued with ID contract:mRg2N_aF-uB4SMSd-JLURSmP-ypYXXO4-MC6fhFP-zNGVekU
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+[tests/issuance.rs:59:5] &state.owned.allocations = [
+    (
+        Outpoint {
+            txid: Array<32>(0000000000000000000000000000000000000000000000000000000000000000),
+            vout: Vout(
+                0,
+            ),
+        },
+        500000,
+    ),
+    (
+        Outpoint {
+            txid: Array<32>(0000000000000000000000000000000000000000000000000000000000000001),
+            vout: Vout(
+                0,
+            ),
+        },
+        500000,
+    ),
+]
+test issue_nia::case_3 ... ok
+wallet_desc Wpkh
+wallet dir: "test-data/integration/c1d39754"
+A new contract issued with ID contract:c0~DmmtE-LAJzcKW-ikEEJ9Z-KtiuqJB-G5WhYQA-D7MTnHs
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+[tests/issuance.rs:59:5] &state.owned.allocations = [
+    (
+        Outpoint {
+            txid: Array<32>(0000000000000000000000000000000000000000000000000000000000000000),
+            vout: Vout(
+                0,
+            ),
+        },
+        500000,
+    ),
+    (
+        Outpoint {
+            txid: Array<32>(0000000000000000000000000000000000000000000000000000000000000001),
+            vout: Vout(
+                0,
+            ),
+        },
+        500000,
+    ),
+]
+test issue_nia::case_2 ... ok
+wallet_desc Tr
+A new contract issued with ID contract:RfIDBjvW-pEIT6Rs-z3HNzrA-uRCR5H5-mdXI9j~-JJDj35c
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+[tests/issuance.rs:59:5] &state.owned.allocations = [
+    (
+        Outpoint {
+            txid: Array<32>(0000000000000000000000000000000000000000000000000000000000000000),
+            vout: Vout(
+                0,
+            ),
+        },
+        500000,
+    ),
+    (
+        Outpoint {
+            txid: Array<32>(0000000000000000000000000000000000000000000000000000000000000001),
+            vout: Vout(
+                0,
+            ),
+        },
+        500000,
+    ),
+]
+wallet dir: "test-data/integration/0bf90c30"
+test issue_nia::case_4 ... ok
+wallet_desc Tr
+wallet dir: "test-data/integration/dbaa1f04"
+test issue_cfa_multiple_utxos::case_1 has been running for over 60 seconds
+test issue_cfa_multiple_utxos::case_2 has been running for over 60 seconds
+test issue_cfa_multiple_utxos::case_3 has been running for over 60 seconds
+test issue_cfa_multiple_utxos::case_4 has been running for over 60 seconds
+A new contract issued with ID contract:oQQeEZW6-o83mtD2-J3nwy76-NClY1Op-W5SrptL-KQMB8X8
+A new contract issued with ID contract:f4n~qKMC-dnXWzGZ-3rRru~n-KjK6qTR-nThsVYG-mukpbpQ
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+test issue_nia_multiple_utxos::case_2 ... ok
+test issue_cfa_multiple_utxos::case_2 ... ok
+A new contract issued with ID contract:GWpU7ND9-VbzVX~X-z_rTnOM-TYqkkxc-mhMBJrN-78ZD~SY
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+test issue_cfa_multiple_utxos::case_1 ... ok
+A new contract issued with ID contract:xYls1diR-IWh9m4j-Mq1dEzy-QkWC6Hd-Doe7sAC-eNKbAjE
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+A new contract issued with ID contract:wspuABJy-BskUelq-xS3XwoN-jOWn5cS-FJuSJRx-pBnXKkY
+test issue_cfa_multiple_utxos::case_3 ... ok
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+test issue_nia_multiple_utxos::case_1 ... ok
+A new contract issued with ID contract:7slgDA4u-bAqvKaZ-ld9_FW2-mnDFN29-kYZeJgO-NRzNP1g
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+A new contract issued with ID contract:Vu5~832o-FwECgUE-hIcNMVE-92~cD70-q78inlB-3seFHiA
+A new contract issued with ID contract:j7abCp5p-KhezRWv-4BHKjY_-Pl7eJOE-urCnnbo-p~0q9Tg
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+[tests/utils/helpers.rs:1071:25] &v.verified = Enum(
+    Name(
+        VariantName(
+            "centiMilli",
+        ),
+    ),
+)
+test issue_cfa_multiple_utxos::case_4 ... ok
+test issue_nia_multiple_utxos::case_3 ... ok
+test issue_nia_multiple_utxos::case_4 ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 66.98s
+
+     Running tests/transfer.rs (target/debug/deps/transfer-356099b53e0807f1)
+
+running 36 tests
+test blank_tapret_opret::case_1 ... ignored, fix needed (calling to method absent in Codex API)
+test blank_tapret_opret::case_2 ... ignored, fix needed (calling to method absent in Codex API)
+test blank_tapret_opret::case_3 ... ignored, fix needed (calling to method absent in Codex API)
+test blank_tapret_opret::case_4 ... ignored, fix needed (calling to method absent in Codex API)
+test collaborative_transfer ... ignored, Pending multi-signature workflow documentation
+test ln_transfers ... ignored, Pending Lightning Network integration documentation
+test mainnet_wlt_receiving_test_asset ... ignored, fix needed
+test reorg_history::case_1 ... ignored, fix needed
+test reorg_history::case_2 ... ignored, fix needed
+test reorg_history::case_3 ... ignored, fix needed
+test reorg_history::case_4 ... ignored, fix needed
+test reorg_history::case_5 ... ignored, fix needed
+test reorg_history::case_6 ... ignored, fix needed
+test same_transfer_twice_update_witnesses::case_1 ... ignored, Awaiting new rollback procedure API in RGB v0.12
+test same_transfer_twice_update_witnesses::case_2 ... ignored, Awaiting new rollback procedure API in RGB v0.12
+transfer_type Witness
+transfer_type Blinded
+starting test services...
+with_transfers true
+wallet dir: "test-data/integration/fb687462"
+wallet dir: "test-data/integration/127c91cb"
+wallet dir: "test-data/integration/5d243af8"
+wallet dir: "test-data/integration/22d5a33a"
+wallet dir: "test-data/integration/ec235ef7"
+wallet dir: "test-data/integration/1ca4a0c1"
+wallet dir: "test-data/integration/a3fbeb5d"
+wallet dir: "test-data/integration/55865b11"
+wallet dir: "test-data/integration/b50e95cf"
+disconnect_reorg_nodes:instance:3 peers: [
+]
+disconnect_reorg_nodes:instance:2 peers: [
+]
+wallet dir: "test-data/integration/aed25b32"
+A new contract issued with ID contract:CIwYp0Lo-_mpu~QN-mNueQ_q-I7AiYrb-s5Hdoio-MOsD7y4
+A new contract issued with ID contract:QeVEgypp-gGErzYy-HDV_QJR-dDaDiWP-X55jlVQ-mTmcIZc
+A new contract issued with ID contract:NZoT~Amj-FlZI5cN-Gz4VGN0-50KTStz-MDPveMQ-ZlnJ3YE
+A new contract issued with ID contract:M99chdch-1K1OQk9-je1Djzq-nHhsWWD-_XWJDbH-VJ9B4VA
+A new contract issued with ID contract:6TRYS4R9-jnAG~VQ-7HiGsOs-IGMhFv7-St85Aeu-wupaeGs
+A new contract issued with ID contract:6HojmiMu-JKcmdLE-l40gTKu-9CtCLAI-70109qe-qEUQwgc
+wallet dir: "test-data/integration/c1953eff"
+transfer txid: d8e2ac957b52392b30513823177c2f6482645aaf561c74eecb323193f3686420, consignment: 1
+transfer txid: 32b495841f92ad53d986caec36492c133b0b8a06c14339ba2ea7d41919fc772b, consignment: 2
+[tests/transfer.rs:562:5] wlt_1.runtime().state_all(None).map(|(c, s)| { s.owned }).collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(498de1142e27d9e96b315ad16709d22d26afd019e5689e86b3f0a4d18d034775),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(32b495841f92ad53d986caec36492c133b0b8a06c14339ba2ea7d41919fc772b),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        100,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(498de1142e27d9e96b315ad16709d22d26afd019e5689e86b3f0a4d18d034775),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(32b495841f92ad53d986caec36492c133b0b8a06c14339ba2ea7d41919fc772b),
+                    vout: Vout(
+                        2,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        1900,
+                    ),
+                ),
+            },
+        },
+    },
+]
+[tests/transfer.rs:567:5] wlt_1.runtime().state_own(None).map(|(c, s)| { s.owned }).collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {},
+    },
+]
+transfer txid: 764d2f4ddcca87f69e66b975487a370e1bd56ebf645279ad914a051589e5287b, consignment: 3
+thread 'same_transfer_twice_no_update_witnesses::case_2' panicked at tests/utils/helpers.rs:850:14:
+called `Result::unwrap()` on an `Err` value: Fulfill(StateInsufficient)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test same_transfer_twice_no_update_witnesses::case_2 ... FAILED
+[tests/transfer.rs:648:5] wlt_1_contract_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(d5621ee862de91c173fba1b92fd0f34b130f8a124a08ca8fdf89e049dc3cfe5c),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(d8e2ac957b52392b30513823177c2f6482645aaf561c74eecb323193f3686420),
+                    vout: Vout(
+                        2,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        400,
+                    ),
+                ),
+            },
+        },
+    },
+]
+test accept_0conf has been running for over 60 seconds
+test check_fungible_history has been running for over 60 seconds
+test rbf_transfer has been running for over 60 seconds
+test revert_genesis::case_1 has been running for over 60 seconds
+transfer txid: 52d1826463b537e0dfdaf113d2f5ed48504c65cf5fe3f52cc55df25a36d1e915, consignment: 5
+test revert_genesis::case_2 has been running for over 60 seconds
+test same_transfer_twice_no_update_witnesses::case_1 has been running for over 60 seconds
+test send_to_oneself has been running for over 60 seconds
+transfer txid: a7c1a5f3aae77ea6aefec7798a9fe59cfcd48dbd1f70631450b0e7a4f86f0c22, consignment: 6
+[tests/transfer.rs:562:5] wlt_1.runtime().state_all(None).map(|(c, s)| { s.owned }).collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(b3ccb0ba6327395dcb978c87a58177b6f182032a71f9a82c93dccb2e828dd45a),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(a7c1a5f3aae77ea6aefec7798a9fe59cfcd48dbd1f70631450b0e7a4f86f0c22),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        1900,
+                    ),
+                ),
+            },
+        },
+    },
+]
+[tests/transfer.rs:567:5] wlt_1.runtime().state_own(None).map(|(c, s)| { s.owned }).collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {},
+    },
+]
+test accept_0conf ... ok
+transfer_type Blinded wlt_1_desc Wpkh wlt_2_desc Wpkh asset_schema_1 Nia asset_schema_2 Nia
+wallet dir: "test-data/integration/fce20f94"
+thread 'same_transfer_twice_no_update_witnesses::case_1' panicked at tests/utils/helpers.rs:850:14:
+called `Result::unwrap()` on an `Err` value: Fulfill(StateInsufficient)
+test same_transfer_twice_no_update_witnesses::case_1 ... FAILED
+transfer_type Blinded wlt_1_desc Wpkh wlt_2_desc Tr asset_schema_1 Nia asset_schema_2 Nia
+wallet dir: "test-data/integration/5a2d6f5c"
+transfer txid: c86e077a61446cb8ad7ea1bd524894bc5f4ae2564fa96a6ad1ccf05789c72b5c, consignment: 7
+wallet dir: "test-data/integration/3a9eebd4"
+wallet dir: "test-data/integration/0b827ff4"
+[tests/transfer.rs:758:5] wlt.runtime().state_own(None).map(|s| s.1.owned).collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(105402272fd310f1664efa7c7617afd893c029e375c27d38fd35f012f1e8a367),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(764d2f4ddcca87f69e66b975487a370e1bd56ebf645279ad914a051589e5287b),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        200,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(105402272fd310f1664efa7c7617afd893c029e375c27d38fd35f012f1e8a367),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(764d2f4ddcca87f69e66b975487a370e1bd56ebf645279ad914a051589e5287b),
+                    vout: Vout(
+                        2,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        400,
+                    ),
+                ),
+            },
+        },
+    },
+]
+test send_to_oneself ... ok
+transfer_type Blinded wlt_1_desc Tr wlt_2_desc Wpkh asset_schema_1 Nia asset_schema_2 Nia
+wallet dir: "test-data/integration/4fe26820"
+wallet dir: "test-data/integration/f645aea1"
+thread 'rbf_transfer' panicked at tests/utils/helpers.rs:850:14:
+called `Result::unwrap()` on an `Err` value: Fulfill(StateInsufficient)
+test rbf_transfer ... FAILED
+transfer_type Blinded wlt_1_desc Tr wlt_2_desc Tr asset_schema_1 Nia asset_schema_2 Nia
+wallet dir: "test-data/integration/d065e778"
+wallet dir: "test-data/integration/7dbf82b2"
+test tapret_wlt_receiving_opret has been running for over 60 seconds
+test transfer_loop::case_01 has been running for over 60 seconds
+test transfer_loop::case_02 has been running for over 60 seconds
+test transfer_loop::case_03 has been running for over 60 seconds
+test transfer_loop::case_04 has been running for over 60 seconds
+forcibly breaking mining wait
+forcibly breaking mining wait
+A new contract issued with ID contract:JXRNCAC0-vqFi9C1-YvEq5AT-7xIfPjl-cIPmR3O-zvgooro
+A new contract issued with ID contract:1M2HqAF2-eWcMDR6-S5xA5TE-azdsrDf-UIhKu~z-l1~m_x0
+A new contract issued with ID contract:YEHU4iOj-ywIiHVW-An7KqAo-SjrSgXN-Y0N75C7-nsuQ0sM
+A new contract issued with ID contract:pLQI5l16-VfpM_1d-1_3gcl3-Xjql042-qO1UXAY-jscJDo0
+A new contract issued with ID contract:F1mG3CDQ-HjKYFiB-15f0Pl9-82DZE0I-tdreTRU-ADw_JTk
+A new contract issued with ID contract:9Kxul6xe-S9WQe_X-MXrdh1C-wgshmVK-172kAXm-LQqJicI
+test revert_genesis::case_2 ... ok
+transfer_type Blinded wlt_1_desc Wpkh wlt_2_desc Wpkh asset_schema_1 Nia asset_schema_2 Cfa
+wallet dir: "test-data/integration/29648f8e"
+wallet dir: "test-data/integration/3707dcd5"
+wallet dir: "test-data/integration/95ffcfe6"
+wallet dir: "test-data/integration/06e00797"
+A new contract issued with ID contract:x~61iNNI-KLMsSHY-pa3WW01-~hHnn4Z-jcFPEoN-vJKoYG4
+A new contract issued with ID contract:_opB7KYm-9lnqvCB-aO~hbix-p8aFQFJ-jKdTp~U-OUpTOe4
+A new contract issued with ID contract:AuPtCKRe-rCcSxFR-99p3c3Y-sDhSzAM-63uVLv6-0aZbKt0
+[tests/transfer.rs:708:5] wlt_1.contracts_info() = [
+    ContractInfo {
+        id: ContractId(
+            Array<32>(c7feb588d34828b32c4876296b7596d35fe11e79f86637053c4a0dbc92a8606e),
+        ),
+        name: Named(
+            TypeName(
+                "TestAsset",
+            ),
+        ),
+        issuer: Identity(
+            RString<AsciiPrintable[1..4096]>(
+                "ssi:anonymous",
+            ),
+        ),
+        timestamp: 2024-12-18T12:32:00Z,
+        codex: CodexInfo {
+            id: CodexId(
+                Array<32>(ce7c10195856adf45af1e96935a02c516516c57b01fb85250bf4df4c4461066e),
+            ),
+            name: Confined(
+                "NonInflatableAsset",
+            ),
+            developer: Identity(
+                RString<AsciiPrintable[1..4096]>(
+                    "dns:pandoraprime.ch",
+                ),
+            ),
+            timestamp: 2024-11-25T10:08:27Z,
+        },
+        consensus: Bitcoin,
+        testnet: true,
+    },
+]
+[tests/transfer.rs:709:5] wlt_1.runtime().state_own(Some(contract_id)).map(|s|
+{ s.1.owned }).collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(a66abae6e7ed55ddd77e5f42a22105c31d0179af5d93d591315e94872b8a0bbc),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(73895d87802e07c6207496d4cf0c577bcc115727bae6e94b9d569e29099f1ffb),
+                    vout: Vout(
+                        0,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        600,
+                    ),
+                ),
+            },
+        },
+    },
+]
+A new contract issued with ID contract:RbyDBkD3-PQMeXRs-HomsVSf-PprU097-YEprjWy-1p~0UY8
+A new contract issued with ID contract:Iq5HSxB4-uKEKYXi-cpWwtDv-R2IE12P-tmR5nZq-09MB4DY
+thread 'transfer_loop::case_02' panicked at sonic/api/src/schema.rs:84:14:
+calling to method absent in Codex API
+thread 'transfer_loop::case_04' panicked at sonic/api/src/schema.rs:84:14:
+calling to method absent in Codex API
+test transfer_loop::case_02 ... FAILED
+transfer_type Blinded wlt_1_desc Wpkh wlt_2_desc Tr asset_schema_1 Nia asset_schema_2 Cfa
+wallet dir: "test-data/integration/84dffb5f"
+test transfer_loop::case_04 ... FAILED
+transfer_type Blinded wlt_1_desc Tr wlt_2_desc Wpkh asset_schema_1 Nia asset_schema_2 Cfa
+wallet dir: "test-data/integration/ad31517a"
+thread 'transfer_loop::case_03' panicked at sonic/api/src/schema.rs:84:14:
+calling to method absent in Codex API
+test transfer_loop::case_03 ... FAILED
+transfer_type Blinded wlt_1_desc Tr wlt_2_desc Tr asset_schema_1 Nia asset_schema_2 Cfa
+wallet dir: "test-data/integration/01b7ced5"
+transfer txid: 81beabcfc3e2814c93613956a11ef74a8302adfd2650036f8bca07b63963975f, consignment: 13
+wallet dir: "test-data/integration/ebb6c6cc"
+wallet dir: "test-data/integration/9a9000b0"
+wallet dir: "test-data/integration/fcc6104d"
+A new contract issued with ID contract:6oY3HBBW-WoLM0BC-qfNmS5m-Hiiv0Xh-~EgbGMN-o6auh9Y
+A new contract issued with ID contract:TABg8Zsd-BkgEjpT-Aaf~tVB-4n8dsUB-AzyT9IE-0ok4DlI
+A new contract issued with ID contract:SZEB7SUU-d90Lj6_-TgJvZza-3Ud4Rgt-SPZmZp5-8gTma5A
+A new contract issued with ID contract:Rg0F_IyI-u8S8n1r-qb2f_37-J0OWn2_-t05jqaj-ZIOZgfw
+thread 'transfer_loop::case_01' panicked at sonic/api/src/schema.rs:84:14:
+calling to method absent in Codex API
+test transfer_loop::case_01 ... FAILED
+transfer_type Blinded wlt_1_desc Wpkh wlt_2_desc Wpkh asset_schema_1 Cfa asset_schema_2 Cfa
+wallet dir: "test-data/integration/2ae8ebbf"
+A new contract issued with ID contract:dJx9RCNL-ApW16Sn-pV~3DPx-FZfHKZ6-RijjyRD-F9WbxYE
+A new contract issued with ID contract:KVKT_rDM-im70d9o-QTAC7SD-RfL8yqA-A0ap3K8-YcpGiHQ
+transfer txid: 94a03dd0f8142ff1624e6cf05811576efd4b8bc77e929f9bbab5cbf227eebdc9, consignment: 15
+[tests/transfer.rs:721:5] wlt_1.runtime().state_own(Some(contract_id)).map(|s|
+{ s.1.owned }).collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(b7d555b88f6932c0de780ab2af37df2c40007869d45b2e2040a722c1fecef225),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(81beabcfc3e2814c93613956a11ef74a8302adfd2650036f8bca07b63963975f),
+                    vout: Vout(
+                        2,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        400,
+                    ),
+                ),
+            },
+        },
+    },
+]
+[tests/transfer.rs:726:5] wlt_2.runtime().state_own(Some(contract_id)).map(|s|
+{ s.1.owned }).collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(b7d555b88f6932c0de780ab2af37df2c40007869d45b2e2040a722c1fecef225),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(81beabcfc3e2814c93613956a11ef74a8302adfd2650036f8bca07b63963975f),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        200,
+                    ),
+                ),
+            },
+        },
+    },
+]
+with_transfers false
+test check_fungible_history ... ok
+transfer_type Blinded wlt_1_desc Wpkh wlt_2_desc Tr asset_schema_1 Cfa asset_schema_2 Cfa
+wallet dir: "test-data/integration/1dff19fa"
+wallet dir: "test-data/integration/6b3f7e48"
+wallet dir: "test-data/integration/fd23c744"
+disconnect_reorg_nodes:instance:3 peers: [
+]
+disconnect_reorg_nodes:instance:2 peers: [
+]
+wallet dir: "test-data/integration/03f95445"
+A new contract issued with ID contract:4AUpeDyY-_WDY00i-KYzTYYd-bN4Ywl8-w3yFJj3-wc9uY~8
+test revert_genesis::case_1 ... ok
+transfer_type Blinded wlt_1_desc Tr wlt_2_desc Wpkh asset_schema_1 Cfa asset_schema_2 Cfa
+wallet dir: "test-data/integration/165cb223"
+wallet dir: "test-data/integration/0a5c7dc0"
+A new contract issued with ID contract:jPR6QljT-QHBn1fd-iGfnrxp-aSjJBM7-EdzkQPg-_ynQlEM
+A new contract issued with ID contract:eMkXEEbK-~p0jzZ9-j~STIAl-uIh7XB7-hk2OtiY-3oPTTtQ
+wallet dir: "test-data/integration/18daf55a"
+wallet dir: "test-data/integration/178e0889"
+A new contract issued with ID contract:Rigqlc5i-P~7Gxau-w75O8UY-IdMxJFO-_ooE9~K-9a648iI
+A new contract issued with ID contract:jy~Ej6SI-Q2B23Rm-1g7kahT-V~36Qr_-ax6JMe2-AFLZRuY
+transfer txid: 8788bb5ef3ef432e81d85caf9f26b5a30dfeca26b2a10c73a45584a2f319b7e5, consignment: 16
+transfer txid: 38115c5307ccc89e84bda26eb05d2c44a6e6c4272555b4ffd13caabad021842c, consignment: 17
+transfer txid: 38e29d25cb31466c4a7cb5261f37123dfb7838af00921cebf7c6ef92a2a3d867, consignment: 18
+A new contract issued with ID contract:LzMGZEx8-EfgYgQx-ZRyEKEy-noUbpLB-9PHWVPC-B_5r4Kg
+A new contract issued with ID contract:KMbA50Sa-g2uTaq4-zKxhqzM-nZD_W2f-KU1V_ky-qmz4h0o
+A new contract issued with ID contract:F2z~~fIF-OjQoxeJ-BbSbkKl-7I~dYCv-DOTVBEG-YsG6hjU
+transfer txid: 1b54e31ddac3a18ca1953cffc4b6156328a09fef832683a243b114b8957dfefd, consignment: 19
+transfer txid: 0d429b07175bf13edc847bcdb50a2a8a6c9e4abe45f9aaddaba9caf5f8dc82be, consignment: 21
+transfer txid: 61962ff0ce375de435b331b24dbd52d440dab500eaf894e2ce710ecad2b50d9b, consignment: 20
+transfer txid: b0bdd0b16177fefc98039bb0445345eff13985b24c711d46b19471639376e611, consignment: 23
+transfer txid: 807f574197702f9a8df1e1530af6b74518db84269a8774ae7525e03150bd72e9, consignment: 24
+transfer txid: 49805441d2df33bc1467e2beee398381991b0c3782d95a17d313fcb0675c5bc6, consignment: 22
+transfer txid: f6a6d3422f72d24fd87988660a69b278568b4860bf37d183dddf7f3f419cd03b, consignment: 26
+transfer txid: 8589750221b23e4ffed8b84d4abedf7484c41fca173100b66280171f26232b7f, consignment: 25
+thread 'transfer_loop::case_05' panicked at sonic/api/src/schema.rs:84:14:
+calling to method absent in Codex API
+test transfer_loop::case_05 ... FAILED
+transfer_type Blinded wlt_1_desc Tr wlt_2_desc Tr asset_schema_1 Cfa asset_schema_2 Cfa
+wallet dir: "test-data/integration/af24bda7"
+transfer txid: acdbaa67b547b21c8ca936e36a1f41291a19e6c2a99d0a273b541942a6906fff, consignment: 28
+transfer txid: b87398da716a41f2970adc61121b70c27cabb7e8d40500d9995bc2f9d00deda5, consignment: 29
+wallet dir: "test-data/integration/20b56ed4"
+transfer txid: b85afc69021a4fcf8cb8052f9cd008972658864b8cb90cda50f6a604b9d8c47f, consignment: 30
+[tests/utils/helpers.rs:568:21] tx.inputs.iter().map(|i| i.prev_output).collect::<Vec<_>>() = [
+    Outpoint {
+        txid: Array<32>(595832f4127ca4b26e7d9f6bb90e393b20a2a0b34ac48ce7aa0f77be24cc6cb8),
+        vout: Vout(
+            0,
+        ),
+    },
+]
+[tests/utils/helpers.rs:568:21] &e = HttpResponse {
+    status: 400,
+    message: "sendrawtransaction RPC error: {\"code\":-27,\"message\":\"Transaction already in block chain\"}",
+}
+thread 'tapret_wlt_receiving_opret' panicked at tests/utils/helpers.rs:574:18:
+called `Result::unwrap()` on an `Err` value: HttpResponse { status: 400, message: "sendrawtransaction RPC error: {\"code\":-27,\"message\":\"Transaction already in block chain\"}" }
+test tapret_wlt_receiving_opret ... FAILED
+A new contract issued with ID contract:6X8H4Hte-j9wAx6o-WZWA9S4-S0pk9ar-lisk3vV-wOLxzag
+A new contract issued with ID contract:vg3TWTC9-SqtTlB5-lKHQrNQ-pbj25Wg-8p3ZUyr-_SEQ9Fc
+thread 'transfer_loop::case_06' panicked at sonic/api/src/schema.rs:84:14:
+calling to method absent in Codex API
+test transfer_loop::case_06 ... FAILED
+thread 'transfer_loop::case_07' panicked at sonic/api/src/schema.rs:84:14:
+calling to method absent in Codex API
+test transfer_loop::case_07 ... FAILED
+transfer txid: a2ad7050d23b566f8d1d0ecfc5f4fd15b61f6c0b46f83a34c694a7b451e2f6fa, consignment: 33
+thread 'transfer_loop::case_08' panicked at sonic/api/src/schema.rs:84:14:
+calling to method absent in Codex API
+test transfer_loop::case_08 ... FAILED
+transfer txid: bee77f26ac6b44af531f12bdf31f13e6386b396b36b1a6bf5e4890f0af2254fc, consignment: 35
+transfer txid: 907e7d07e1aa0d6129aa0b5dbcf9528a7149ab94681e6010ab1859ae7a3beebd, consignment: 36
+transfer txid: 900288520864289efbd0d8a604af9cc4d25182e1ebb5064b58a7e1e5b8575abb, consignment: 37
+transfer txid: 86448b4d1c93b875a009c70a3ed793ecdf0a077c7810eaca513ea127df3357f7, consignment: 38
+transfer txid: c84794743ace45d932f8d6ee5e063e27797892ef17100d7e7e24619dec5360df, consignment: 41
+transfer txid: 606f0fc715b2c7a0e27e4ae5399121e563c88a7b99b4a91c1cdd749bb1e6ddff, consignment: 39
+transfer txid: 5f638aafdf2e4261a811622d271b0a5dfa10e94d86224b7acc8c195e26ed90e2, consignment: 40
+transfer txid: b53398068e54ea4d74acb0afa4b0d6dbded2d5ae51927274d7f93985f53e9625, consignment: 42
+transfer txid: c005f7fba2f8d3694f1f573840972b1336093d8d752857be30b1756bb4c74963, consignment: 43
+transfer txid: b93a5edfcdf91d332e877a8f0e26c9297eb04b2c365aa39621ff38e5ce78df05, consignment: 45
+transfer txid: 0a583e16e58b1d3b98ccf22f57b43ea230c72e048790bc852b6f6bff72745e02, consignment: 44
+transfer txid: 6370419e089e94afdb960198a5c590ef4af67b42af628897dcb62cae1e184e5b, consignment: 46
+[tests/transfer.rs:422:9] wlt_1_contract_2_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(5b31306bed3f28e13590d1081d9bcbd4684ce6be2bcbe4e9869da2dfcf8da582),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(c1252ce1747030aa12c4d789023f4381429cea6a5bebb1190b55a4e70de81ecd),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        111,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(d9bbd6856212642394341486fa4b17ed67b3edeb5b60ff1278fbe86c0b4dff9b),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(bee77f26ac6b44af531f12bdf31f13e6386b396b36b1a6bf5e4890f0af2254fc),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        867,
+                    ),
+                ),
+            },
+        },
+    },
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(5c5e1396753ab6d64031ad79554259d9ba4dea8bb27ce599bcb75c7e99cf929d),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(ee6ffdc6f1bb1fc04b7c72b51182eb34a56aca8a61a25ba5bff7a3c1d1ff710c),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        11,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(a26a48962e0ea4f47463f5b45c7e4649d7de68f517c80bbd6f2f4cf5e68b9660),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(bee77f26ac6b44af531f12bdf31f13e6386b396b36b1a6bf5e4890f0af2254fc),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        644,
+                    ),
+                ),
+            },
+        },
+    },
+]
+[tests/transfer.rs:422:9] wlt_1_contract_2_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(a064ae6cf4d98415cec7be52c3ffd3e4e9cf174377b09a79d4c6c05c98a4972a),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(900288520864289efbd0d8a604af9cc4d25182e1ebb5064b58a7e1e5b8575abb),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        644,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(a8db0cbcbd960aef723a9afb0588ba18fa853d80c5ae13e96fc0cfc332cd3b64),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(c8107905d86a1f9f68466bce46233bfcfcda49b29ab03169f74b8b774627bb44),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        11,
+                    ),
+                ),
+            },
+        },
+    },
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(6aae48b92b6a0a018699d80bc149f3fea124e808bd9d8268e048900243c34de4),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(900288520864289efbd0d8a604af9cc4d25182e1ebb5064b58a7e1e5b8575abb),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        867,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(70bdcadb4c3ce99592737353bc4f62b9a717ed05e25f5801d6643306c6d31718),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(840608def10c6747bec77e6cc614a4e68e16081efd798a3aabad9aad4d8a926b),
+                    vout: Vout(
+                        0,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        111,
+                    ),
+                ),
+            },
+        },
+    },
+]
+test transfer_loop::case_09 has been running for over 60 seconds
+test transfer_loop::case_10 has been running for over 60 seconds
+transfer txid: bb5d25f95d0ce13db29a6892e99bc02f18833f1821a4f5197e998639990e6713, consignment: 49
+transfer txid: 2855d899c87314a74877d5f68a571c8d72425b02118c9dcd78b0299168e90125, consignment: 48
+transfer txid: c3bf69e92182d1e3e93e0ab105810682e0514205e3163cdc7b19f93307421527, consignment: 47
+[tests/transfer.rs:422:9] wlt_1_contract_2_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(6863afc3d8e25308042d56aae7ce08e86d4c9b9f851251a072f40e89e5f0f38c),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(d82f1d8807da8288e2060a123f6d178e08b97722f798a781755436581b163bf5),
+                    vout: Vout(
+                        0,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        11,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(c6159f6a7f58ee05c6d6be7ba8a71bfb94078085b7e41b10fc83b3f832735ebf),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(86448b4d1c93b875a009c70a3ed793ecdf0a077c7810eaca513ea127df3357f7),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        644,
+                    ),
+                ),
+            },
+        },
+    },
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(e06e555d565898c31fff2febd753b1c7fefa2e58be2a4a284d36ab1aa87607fa),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(9f9c2b9ffe2b335897d676b13b3c0d6252df05ac9f26a5ff8b0b10c3fe20157a),
+                    vout: Vout(
+                        0,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        111,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(e3cb747c2f553eb017d0d64bc236e5391a2a8643eaebf8e1a8f0b922717b86d0),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(86448b4d1c93b875a009c70a3ed793ecdf0a077c7810eaca513ea127df3357f7),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        867,
+                    ),
+                ),
+            },
+        },
+    },
+]
+test transfer_loop::case_11 has been running for over 60 seconds
+transfer txid: e076018c18a723574583af1ebcae93e03d76ef6ecea7e60ff97bbb9b8047a373, consignment: 50
+[tests/transfer.rs:444:9] wlt_1_contract_2_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(63622a49d1f8a779ba2b4e740bbabc375731a278404ea641e656a8b18961f395),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(2855d899c87314a74877d5f68a571c8d72425b02118c9dcd78b0299168e90125),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        644,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(a8db0cbcbd960aef723a9afb0588ba18fa853d80c5ae13e96fc0cfc332cd3b64),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(c8107905d86a1f9f68466bce46233bfcfcda49b29ab03169f74b8b774627bb44),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        11,
+                    ),
+                ),
+            },
+        },
+    },
+    {
+        VariantName(
+            "owned",
+        ): {},
+    },
+]
+thread 'transfer_loop::case_10' panicked at tests/utils/helpers.rs:914:17:
+assertion `left == right` failed
+  left: [11, 644]
+ right: [655]
+[tests/transfer.rs:444:9] wlt_1_contract_2_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {},
+    },
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(5c5e1396753ab6d64031ad79554259d9ba4dea8bb27ce599bcb75c7e99cf929d),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(ee6ffdc6f1bb1fc04b7c72b51182eb34a56aca8a61a25ba5bff7a3c1d1ff710c),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        11,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(a1d102045c3fb4f3822d62b0f994b9637c388ac9f7fad4d0eb021dce96d230bb),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(c3bf69e92182d1e3e93e0ab105810682e0514205e3163cdc7b19f93307421527),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        644,
+                    ),
+                ),
+            },
+        },
+    },
+]
+thread 'transfer_loop::case_09' panicked at tests/utils/helpers.rs:914:17:
+assertion `left == right` failed
+  left: [11, 644]
+ right: [655]
+[tests/transfer.rs:444:9] wlt_1_contract_2_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(60d126dafdfca72926d32187509a0ae03b7cabcf8dd7116a6f0427ca40aa3e1e),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(e076018c18a723574583af1ebcae93e03d76ef6ecea7e60ff97bbb9b8047a373),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        644,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(6863afc3d8e25308042d56aae7ce08e86d4c9b9f851251a072f40e89e5f0f38c),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(d82f1d8807da8288e2060a123f6d178e08b97722f798a781755436581b163bf5),
+                    vout: Vout(
+                        0,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        11,
+                    ),
+                ),
+            },
+        },
+    },
+    {
+        VariantName(
+            "owned",
+        ): {},
+    },
+]
+thread 'transfer_loop::case_11' panicked at tests/utils/helpers.rs:914:17:
+assertion `left == right` failed
+  left: [11, 644]
+ right: [655]
+transfer txid: 14176fd58d2d56a9f66414e314666d59cc7c08c3b036bd408eb7cb321148ae89, consignment: 52
+transfer txid: da5369f1bfdf9c9068caeabe5b0325a5d2a24c523a1eaf700db7bdb5f1f99dd6, consignment: 51
+transfer txid: f4641d46f284e542aedb69c3515b1876c5ff4c94b71a19dc13f465521381a066, consignment: 53
+transfer txid: 697e2dcec845e593e0c3ffdfa65ba59cd6829c36995bf8470fcf9e2927f8ce64, consignment: 54
+[tests/transfer.rs:422:9] wlt_1_contract_2_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(207ec47bb8f85d23cc630027f2355884a35f4e8645d52a9f2a2bdf282d44867c),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(c4512d6e4e0db3e7eb5f4b3204a74583e0e1eee5f7dc43dc7efe29f475cbd403),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        11,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(37072c6093b3e3026b87eeece3f23d0531a55702e790e04865b8cdb8b056ea2e),
+                ),
+                pos: 1,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(0a583e16e58b1d3b98ccf22f57b43ea230c72e048790bc852b6f6bff72745e02),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        644,
+                    ),
+                ),
+            },
+        },
+    },
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(674273677b864e0f92ec399012e4bc1bf6f112a5649aef8e3870544431224e24),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(0a583e16e58b1d3b98ccf22f57b43ea230c72e048790bc852b6f6bff72745e02),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        867,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(fa32075db4b159ea4467ec1e20538715254566555c2e15fefca71f274757fc6c),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(5d0c848b907391acde837244305935a826f000df53a46829825c9b96f02d43c4),
+                    vout: Vout(
+                        0,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        111,
+                    ),
+                ),
+            },
+        },
+    },
+]
+test transfer_loop::case_10 ... ok
+test transfer_loop::case_09 ... ok
+test transfer_loop::case_12 has been running for over 60 seconds
+transfer txid: 44332505f8aad577eae3f83d1c12bf5b39186f4d6b186c8f660b3c3e4a7da665, consignment: 55
+test transfer_loop::case_11 ... ok
+[tests/transfer.rs:444:9] wlt_1_contract_2_state.collect::<Vec<_>>() = [
+    {
+        VariantName(
+            "owned",
+        ): {
+            CellAddr {
+                opid: Opid(
+                    Array<32>(207ec47bb8f85d23cc630027f2355884a35f4e8645d52a9f2a2bdf282d44867c),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(c4512d6e4e0db3e7eb5f4b3204a74583e0e1eee5f7dc43dc7efe29f475cbd403),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        11,
+                    ),
+                ),
+            },
+            CellAddr {
+                opid: Opid(
+                    Array<32>(c89fd96b42db7d11ba35f8c4ef84c518fe0f1cec10ef559f24d4330782fe9b72),
+                ),
+                pos: 0,
+            }: Assignment {
+                seal: Outpoint {
+                    txid: Array<32>(44332505f8aad577eae3f83d1c12bf5b39186f4d6b186c8f660b3c3e4a7da665),
+                    vout: Vout(
+                        1,
+                    ),
+                },
+                data: Number(
+                    Uint(
+                        644,
+                    ),
+                ),
+            },
+        },
+    },
+    {
+        VariantName(
+            "owned",
+        ): {},
+    },
+]
+thread 'transfer_loop::case_12' panicked at tests/utils/helpers.rs:914:17:
+assertion `left == right` failed
+  left: [11, 644]
+ right: [655]
+transfer txid: 6881a0b4b1723a71af7748e767c77823b7e5e15f538d7cfca0c3368b0ea72aef, consignment: 56
+test transfer_loop::case_12 ... ok
+
+failures:
+
+failures:
+    rbf_transfer
+    same_transfer_twice_no_update_witnesses::case_1
+    same_transfer_twice_no_update_witnesses::case_2
+    tapret_wlt_receiving_opret
+    transfer_loop::case_01
+    transfer_loop::case_02
+    transfer_loop::case_03
+    transfer_loop::case_04
+    transfer_loop::case_05
+    transfer_loop::case_06
+    transfer_loop::case_07
+    transfer_loop::case_08
+
+test result: FAILED. 9 passed; 12 failed; 15 ignored; 0 measured; 0 filtered out; finished in 290.95s
+
+error: test failed, to rerun pass `--test transfer`

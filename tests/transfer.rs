@@ -498,6 +498,7 @@ fn transfer_loop(
 #[rstest]
 #[ignore = "Awaiting new rollback procedure API in RGB v0.12"]
 #[case(TransferType::Blinded)]
+#[ignore = "Awaiting new rollback procedure API in RGB v0.12"]
 #[case(TransferType::Witness)]
 fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {}
 
@@ -653,6 +654,7 @@ fn accept_0conf() {
 }
 
 #[test]
+#[serial]
 fn tapret_wlt_receiving_opret() {
     initialize();
 
@@ -687,6 +689,7 @@ fn tapret_wlt_receiving_opret() {
 }
 
 #[test]
+#[serial]
 fn check_fungible_history() {
     initialize();
 
