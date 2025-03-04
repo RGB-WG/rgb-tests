@@ -21,7 +21,7 @@ pub const ESPLORA_3_REGTEST_URL: &str = "http://127.0.0.1:3003";
 pub const ESPLORA_MAINNET_URL: &str = "https://blockstream.info/api";
 pub const FAKE_TXID: &str = "e5a3e577309df31bd606f48049049d2e1e02b048206ba232944fcc053a176ccb:0";
 pub const UDA_FIXED_INDEX: u32 = 0;
-pub const DEFAULT_FEE_ABS: u64 = 400;
+pub const DEFAULT_FEE_ABS: u64 = 600;
 
 pub const INSTANCE_1: u8 = 1;
 pub const INSTANCE_2: u8 = 2;
