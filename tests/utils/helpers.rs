@@ -8,6 +8,7 @@ use std::sync::OnceLock;
 use std::time::Duration;
 use std::time::Instant;
 
+use bp::Weight;
 use bp::{seals::WTxoSeal, Outpoint};
 use commit_verify::{Digest, DigestExt, Sha256};
 use psbt::TxParams;
@@ -32,6 +33,12 @@ use super::{
     chain::{indexer_url, mine_custom, Indexer, INDEXER},
     *,
 };
+
+use tabled::settings::{
+    object::{Columns, Rows},
+    Alignment, Modify, Style,
+};
+use tabled::{builder::Builder, Table, Tabled};
 
 /// RGB Asset creation parameters builder
 #[derive(Clone)]
@@ -310,6 +317,8 @@ impl fmt::Display for AssetSchema {
 pub enum MetricType {
     /// Duration (milliseconds)
     Duration,
+    /// Bytes value
+    Bytes,
     /// Integer value
     Integer,
     /// Float value
@@ -434,6 +443,13 @@ impl Report {
         self.check_metric_name_and_type(name, MetricType::Duration)?;
         self.current_row
             .insert(name.to_string(), duration.as_millis().to_string());
+        Ok(())
+    }
+
+    /// Add bytes metric by name
+    pub fn add_bytes(&mut self, name: &str, value: u64) -> Result<(), ReportError> {
+        self.check_metric_name_and_type(name, MetricType::Bytes)?;
+        self.current_row.insert(name.to_string(), value.to_string());
         Ok(())
     }
 
@@ -574,11 +590,21 @@ impl Report {
             }
         }
 
-        // Generate summary
-        let mut summary = String::new();
-        summary.push_str("# Performance Test Summary\n\n");
-        summary.push_str("| Metric | Average | Minimum | Maximum | Sample Count |\n");
-        summary.push_str("|------|--------|--------|--------|--------|\n");
+        #[derive(Tabled)]
+        struct MetricSummary {
+            #[tabled(rename = "Metric")]
+            metric: String,
+            #[tabled(rename = "Average")]
+            average: String,
+            #[tabled(rename = "Minimum")]
+            minimum: String,
+            #[tabled(rename = "Maximum")]
+            maximum: String,
+            #[tabled(rename = "Sample Count")]
+            count: String,
+        }
+
+        let mut summaries = Vec::new();
 
         for (i, header) in headers.iter().enumerate() {
             if data[i].is_empty() {
@@ -597,42 +623,56 @@ impl Report {
                 MetricType::Float
             };
 
-            match metric_type {
-                MetricType::Duration => {
-                    summary.push_str(&format!(
-                        "| {} | {:.2} ms | {:.2} ms | {:.2} ms | {} |\n",
-                        header,
-                        avg,
-                        min,
-                        max,
-                        values.len()
-                    ));
-                }
-                MetricType::Integer | MetricType::Float => {
-                    summary.push_str(&format!(
-                        "| {} | {:.2} | {:.2} | {:.2} | {} |\n",
-                        header,
-                        avg,
-                        min,
-                        max,
-                        values.len()
-                    ));
-                }
-                MetricType::Text => {
-                    summary.push_str(&format!("| {} | - | - | - | {} |\n", header, values.len()));
-                }
-            }
+            let (avg_str, min_str, max_str) = match metric_type {
+                MetricType::Duration => (
+                    format!("{:.2} ms", avg),
+                    format!("{:.2} ms", min),
+                    format!("{:.2} ms", max),
+                ),
+                MetricType::Bytes => (
+                    format!("{:.2} B", avg),
+                    format!("{:.2} B", min),
+                    format!("{:.2} B", max),
+                ),
+                MetricType::Integer | MetricType::Float => (
+                    format!("{:.2}", avg),
+                    format!("{:.2}", min),
+                    format!("{:.2}", max),
+                ),
+                MetricType::Text => ("-".to_string(), "-".to_string(), "-".to_string()),
+            };
+
+            summaries.push(MetricSummary {
+                metric: header.to_string(),
+                average: avg_str,
+                minimum: min_str,
+                maximum: max_str,
+                count: values.len().to_string(),
+            });
         }
+
+        // Create the table and style it
+        let mut table = Table::new(summaries);
+        table
+            .with(Style::markdown())
+            .with(Modify::new(Columns::new(1..)).with(Alignment::right()));
+
+        // Generate the final Markdown output
+        let mut summary = String::new();
+        summary.push_str("# Performance Test Summary\n\n");
+        summary.push_str(&table.to_string());
 
         Ok(summary)
     }
 
     /// Save summary statistics to file
-    pub fn save_summary(&mut self) -> Result<PathBuf, ReportError> {
+    pub fn save_summary(&mut self, name: &str) -> Result<PathBuf, ReportError> {
         let summary = self.generate_summary()?;
 
-        let mut summary_path = self.report_path.clone();
-        summary_path.set_extension("md");
+        let summary_path = self
+            .report_path
+            .clone()
+            .with_file_name(format!("{}.md", name));
 
         let mut file = std::fs::File::create(&summary_path)?;
         file.write_all(summary.as_bytes())?;
@@ -1179,11 +1219,12 @@ impl TestWallet {
         contract_id: ContractId,
         amount: u64,
         sats: u64,
+        fee: Option<u64>,
         nonce: Option<u64>,
         report: Option<&mut Report>,
     ) -> (PathBuf, Tx) {
         let invoice = recv_wallet.invoice(contract_id, amount, wout, nonce, None);
-        self.send_to_invoice(recv_wallet, invoice, Some(sats), None, report)
+        self.send_to_invoice(recv_wallet, invoice, Some(sats), fee, report)
     }
 
     pub fn send_to_invoice(
@@ -1261,10 +1302,6 @@ impl TestWallet {
             .unwrap();
 
         let pay_duration = pay_start.elapsed();
-        if let Some(report) = report {
-            let column_name = format!("{}_pay", self.wallet_id());
-            report.add_duration(&column_name, pay_duration).unwrap();
-        }
 
         let tx = self.sign_finalize_extract(&mut psbt);
 
@@ -1286,6 +1323,28 @@ impl TestWallet {
             .mound
             .consign_to_file(invoice.scope, [terminal], &consignment)
             .unwrap();
+
+        if let Some(report) = report {
+            let wallet_id = self.wallet_id();
+            let column_name = format!("{}_pay", wallet_id);
+            report.add_duration(&column_name, pay_duration).unwrap();
+
+            let consigment_column_name = format!("{}_pay_consignment_size", wallet_id);
+            let file_size = std::fs::metadata(&consignment).unwrap().len();
+            report
+                .add_bytes(&consigment_column_name, file_size)
+                .unwrap();
+
+            let txin_column_name = format!("{}_pay_txin_count", wallet_id);
+            report
+                .add_integer(&txin_column_name, tx.inputs.len() as u64)
+                .unwrap();
+
+            let txout_column_name = format!("{}_pay_txout_count", wallet_id);
+            report
+                .add_integer(&txout_column_name, tx.outputs.len() as u64)
+                .unwrap();
+        }
 
         (consignment, tx)
     }

@@ -187,7 +187,16 @@ fn rbf_transfer() {
     wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![400]);
 
     // Transfer assets back to sender
-    wlt_2.send(&mut wlt_1, false, contract_id, 400, 2000, Some(0), None);
+    wlt_2.send(
+        &mut wlt_1,
+        false,
+        contract_id,
+        400,
+        2000,
+        None,
+        Some(0),
+        None,
+    );
 }
 
 #[rstest]
@@ -305,6 +314,7 @@ fn transfer_loop(
         contract_id_1,
         amount_1,
         sats,
+        None,
         Some(0),
         None,
     );
@@ -327,6 +337,7 @@ fn transfer_loop(
             contract_id_1,
             amount_2,
             sats,
+            None,
             Some(0),
             None,
         );
@@ -345,7 +356,16 @@ fn transfer_loop(
     } else {
         1
     };
-    wlt_1.send(&mut wlt_2, wout, contract_id_2, amount_3, sats, None, None);
+    wlt_1.send(
+        &mut wlt_2,
+        wout,
+        contract_id_2,
+        amount_3,
+        sats,
+        None,
+        None,
+        None,
+    );
 
     // Verify final allocations
     if asset_schema_1 != AssetSchema::Uda {
@@ -381,7 +401,16 @@ fn transfer_loop(
         0
     };
     sats -= 1000;
-    wlt_2.send(&mut wlt_1, wout, contract_id_1, amount_4, sats, None, None);
+    wlt_2.send(
+        &mut wlt_1,
+        wout,
+        contract_id_1,
+        amount_4,
+        sats,
+        None,
+        None,
+        None,
+    );
     wlt_1.check_allocations(
         contract_id_1,
         asset_schema_1,
@@ -406,7 +435,16 @@ fn transfer_loop(
         1
     };
     sats -= 1000;
-    wlt_2.send(&mut wlt_1, wout, contract_id_2, amount_5, sats, None, None);
+    wlt_2.send(
+        &mut wlt_1,
+        wout,
+        contract_id_2,
+        amount_5,
+        sats,
+        None,
+        None,
+        None,
+    );
     wlt_1.check_allocations(
         contract_id_1,
         asset_schema_1,
@@ -438,7 +476,16 @@ fn transfer_loop(
         1
     };
     sats -= 1000;
-    wlt_1.send(&mut wlt_2, wout, contract_id_1, amount_6, sats, None, None);
+    wlt_1.send(
+        &mut wlt_2,
+        wout,
+        contract_id_1,
+        amount_6,
+        sats,
+        None,
+        None,
+        None,
+    );
     wlt_1.check_allocations(contract_id_1, asset_schema_1, vec![]);
     // for debug
     {
@@ -480,7 +527,16 @@ fn transfer_loop(
         1
     };
     sats -= 1000;
-    wlt_1.send(&mut wlt_2, wout, contract_id_2, amount_7, sats, None, None);
+    wlt_1.send(
+        &mut wlt_2,
+        wout,
+        contract_id_2,
+        amount_7,
+        sats,
+        None,
+        None,
+        None,
+    );
     wlt_1.check_allocations(contract_id_1, asset_schema_1, vec![]);
     wlt_1.check_allocations(contract_id_2, asset_schema_2, vec![]);
     wlt_2.check_allocations(
@@ -593,7 +649,16 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
 
     wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![amount]);
 
-    wlt_2.send(&mut wlt_1, wout, contract_id, amount, 1000, None, None);
+    wlt_2.send(
+        &mut wlt_1,
+        wout,
+        contract_id,
+        amount,
+        1000,
+        None,
+        None,
+        None,
+    );
 
     let wlt_1_contract_state = wlt_1.runtime().state_own(None).map(|s| s.1.owned);
     dbg!(wlt_1_contract_state.collect::<Vec<_>>());
@@ -608,6 +673,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
         contract_id,
         issue_supply,
         1000,
+        None,
         None,
         None,
     );
@@ -671,20 +737,20 @@ fn tapret_wlt_receiving_opret() {
     wlt_2.reload_runtime();
 
     // First transfer: wlt_1 -> wlt_2, transfer 400
-    wlt_1.send(&mut wlt_2, false, contract_id, 400, 5000, None, None);
+    wlt_1.send(&mut wlt_2, false, contract_id, 400, 5000, None, None, None);
 
     // Second transfer: wlt_2 -> wlt_1, transfer 100
     let invoice = wlt_1.invoice(contract_id, 100, true, Some(0), None);
     wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
 
     // Third transfer: wlt_1 -> wlt_2, transfer 290
-    wlt_1.send(&mut wlt_2, true, contract_id, 290, 1000, None, None);
+    wlt_1.send(&mut wlt_2, true, contract_id, 290, 1000, None, None, None);
 
     // Fourth transfer: wlt_2 -> wlt_1, transfer 560
-    wlt_2.send(&mut wlt_1, false, contract_id, 560, 1000, None, None);
+    wlt_2.send(&mut wlt_1, false, contract_id, 560, 1000, None, None, None);
 
     // Fifth transfer: wlt_1 -> wlt_2, transfer 570
-    wlt_1.send(&mut wlt_2, false, contract_id, 570, 1000, None, None);
+    wlt_1.send(&mut wlt_2, false, contract_id, 570, 1000, None, None, None);
 
     wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
     wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![30, 570]);
@@ -716,7 +782,7 @@ fn check_fungible_history() {
 
     // transfer
     let amt = 200;
-    let (_, tx) = wlt_1.send(&mut wlt_2, true, contract_id, amt, 1000, None, None);
+    let (_, tx) = wlt_1.send(&mut wlt_2, true, contract_id, amt, 1000, None, None, None);
     let _txid = tx.txid();
 
     // debug contract state
@@ -801,11 +867,29 @@ fn blank_tapret_opret(
     wlt_2.reload_runtime();
 
     // First transfer: wlt_1 -> wlt_2, transfer 200 of first asset
-    wlt_1.send(&mut wlt_2, false, contract_id_0, 200, 1000, None, None);
+    wlt_1.send(
+        &mut wlt_2,
+        false,
+        contract_id_0,
+        200,
+        1000,
+        None,
+        None,
+        None,
+    );
 
     // Second transfer: wlt_1 -> wlt_2, transfer 100 of second asset
     // This tests the blank transfer functionality with different descriptor types
-    wlt_1.send(&mut wlt_2, false, contract_id_1, 100, 1000, None, None);
+    wlt_1.send(
+        &mut wlt_2,
+        false,
+        contract_id_1,
+        100,
+        1000,
+        None,
+        None,
+        None,
+    );
 
     // Verify final allocations
     wlt_1.check_allocations(contract_id_0, AssetSchema::Nia, vec![]);
@@ -1067,8 +1151,26 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             // Test spending the final allocations
             wlt_1.send_contract("TestAsset", &mut wlt_3);
             wlt_3.reload_runtime();
-            wlt_1.send(&mut wlt_3, false, contract_id, wlt_1_amt, 1000, None, None);
-            wlt_2.send(&mut wlt_3, false, contract_id, wlt_2_amt, 1000, None, None);
+            wlt_1.send(
+                &mut wlt_3,
+                false,
+                contract_id,
+                wlt_1_amt,
+                1000,
+                None,
+                None,
+                None,
+            );
+            wlt_2.send(
+                &mut wlt_3,
+                false,
+                contract_id,
+                wlt_2_amt,
+                1000,
+                None,
+                None,
+                None,
+            );
             wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
             wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
             wlt_3.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_amt, wlt_2_amt]);
@@ -1088,13 +1190,23 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             // Test spending the final allocations
             wlt_1.send_contract("TestAsset", &mut wlt_3);
             wlt_3.reload_runtime();
-            wlt_1.send(&mut wlt_3, false, contract_id, wlt_1_amt, 1000, None, None);
+            wlt_1.send(
+                &mut wlt_3,
+                false,
+                contract_id,
+                wlt_1_amt,
+                1000,
+                None,
+                None,
+                None,
+            );
             wlt_2.send(
                 &mut wlt_3,
                 false,
                 contract_id,
                 wlt_2_alloc_1,
                 1000,
+                None,
                 None,
                 None,
             );
@@ -1123,6 +1235,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 1000,
                 None,
                 None,
+                None,
             );
             wlt_2.send(
                 &mut wlt_3,
@@ -1130,6 +1243,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 contract_id,
                 wlt_2_alloc_1,
                 1000,
+                None,
                 None,
                 None,
             );
@@ -1174,7 +1288,16 @@ fn revert_genesis(#[case] with_transfers: bool) {
         let amt = 200;
         wlt.send_contract("TestAsset", &mut recv_wlt);
         recv_wlt.reload_runtime();
-        wlt.send(&mut recv_wlt, false, contract_id, amt, 1000, None, None);
+        wlt.send(
+            &mut recv_wlt,
+            false,
+            contract_id,
+            amt,
+            1000,
+            None,
+            None,
+            None,
+        );
         wlt.check_allocations(contract_id, AssetSchema::Nia, vec![issued_supply - amt]);
     }
 

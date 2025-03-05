@@ -25,7 +25,7 @@ serde_json = "1.0"
 serial_test = "3.2.0"
 strum = { version = "0.26.2", features = ["derive"] }
 strum_macros = "0.26.2"
-time = "0.3.34"
+time = { version = "0.3.34", features = ["formatting"] }
 
 # RGB-related deps
 ## bp-core
@@ -63,6 +63,7 @@ strict_encoding = { path = "./strict-encoding/rust" }
 strict_types = { path = "./strict-types" }
 ## commit_verify
 commit_verify = { path = "./client_side_validation/commit_verify" }
+tabled = "0.18.0"
 
 
 [patch.crates-io]
