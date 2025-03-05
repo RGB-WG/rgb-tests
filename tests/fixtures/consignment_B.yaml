@@ -3,9 +3,9 @@ transfer: true
 terminals: {}
 genesis:
   ffv: 0
-  schemaId: rgb:sch:Il7xqc$4yuca6X0oy0kN27e13ieIAxAv43uVfpG$gYE#philips-charm-albert
+  schemaId: rgb:sch:tq4jbmu9hL6kJ5galPSMBH37K1g6MqPlxTa8$!0jhZs#marble-simon-avalon
   flags: null
-  timestamp: 1741180656
+  timestamp: 1741691716
   issuer: ssi:anonymous
   chainNet: bitcoinRegtest
   metadata: {}
@@ -21,9 +21,9 @@ genesis:
       type: fungible
       items:
       - seal:
-          txid: 5d922e75ea2fa1b1c84f0eec0617b378c331c81e0c5a5e01788dcc3952e43a65
-          vout: 1
-          blinding: 10303971587565934047
+          txid: 770397849ad0157e32a87244f0b70fc6d1504fabacfbb405175090478479c4b3
+          vout: 0
+          blinding: 7689682088762755142
         state:
           value: 666
         lock: null
@@ -32,42 +32,42 @@ bundles:
 - pubWitness: !tx
     version: 2
     inputs:
-    - prevOutput: 8be09f936667b171997b45ef6f92c385ec2916581ca6dad231172eb5fd7f9eea:2
+    - prevOutput: f118b087f59c0964dab787b8d123b301bab6c2edb1192e49c31074c77ff144bd:2
       sigScript: ''
       sequence: 0
       witness: []
     outputs:
     - value: 0
-      scriptPubkey: 6a20bfe02094398b8ab93141bdfc580e0fa0bf817edf383df8461de78bf623aaa4be
+      scriptPubkey: 6a2082ab2949b2e5dc306fd29b4a6d12191c922245e4984b4a6f5d30e969e6d9b75a
     - value: 9000
-      scriptPubkey: 0014965f1c905d280d1f921d45945f26192b8e411fc6
+      scriptPubkey: 001474e33fe716569577816a055e0b505d7db4287293
     - value: 99971800
-      scriptPubkey: 00144d627b8e1cda376c21751bc287a313e253bcdd50
+      scriptPubkey: 0014636d993b398a0a9ff6622acb9512072e5d9c9eb8
     lockTime: 0
   anchoredBundle: !opret
     mpcProof:
-      pos: 6
+      pos: 1
       cofactor: 0
       path:
-      - f99b60d2259942797c5bdda8afa78868b61204d9a1977f803b185337889f2ac3
-      - ab7ef167e6e867b93d976dac368521294b42b2bf98c7ff4260c6d789ad67c140
-      - 64db4bcfae6abcb873aed86fc0c2ee1d04479e43a379ba40fe55b0ad7714a10a
+      - f1c44854b8f9f3ca3a8c5b12393dd7c7c25b24794fa03cc9367e010e097236fb
+      - 5e26839cf33a960887efe243a5f9cd6d4c29e26ead0caae3b393baac671ead3e
+      - 157b735c8a9ff3b2ba53c1e57c90725ad93bdaf32a1780864a05bd8ecc7325ae
     dbcProof: null
     bundle:
       inputMap:
         0:
-        - 3ee96c0daf8b0c9278662d97b68a699343766348fcd3cf5c6bcf5b7d81665688
+        - 97cdb39ddde8c37dce06eea5a32049397d1239fc1594bdb2fa3a04cfc3644bb4
       knownTransitions:
-        3ee96c0daf8b0c9278662d97b68a699343766348fcd3cf5c6bcf5b7d81665688:
+        97cdb39ddde8c37dce06eea5a32049397d1239fc1594bdb2fa3a04cfc3644bb4:
           ffv: 0
-          contractId: rgb:Fpft2Fiy-rBBasu1-hLx3F0$-rAIRbae-QTTa5E2-BPS6nnc
+          contractId: rgb:QbjlpaRk-IBw!1Ds-dfSCXMh-UZgFOJB-XjHC!sY-tZyTQY0
           nonce: 18446744073709551615
           transitionType: 10000
           metadata: {}
           globals: {}
           inputs:
           - prevOut:
-              op: 4afb54866f5ffbdfe3965bb09c486d56b01e29ba051d9d26308df1938ecb2fb8
+              op: d7e1803968823f5b77268936d2a44844e68d7dad1809bc81122299db575f486c
               ty: 4000
               no: 1
           assignments:
@@ -77,14 +77,14 @@ bundles:
               - seal:
                   txid: null
                   vout: 1
-                  blinding: 16336628066296185412
+                  blinding: 16577005664281778825
                 state:
                   value: 77
                 lock: null
               - seal:
                   txid: null
                   vout: 2
-                  blinding: 9945613456274863680
+                  blinding: 1478314234547706983
                 state:
                   value: 539
                 lock: null
@@ -93,96 +93,42 @@ bundles:
 - pubWitness: !tx
     version: 2
     inputs:
-    - prevOutput: 5d922e75ea2fa1b1c84f0eec0617b378c331c81e0c5a5e01788dcc3952e43a65:1
+    - prevOutput: 3aa4859506a217c570c817104719367313cb905833c63ae8d4bfd40ca478f3be:2
       sigScript: ''
       sequence: 0
       witness: []
     outputs:
     - value: 0
-      scriptPubkey: 6a20cf2aa71ae6010250b48c346d403d6dff48bcacbebaf416a1fe5c4059a4cc9a18
+      scriptPubkey: 6a2055565c5687a022c73348cee6bfda722ae5e1edbcc562ca8dda5932c66586522f
     - value: 9000
-      scriptPubkey: 00148c320c069d65347f825845a18c6d9bee77a34a86
-    - value: 99990600
-      scriptPubkey: 001462e750d1500fb3ffeaa0cf1e6e84c26ee2bce48d
-    lockTime: 0
-  anchoredBundle: !opret
-    mpcProof:
-      pos: 6
-      cofactor: 0
-      path:
-      - 27dd394310f57fd55d7b92377d5a709ebc9ef2282f6c00150e49029ad2355afa
-      - 09b0eef8346e16efae2ad7ff595f9754d68ff9a64d9bd0dc94aad953d0366164
-      - 96a7d1159053cd52b0e558645b16be4b47af5e8f770668bc8da8997de1d415ba
-    dbcProof: null
-    bundle:
-      inputMap:
-        0:
-        - 0386802c3ebd0ef419ea7afc2b002d92a1b90c04014a983c8dd765af79a00359
-      knownTransitions:
-        0386802c3ebd0ef419ea7afc2b002d92a1b90c04014a983c8dd765af79a00359:
-          ffv: 0
-          contractId: rgb:Fpft2Fiy-rBBasu1-hLx3F0$-rAIRbae-QTTa5E2-BPS6nnc
-          nonce: 18446744073709551615
-          transitionType: 10000
-          metadata: {}
-          globals: {}
-          inputs:
-          - prevOut:
-              op: 1697edd858b2ac105ab2ed612f1dc5d3fac02116da7904d36b913604f4ba9e77
-              ty: 4000
-              no: 0
-          assignments:
-            4000:
-              type: fungible
-              items:
-              - seal:
-                  txid: null
-                  vout: 2
-                  blinding: 10503559111967631932
-                state:
-                  value: 666
-                lock: null
-          validator: null
-          witness: null
-- pubWitness: !tx
-    version: 2
-    inputs:
-    - prevOutput: 9816c61eadecdbda6ffc72e6b0f202ff23fef6de2819b59da78a4f6bcbe56469:2
-      sigScript: ''
-      sequence: 0
-      witness: []
-    outputs:
-    - value: 0
-      scriptPubkey: 6a20c3c09a0cd6b4e9b4aa6cc9a479d0f1dab64ca9c34fa51cea67310b86c44b6e08
-    - value: 9000
-      scriptPubkey: 001419b8c953041349dd0a02ebdb989efd2759d57e5e
+      scriptPubkey: 00149e648078641215ecc0cecdc2590807c04c5d5de0
     - value: 99981200
-      scriptPubkey: 0014ea569d6a7d580f80ed518723bfe61522cf97b95e
+      scriptPubkey: 001434851d4a5390707bd454a124860e4a6d6c512818
     lockTime: 0
   anchoredBundle: !opret
     mpcProof:
-      pos: 6
+      pos: 1
       cofactor: 0
       path:
-      - 28dc601cc8739cf0fc0a404caa997fa11824a686a693874d7254fd308c55206f
-      - 78ebd24d52b31915cd0ea729fb82fef3dd7d7c050fcd4824e51336d6f9bd1c5e
-      - 0c7adaa11b2848b1e45c2c7d614865215f84ca23f0761a7e7ef56bca649811df
+      - 2727abf034f43f85bc63e7166907ac99b652aff9f2f20016f65faebcb5222e2f
+      - a709151a3fce737c7323e03b456ffbe6af7e00e86c7379b7b6f6b8966936cb0f
+      - 1ddc1b50f52d1176fa2803b6521fd1e484520c3ef1b6f822eba11d699cedf16c
     dbcProof: null
     bundle:
       inputMap:
         0:
-        - 4afb54866f5ffbdfe3965bb09c486d56b01e29ba051d9d26308df1938ecb2fb8
+        - d7e1803968823f5b77268936d2a44844e68d7dad1809bc81122299db575f486c
       knownTransitions:
-        4afb54866f5ffbdfe3965bb09c486d56b01e29ba051d9d26308df1938ecb2fb8:
+        d7e1803968823f5b77268936d2a44844e68d7dad1809bc81122299db575f486c:
           ffv: 0
-          contractId: rgb:Fpft2Fiy-rBBasu1-hLx3F0$-rAIRbae-QTTa5E2-BPS6nnc
+          contractId: rgb:QbjlpaRk-IBw!1Ds-dfSCXMh-UZgFOJB-XjHC!sY-tZyTQY0
           nonce: 18446744073709551615
           transitionType: 10000
           metadata: {}
           globals: {}
           inputs:
           - prevOut:
-              op: 0386802c3ebd0ef419ea7afc2b002d92a1b90c04014a983c8dd765af79a00359
+              op: 756401d669398e4e2de71aef401eac8b45c18524c7b9babd69ecafc5af3f066e
               ty: 4000
               no: 0
           assignments:
@@ -192,16 +138,70 @@ bundles:
               - seal:
                   txid: null
                   vout: 1
-                  blinding: 8739721341912956546
+                  blinding: 13748057051946027536
                 state:
                   value: 50
                 lock: null
               - seal:
                   txid: null
                   vout: 2
-                  blinding: 129606556842175343
+                  blinding: 7061406511939988492
                 state:
                   value: 616
+                lock: null
+          validator: null
+          witness: null
+- pubWitness: !tx
+    version: 2
+    inputs:
+    - prevOutput: 770397849ad0157e32a87244f0b70fc6d1504fabacfbb405175090478479c4b3:0
+      sigScript: ''
+      sequence: 0
+      witness: []
+    outputs:
+    - value: 0
+      scriptPubkey: 6a20c34f644835d8309707128d7487b6ec4ea5a811b8748bc25104468246cbc378bf
+    - value: 9000
+      scriptPubkey: 001448d0b288ac7abe6a9b107bc53b8467b480733b5b
+    - value: 99990600
+      scriptPubkey: 0014e2ff0c779cdab281bc73039de7c5474c6707add5
+    lockTime: 0
+  anchoredBundle: !opret
+    mpcProof:
+      pos: 1
+      cofactor: 0
+      path:
+      - 163d86507476e32a0c384adc5c4971c4fcc39e0c8f8edd6d969bb11c7c0054a1
+      - 66001735a1e736f63a7f0436a2c216d12c810a4250f2a0897baa798e3a9c3d46
+      - 6d4602406e89b38194b456ba0cfdd34f70072aac0ff03374a3b6fd54458cc003
+    dbcProof: null
+    bundle:
+      inputMap:
+        0:
+        - 756401d669398e4e2de71aef401eac8b45c18524c7b9babd69ecafc5af3f066e
+      knownTransitions:
+        756401d669398e4e2de71aef401eac8b45c18524c7b9babd69ecafc5af3f066e:
+          ffv: 0
+          contractId: rgb:QbjlpaRk-IBw!1Ds-dfSCXMh-UZgFOJB-XjHC!sY-tZyTQY0
+          nonce: 18446744073709551615
+          transitionType: 10000
+          metadata: {}
+          globals: {}
+          inputs:
+          - prevOut:
+              op: 41b8e5a5a464201c3ed43b1d7d20973215198053890578c70beb18b59c93418d
+              ty: 4000
+              no: 0
+          assignments:
+            4000:
+              type: fungible
+              items:
+              - seal:
+                  txid: null
+                  vout: 2
+                  blinding: 3798035576475988077
+                state:
+                  value: 666
                 lock: null
           validator: null
           witness: null
@@ -214,19 +214,28 @@ schema:
   metaTypes: {}
   globalTypes:
     2000:
-      reserved: null
-      semId: d7fcbee31ef0a85d5f973bda1b0b8c9e7efbcbc5572577382cacd3bdb4218a01
-      maxItems: 1
+      globalStateSchema:
+        reserved: null
+        semId: d7fcbee31ef0a85d5f973bda1b0b8c9e7efbcbc5572577382cacd3bdb4218a01
+        maxItems: 1
+      name: spec
     2001:
-      reserved: null
-      semId: 5b8bc7543832054a1d22be94226be7538b133a26881cba4613027878e05c6cf7
-      maxItems: 1
+      globalStateSchema:
+        reserved: null
+        semId: 5b8bc7543832054a1d22be94226be7538b133a26881cba4613027878e05c6cf7
+        maxItems: 1
+      name: terms
     2010:
-      reserved: null
-      semId: 888c5865633af13b95b7cd1a8d8af2dac1dc140b977251d9d4daf3c7511c8e84
-      maxItems: 1
+      globalStateSchema:
+        reserved: null
+        semId: 888c5865633af13b95b7cd1a8d8af2dac1dc140b977251d9d4daf3c7511c8e84
+        maxItems: 1
+      name: issuedSupply
   ownedTypes:
-    4000: !fungible unsigned64Bit
+    4000:
+      ownedStateSchema: !fungible unsigned64Bit
+      name: assetOwner
+      defaultTransition: 10000
   genesis:
     metadata: []
     globals:
@@ -240,105 +249,18 @@ schema:
       pos: 9
   transitions:
     10000:
-      metadata: []
-      globals: {}
-      inputs:
-        4000: onceOrMore
-      assignments:
-        4000: onceOrMore
-      validator:
-        lib: abf099d28bed50df5e065715327f3a9b329f777cb0b9fefff634c193a03cb626
-        pos: 0
-  reserved: null
-ifaces:
-  ? version: v1
-    name: RGB20Fixed
-    inherits:
-    - rgb:ifc:1aUMqotD-eVC8T0G-RF5UaXY-DAJx4ZX-l8CPnBe-D16eoXk#brother-capital-almanac
-    - rgb:ifc:tGRqYNyx-61Q7zm2-VKnxYLQ-SK9mYoJ-AATMvkv-C$3oS2k#queen-global-suzuki
-    - rgb:ifc:ppgM0SEs-!JuGVNE-8yWTxxf-aQKklXh-s8u5dt7-gDyyWBw#smart-hostel-fractal
-    - rgb:ifc:zuIHOjAi-D0MlrR1-PvzQ7L3-bke4CON-aZHSf0d-g81mdQ4#liberal-exhibit-mister
-    timestamp: 1711405444
-    metadata: {}
-    globalState:
-      issuedSupply:
-        semId: 888c5865633af13b95b7cd1a8d8af2dac1dc140b977251d9d4daf3c7511c8e84
-        required: true
-        multiple: false
-      spec:
-        semId: d7fcbee31ef0a85d5f973bda1b0b8c9e7efbcbc5572577382cacd3bdb4218a01
-        required: true
-        multiple: false
-      terms:
-        semId: 5b8bc7543832054a1d22be94226be7538b133a26881cba4613027878e05c6cf7
-        required: true
-        multiple: false
-    assignments:
-      assetOwner:
-        ownedState: amount
-        public: false
-        required: true
-        multiple: true
-    genesis:
-      modifier: abstract
-      metadata: []
-      globals:
-        issuedSupply: once
-        spec: once
-        terms: once
-      assignments:
-        assetOwner: onceOrMore
-      errors:
-      - issuedMismatch
-    transitions:
-      transfer:
-        modifier: abstract
-        optional: false
+      transitionSchema:
         metadata: []
         globals: {}
         inputs:
-          assetOwner: onceOrMore
+          4000: onceOrMore
         assignments:
-          assetOwner: onceOrMore
-        errors:
-        - nonEqualAmounts
-        defaultAssignment: assetOwner
-    defaultOperation: transfer
-    errors:
-      issuedMismatch: supply specified as a global parameter doesn't match the issued supply allocated to the asset owners
-      nonEqualAmounts: the sum of spent assets doesn't equal to the sum of assets in outputs
-    developer: ssi:LZS1ux-gjD9nXPF-OcetUUkW-6r3uSCS6-aQhs9W5f-8JE7w
-  : version: v1
-    schemaId: rgb:sch:Il7xqc$4yuca6X0oy0kN27e13ieIAxAv43uVfpG$gYE#philips-charm-albert
-    ifaceId: rgb:ifc:mpx1ZasJ-eA7rtXs-SfEdHy4-AbxLyZA-D6l1WIq-NGMqMQ0#portal-native-model
-    timestamp: 1713343888
-    metadata: []
-    globalState:
-    - id: 2000
-      name: spec
-      reserved: null
-    - id: 2001
-      name: terms
-      reserved: null
-    - id: 2010
-      name: issuedSupply
-      reserved: null
-    assignments:
-    - id: 4000
-      name: assetOwner
-      reserved: null
-    transitions:
-    - id: 10000
+          4000: onceOrMore
+        validator:
+          lib: abf099d28bed50df5e065715327f3a9b329f777cb0b9fefff634c193a03cb626
+          pos: 0
       name: transfer
-      reserved: null
-    errors:
-    - id: 0
-      name: nonEqualAmounts
-      reserved: null
-    - id: 1
-      name: issuedMismatch
-      reserved: null
-    developer: ssi:LZS1ux-gjD9nXPF-OcetUUkW-6r3uSCS6-aQhs9W5f-8JE7w
+  reserved: null
 types:
   0af65fd62581de85cbd14e23e2db9a92bbef8b7974ffe1b50c4c74db8f86e751: !List
   - 5f5e26e5c5053c1b4544515bc6a0653da02a0791fb31116d71a4fad916e15355

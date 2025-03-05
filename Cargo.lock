@@ -1781,23 +1781,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rgb-interfaces"
-version = "0.11.1-alpha.1"
-dependencies = [
- "aluvm",
- "amplify",
- "bp-core",
- "chrono",
- "getrandom 0.2.15",
- "rgb-std",
- "serde_json",
- "sha2",
- "strict_encoding",
- "strict_types",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "rgb-invoice"
 version = "0.11.1-alpha.1"
 dependencies = [
@@ -1834,7 +1817,7 @@ dependencies = [
 [[package]]
 name = "rgb-psbt"
 version = "0.11.1-alpha.1"
-source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#e8360570a22b7fefa2f88e706d559abe4246f309"
+source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#a33f289ddc670c77990d39e809543f34016233af"
 dependencies = [
  "amplify",
  "baid64",
@@ -1874,7 +1857,7 @@ dependencies = [
 [[package]]
 name = "rgb-runtime"
 version = "0.11.1-alpha.1"
-source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#e8360570a22b7fefa2f88e706d559abe4246f309"
+source = "git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer#a33f289ddc670c77990d39e809543f34016233af"
 dependencies = [
  "amplify",
  "baid64",
@@ -1904,7 +1887,6 @@ dependencies = [
  "amplify",
  "bp-core",
  "chrono",
- "rgb-interfaces",
  "rgb-std",
  "serde",
  "serde_json",
@@ -1954,7 +1936,6 @@ dependencies = [
  "once_cell",
  "psbt",
  "rand",
- "rgb-interfaces",
  "rgb-psbt 0.11.1-alpha.1",
  "rgb-psbt 0.11.1-alpha.1 (git+https://github.com/RGB-WG/rgb?branch=revert_fix_same_blinded_transfer)",
  "rgb-runtime 0.11.1-alpha.1",

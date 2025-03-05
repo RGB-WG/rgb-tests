@@ -62,8 +62,6 @@ rgb_altered = { git = "https://github.com/RGB-WG/rgb", branch = "revert_fix_same
     "serde",
 ], optional = true }
 psrgbt_altered = { git = "https://github.com/RGB-WG/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-psbt", optional = true }
-## rgb-interfaces
-rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
 rgb-schemata = { path = "./rgb-schemata" }
 ## rgb-std
@@ -115,8 +113,6 @@ rgb-runtime = { path = "./rgb" }
 rgb-psbt = { path = "./rgb/psbt" }
 ## rgb-core
 rgb-core = { path = "./rgb-core" }
-## rgb-interfaces
-rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
 rgb-schemata = { path = "./rgb-schemata" }
 ## rgb-std
