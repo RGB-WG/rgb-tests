@@ -65,11 +65,11 @@ impl Scenario {
         match self {
             Self::A => {
                 let (tx_1, witness_id_1) =
-                    get_tx("8022d57a807fad725b79f84227f57a787055e911bd7e4e3fd3cb23d1198efbff");
+                    get_tx("4fa504106afb626b132a70b97225e4ad7607f5ba19801717c8fa056c990b450e");
                 let (tx_2, witness_id_2) =
-                    get_tx("89cd8cd9aa720c513d038eed0f67ebd515d3048ac9cf8448351269b5e7970041");
+                    get_tx("c1ffb662bdf8a89f5c50946b4f1f7afce1e4dd5655381101f111f839f0294242");
                 let (tx_3, witness_id_3) =
-                    get_tx("3130ce4f70a7d16f096b0225172f74186877c16883cd1e500ad0f9d97c0a7a1b");
+                    get_tx("eee4efa2a7d264efd948dc2d46690c200beb4630b5638d3249c4738e0049fd05");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -85,11 +85,11 @@ impl Scenario {
             }
             Self::B => {
                 let (tx_1, witness_id_1) =
-                    get_tx("9816c61eadecdbda6ffc72e6b0f202ff23fef6de2819b59da78a4f6bcbe56469");
+                    get_tx("3aa4859506a217c570c817104719367313cb905833c63ae8d4bfd40ca478f3be");
                 let (tx_2, witness_id_2) =
-                    get_tx("8be09f936667b171997b45ef6f92c385ec2916581ca6dad231172eb5fd7f9eea");
+                    get_tx("f118b087f59c0964dab787b8d123b301bab6c2edb1192e49c31074c77ff144bd");
                 let (tx_3, witness_id_3) =
-                    get_tx("0442d5b3a4ffe8edb2a757a307ea68e5acfa9becba9b3e1973ccfbe22ed8363a");
+                    get_tx("6a335f810a3b31f2a5326e64b11fed6d712f6776ae211240166858f8ac274391");
                 MockResolver {
                     pub_witnesses: map![
                         witness_id_1 => MockResolvePubWitness::Success(tx_1),
@@ -124,44 +124,20 @@ fn get_consignment(scenario: Scenario) -> (Transfer, Vec<Tx>) {
     let sats = 9000;
 
     let utxo = wlt_1.get_utxo(None);
-    let (contract_id_1, iface_type_name_1) = wlt_1.issue_nia(issued_supply_1, Some(&utxo));
-    let (contract_id_2, iface_type_name_2) = wlt_1.issue_nia(issued_supply_2, Some(&utxo));
+    let contract_id_1 = wlt_1.issue_nia(issued_supply_1, Some(&utxo));
+    let contract_id_2 = wlt_1.issue_nia(issued_supply_2, Some(&utxo));
 
     let mut txes = vec![];
 
-    let (_consignment, tx) = wlt_1.send(
-        &mut wlt_2,
-        transfer_type,
-        contract_id_1,
-        &iface_type_name_1,
-        66,
-        sats,
-        None,
-    );
+    let (_consignment, tx) = wlt_1.send(&mut wlt_2, transfer_type, contract_id_1, 66, sats, None);
     txes.push(tx);
 
     // spend asset that was moved automatically
-    let (_consignment, tx) = wlt_1.send(
-        &mut wlt_2,
-        transfer_type,
-        contract_id_2,
-        &iface_type_name_2,
-        50,
-        sats,
-        None,
-    );
+    let (_consignment, tx) = wlt_1.send(&mut wlt_2, transfer_type, contract_id_2, 50, sats, None);
     txes.push(tx);
 
     // spend change of previous send
-    let (consignment, tx) = wlt_1.send(
-        &mut wlt_2,
-        transfer_type,
-        contract_id_2,
-        &iface_type_name_2,
-        77,
-        sats,
-        None,
-    );
+    let (consignment, tx) = wlt_1.send(&mut wlt_2, transfer_type, contract_id_2, 77, sats, None);
     txes.push(tx);
 
     (consignment, txes)
@@ -273,19 +249,19 @@ fn validate_consignment_genesis_fail() {
     assert_eq!(validation_status.failures.len(), 5);
     assert!(matches!(
         validation_status.failures[0],
-        Failure::OperationAbsent(_)
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
         validation_status.failures[1],
-        Failure::MpcInvalid(_, _, _)
+        Failure::OperationAbsent(_)
     ));
     assert!(matches!(
         validation_status.failures[2],
-        Failure::BundleExtraTransition(_, _)
+        Failure::MpcInvalid(_, _, _)
     ));
     assert!(matches!(
         validation_status.failures[3],
-        Failure::MpcInvalid(_, _, _)
+        Failure::BundleExtraTransition(_, _)
     ));
     assert!(matches!(
         validation_status.failures[4],
@@ -355,7 +331,7 @@ fn validate_consignment_resolver_error() {
     let scenario = Scenario::A;
     let mut resolver = scenario.resolver();
     let txid =
-        Txid::from_str("89cd8cd9aa720c513d038eed0f67ebd515d3048ac9cf8448351269b5e7970041").unwrap();
+        Txid::from_str("c1ffb662bdf8a89f5c50946b4f1f7afce1e4dd5655381101f111f839f0294242").unwrap();
 
     // resolve_pub_witness error
     *resolver.pub_witnesses.get_mut(&txid).unwrap() =

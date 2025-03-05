@@ -115,8 +115,6 @@ impl From<TransferType> for InvoiceType {
 /// RGB asset-specific information to color a transaction
 #[derive(Clone, Debug)]
 pub struct AssetColoringInfo {
-    /// Contract iface
-    pub iface: TypeName,
     /// Input outpoints of the assets being spent
     pub input_outpoints: Vec<Outpoint>,
     /// Map of vouts and asset amounts to color the transaction outputs
@@ -153,27 +151,11 @@ impl fmt::Display for AssetSchema {
 }
 
 impl AssetSchema {
-    fn iface_type_name(&self) -> TypeName {
-        tn!(match self {
-            Self::Nia => "RGB20Fixed",
-            Self::Uda => "RGB21Unique",
-            Self::Cfa => "RGB25Base",
-        })
-    }
-
     fn schema(&self) -> Schema {
         match self {
             Self::Nia => NonInflatableAsset::schema(),
             Self::Uda => UniqueDigitalAsset::schema(),
             Self::Cfa => CollectibleFungibleAsset::schema(),
-        }
-    }
-
-    fn issue_impl(&self) -> IfaceImpl {
-        match self {
-            Self::Nia => NonInflatableAsset::issue_impl(),
-            Self::Uda => UniqueDigitalAsset::issue_impl(),
-            Self::Cfa => CollectibleFungibleAsset::issue_impl(),
         }
     }
 
@@ -193,22 +175,40 @@ impl AssetSchema {
         }
     }
 
-    fn iface(&self) -> Iface {
-        match self {
-            Self::Nia => Rgb20::iface(&Rgb20::FIXED),
-            Self::Uda => Rgb21::iface(&Rgb21::NONE),
-            Self::Cfa => Rgb25::iface(&Rgb25::NONE),
-        }
-    }
-
     fn get_valid_kit(&self) -> ValidKit {
         let mut kit = Kit::default();
         kit.schemata.push(self.schema()).unwrap();
-        kit.ifaces.push(self.iface()).unwrap();
-        kit.iimpls.push(self.issue_impl()).unwrap();
         kit.scripts.extend(self.scripts().into_values()).unwrap();
         kit.types = self.types();
         kit.validate().unwrap()
+    }
+
+    fn default_state_type(&self) -> StateType {
+        match self {
+            Self::Cfa | Self::Nia => StateType::Fungible,
+            Self::Uda => StateType::Structured,
+        }
+    }
+
+    fn persisted_state(&self, value: u64) -> PersistedState {
+        match self {
+            Self::Cfa | Self::Nia => PersistedState::Amount(value.into()),
+            Self::Uda => PersistedState::Data(
+                Allocation::with(UDA_FIXED_INDEX, OwnedFraction::from(1)).into(),
+                1,
+            ),
+        }
+    }
+}
+
+impl From<SchemaId> for AssetSchema {
+    fn from(schema_id: SchemaId) -> Self {
+        match schema_id {
+            CFA_SCHEMA_ID => AssetSchema::Cfa,
+            NIA_SCHEMA_ID => AssetSchema::Nia,
+            UDA_SCHEMA_ID => AssetSchema::Uda,
+            _ => panic!("unknown schema ID"),
+        }
     }
 }
 
@@ -242,16 +242,8 @@ impl AssetInfo {
         }
     }
 
-    pub fn iface_type_name(&self) -> TypeName {
-        self.asset_schema().iface_type_name()
-    }
-
     pub fn schema(&self) -> Schema {
         self.asset_schema().schema()
-    }
-
-    pub fn issue_impl(&self) -> IfaceImpl {
-        self.asset_schema().issue_impl()
     }
 
     pub fn scripts(&self) -> Scripts {
@@ -260,10 +252,6 @@ impl AssetInfo {
 
     pub fn types(&self) -> TypeSystem {
         self.asset_schema().types()
-    }
-
-    pub fn iface(&self) -> Iface {
-        self.asset_schema().iface()
     }
 
     pub fn default_cfa(issue_amounts: Vec<u64>) -> Self {
@@ -809,6 +797,19 @@ impl TestWallet {
         }
     }
 
+    pub fn schema_id(&self, contract_id: ContractId) -> SchemaId {
+        self.wallet
+            .stock()
+            .as_stash_provider()
+            .genesis(contract_id)
+            .unwrap()
+            .schema_id
+    }
+
+    pub fn asset_schema(&self, contract_id: ContractId) -> AssetSchema {
+        self.schema_id(contract_id).into()
+    }
+
     pub fn import_contract(&mut self, contract: &ValidContract, resolver: impl ResolveWitness) {
         self.wallet
             .stock_mut()
@@ -820,7 +821,7 @@ impl TestWallet {
         &mut self,
         asset_info: AssetInfo,
         outpoints: Vec<Option<Outpoint>>,
-    ) -> (ContractId, TypeName) {
+    ) -> ContractId {
         let outpoints = if outpoints.is_empty() {
             vec![self.get_utxo(None)]
         } else {
@@ -832,9 +833,7 @@ impl TestWallet {
 
         let mut builder = ContractBuilder::with(
             Identity::default(),
-            asset_info.iface(),
             asset_info.schema(),
-            asset_info.issue_impl(),
             asset_info.types(),
             asset_info.scripts(),
             self.chain_net(),
@@ -848,28 +847,20 @@ impl TestWallet {
         let resolver = self.get_resolver();
         self.import_contract(&contract, resolver);
 
-        (contract.contract_id(), asset_info.iface_type_name())
+        contract.contract_id()
     }
 
-    pub fn issue_nia(
-        &mut self,
-        issued_supply: u64,
-        outpoint: Option<&Outpoint>,
-    ) -> (ContractId, TypeName) {
+    pub fn issue_nia(&mut self, issued_supply: u64, outpoint: Option<&Outpoint>) -> ContractId {
         let asset_info = AssetInfo::default_nia(vec![issued_supply]);
         self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
 
-    pub fn issue_uda(&mut self, outpoint: Option<&Outpoint>) -> (ContractId, TypeName) {
+    pub fn issue_uda(&mut self, outpoint: Option<&Outpoint>) -> ContractId {
         let asset_info = AssetInfo::default_uda();
         self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
 
-    pub fn issue_cfa(
-        &mut self,
-        issued_supply: u64,
-        outpoint: Option<&Outpoint>,
-    ) -> (ContractId, TypeName) {
+    pub fn issue_cfa(&mut self, issued_supply: u64, outpoint: Option<&Outpoint>) -> ContractId {
         let asset_info = AssetInfo::default_cfa(vec![issued_supply]);
         self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
@@ -877,7 +868,7 @@ impl TestWallet {
     pub fn invoice(
         &mut self,
         contract_id: ContractId,
-        iface_type_name: &TypeName,
+        schema_id: SchemaId,
         amount: u64,
         invoice_type: InvoiceType,
     ) -> RgbInvoice {
@@ -901,8 +892,9 @@ impl TestWallet {
 
         let mut builder = RgbInvoiceBuilder::new(XChainNet::bitcoin(network, beneficiary))
             .set_contract(contract_id)
-            .set_interface(iface_type_name.clone());
-        if *iface_type_name == AssetSchema::Uda.iface_type_name() {
+            .set_schema(schema_id);
+
+        if matches!(schema_id.into(), AssetSchema::Uda) {
             if amount != 1 {
                 panic!("UDA amount must be 1");
             }
@@ -1030,31 +1022,26 @@ impl TestWallet {
         }
     }
 
-    pub fn contract_iface(
+    pub fn contract_data(
         &self,
         contract_id: ContractId,
-        iface_type_name: &TypeName,
-    ) -> ContractIface<MemContract<&MemContractState>> {
-        self.wallet
-            .stock()
-            .contract_iface(contract_id, iface_type_name.clone())
-            .unwrap()
+    ) -> ContractData<MemContract<&MemContractState>> {
+        self.wallet.stock().contract_data(contract_id).unwrap()
     }
 
-    pub fn contract_iface_class<C: IfaceClass>(
+    pub fn contract_wrapper<C: IssuerWrapper>(
         &self,
         contract_id: ContractId,
     ) -> C::Wrapper<MemContract<&MemContractState>> {
         self.wallet
             .stock()
-            .contract_iface_class::<C>(contract_id)
+            .contract_wrapper::<C>(contract_id)
             .unwrap()
     }
 
     pub fn contract_fungible_allocations(
         &self,
         contract_id: ContractId,
-        iface_type_name: &TypeName,
         show_tentative: bool,
     ) -> Vec<FungibleAllocation> {
         let filter = if show_tentative {
@@ -1062,27 +1049,21 @@ impl TestWallet {
         } else {
             Filter::Wallet(&self.wallet)
         };
-        self.contract_iface(contract_id, iface_type_name)
-            .fungible(fname!("assetOwner"), filter)
+        self.contract_data(contract_id)
+            .fungible("assetOwner", filter)
             .unwrap()
             .collect()
     }
 
-    pub fn contract_data_allocations(
-        &self,
-        contract_id: ContractId,
-        iface_type_name: &TypeName,
-    ) -> Vec<DataAllocation> {
-        self.contract_iface(contract_id, iface_type_name)
-            .data(fname!("assetOwner"), Filter::Wallet(&self.wallet))
+    pub fn contract_data_allocations(&self, contract_id: ContractId) -> Vec<DataAllocation> {
+        self.contract_data(contract_id)
+            .data("assetOwner", Filter::Wallet(&self.wallet))
             .unwrap()
             .collect()
     }
 
-    pub fn history(&self, contract_id: ContractId, iface_type_name: &TypeName) -> Vec<ContractOp> {
-        self.wallet
-            .history(contract_id, iface_type_name.clone())
-            .unwrap()
+    pub fn history(&self, contract_id: ContractId) -> Vec<ContractOp> {
+        self.wallet.history(contract_id).unwrap()
     }
 
     pub fn list_contracts(&self) -> Vec<ContractInfo> {
@@ -1100,12 +1081,7 @@ impl TestWallet {
         }
     }
 
-    pub fn debug_logs(
-        &self,
-        contract_id: ContractId,
-        iface_type_name: &TypeName,
-        filter: AllocationFilter,
-    ) {
+    pub fn debug_logs(&self, contract_id: ContractId, filter: AllocationFilter) {
         let filter = match filter {
             AllocationFilter::WalletAll => Filter::WalletAll(&self.wallet),
             AllocationFilter::WalletTentative => Filter::WalletTentative(&self.wallet),
@@ -1113,21 +1089,20 @@ impl TestWallet {
             AllocationFilter::Stock => Filter::NoWallet,
         };
 
-        let contract = self.contract_iface(contract_id, iface_type_name);
+        let contract = self.contract_data(contract_id);
 
         println!("Global:");
-        for global in &contract.iface.global_state {
-            if let Ok(values) = contract.global(global.name.clone()) {
-                for val in values {
-                    println!("  {} := {}", global.name, val);
-                }
+        for global_details in contract.schema.global_types.values() {
+            let values = contract.global(global_details.name.clone());
+            for val in values {
+                println!("  {} := {}", global_details.name, val);
             }
         }
 
         println!("\nOwned:");
         fn witness<S: KnownState>(
             allocation: &OutputAssignment<S>,
-            contract: &ContractIface<MemContract<&MemContractState>>,
+            contract: &ContractData<MemContract<&MemContractState>>,
         ) -> String {
             allocation
                 .witness
@@ -1135,10 +1110,10 @@ impl TestWallet {
                 .map(|info| format!("{} ({})", info.id, info.ord))
                 .unwrap_or_else(|| s!("~"))
         }
-        for owned in &contract.iface.assignments {
+        for details in contract.schema.owned_types.values() {
             println!("  State      \t{:78}\tWitness", "Seal");
-            println!("  {}:", owned.name);
-            if let Ok(allocations) = contract.fungible(owned.name.clone(), &filter) {
+            println!("  {}:", details.name);
+            if let Ok(allocations) = contract.fungible(details.name.clone(), &filter) {
                 for allocation in allocations {
                     println!(
                         "    {: >9}\t{}\t{} {}",
@@ -1149,7 +1124,7 @@ impl TestWallet {
                     );
                 }
             }
-            if let Ok(allocations) = contract.data(owned.name.clone(), &filter) {
+            if let Ok(allocations) = contract.data(details.name.clone(), &filter) {
                 for allocation in allocations {
                     println!(
                         "    {: >9}\t{}\t{} {}",
@@ -1160,7 +1135,7 @@ impl TestWallet {
                     );
                 }
             }
-            if let Ok(allocations) = contract.attachments(owned.name.clone(), &filter) {
+            if let Ok(allocations) = contract.attachments(details.name.clone(), &filter) {
                 for allocation in allocations {
                     println!(
                         "    {: >9}\t{}\t{} {}",
@@ -1171,7 +1146,7 @@ impl TestWallet {
                     );
                 }
             }
-            if let Ok(allocations) = contract.rights(owned.name.clone(), &filter) {
+            if let Ok(allocations) = contract.rights(details.name.clone(), &filter) {
                 for allocation in allocations {
                     println!(
                         "    {: >9}\t{}\t{} {}",
@@ -1197,13 +1172,8 @@ impl TestWallet {
         println!("\nWallet total balance: {} ṩ", bp_runtime.balance());
     }
 
-    pub fn debug_history(
-        &self,
-        contract_id: ContractId,
-        iface_type_name: &TypeName,
-        details: bool,
-    ) {
-        let mut history = self.history(contract_id, iface_type_name);
+    pub fn debug_history(&self, contract_id: ContractId, details: bool) {
+        let mut history = self.history(contract_id);
         history.sort_by_key(|op| op.witness.map(|w| w.ord).unwrap_or(WitnessOrd::Archived));
         if details {
             println!("Operation\tValue    \tState\t{:78}\tWitness", "Seal");
@@ -1254,12 +1224,12 @@ impl TestWallet {
         recv_wlt: &mut TestWallet,
         transfer_type: TransferType,
         contract_id: ContractId,
-        iface_type_name: &TypeName,
         amount: u64,
         sats: u64,
         report: Option<&Report>,
     ) -> (Transfer, Tx) {
-        let invoice = recv_wlt.invoice(contract_id, iface_type_name, amount, transfer_type.into());
+        let schema_id = self.schema_id(contract_id);
+        let invoice = recv_wlt.invoice(contract_id, schema_id, amount, transfer_type.into());
         self.send_to_invoice(recv_wlt, invoice, Some(sats), None, report)
     }
 
@@ -1281,15 +1251,13 @@ impl TestWallet {
     pub fn check_allocations(
         &self,
         contract_id: ContractId,
-        iface_type_name: &TypeName,
-        asset_schema: AssetSchema,
+        asset_schema: impl Into<AssetSchema>,
         expected_fungible_allocations: Vec<u64>,
         nonfungible_allocation: bool,
     ) {
-        match asset_schema {
+        match asset_schema.into() {
             AssetSchema::Nia | AssetSchema::Cfa => {
-                let allocations =
-                    self.contract_fungible_allocations(contract_id, iface_type_name, false);
+                let allocations = self.contract_fungible_allocations(contract_id, false);
                 let mut actual_fungible_allocations = allocations
                     .iter()
                     .map(|a| a.state.value())
@@ -1300,7 +1268,7 @@ impl TestWallet {
                 assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
             }
             AssetSchema::Uda => {
-                let allocations = self.contract_data_allocations(contract_id, iface_type_name);
+                let allocations = self.contract_data_allocations(contract_id);
                 let expected_allocations = if nonfungible_allocation {
                     assert_eq!(
                         allocations
@@ -1321,13 +1289,12 @@ impl TestWallet {
     pub fn check_history_operation(
         &self,
         contract_id: &ContractId,
-        iface_type_name: &TypeName,
         txid: Option<&Txid>,
         direction: OpDirection,
         amount: u64,
     ) {
         let operation = self
-            .history(*contract_id, iface_type_name)
+            .history(*contract_id)
             .into_iter()
             .find(|co| {
                 co.direction == direction
@@ -1500,16 +1467,21 @@ impl TestWallet {
 
         let mut all_transitions: HashMap<ContractId, Transition> = HashMap::new();
         let mut asset_beneficiaries: AssetBeneficiariesMap = bmap![];
-        let assignment_name = FieldName::from("assetOwner");
 
         for (contract_id, asset_coloring_info) in coloring_info.asset_info_map.clone() {
+            let asset_schema = self.asset_schema(contract_id);
+            let contract = self.wallet.stock().contract_data(contract_id).unwrap();
+            let assignment_types = contract
+                .schema
+                .assignment_types_for_state(asset_schema.default_state_type());
+            let assignment_type = assignment_types[0];
+            let transition_type = contract
+                .schema
+                .default_transition_for_assignment(assignment_type);
             let mut asset_transition_builder = self
                 .wallet
                 .stock()
-                .transition_builder(contract_id, asset_coloring_info.iface, None::<&str>)
-                .unwrap();
-            let assignment_id = asset_transition_builder
-                .assignments_type(&assignment_name)
+                .transition_builder_raw(contract_id, transition_type)
                 .unwrap();
 
             let mut asset_available_amt = 0;
@@ -1558,7 +1530,11 @@ impl TestWallet {
                 beneficiaries.push(seal);
 
                 asset_transition_builder = asset_transition_builder
-                    .add_fungible_state_raw(assignment_id, seal, amount)
+                    .add_owned_state_raw(
+                        *assignment_type,
+                        seal,
+                        asset_schema.persisted_state(amount),
+                    )
                     .unwrap();
             }
             if sending_amt > asset_available_amt {
