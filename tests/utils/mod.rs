@@ -1,4 +1,5 @@
 pub mod chain;
+pub mod consignment_utils;
 pub mod helpers;
 
 pub const TEST_DATA_DIR: &str = "test-data";

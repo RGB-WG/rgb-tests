@@ -1760,6 +1760,7 @@ name = "rgb-tests"
 version = "0.1.0"
 dependencies = [
  "amplify",
+ "amplify_derive",
  "bitcoin_hashes",
  "bp-core",
  "bp-electrum",
@@ -1770,6 +1771,7 @@ dependencies = [
  "commit_verify",
  "descriptors",
  "file-format",
+ "hypersonic",
  "once_cell",
  "psbt",
  "rand",
@@ -1778,9 +1780,11 @@ dependencies = [
  "rgb-std",
  "rstest",
  "rstest_reuse",
+ "serde",
  "serde_json",
  "serde_yaml",
  "serial_test",
+ "single_use_seals",
  "strict_encoding",
  "strict_types",
  "strum",

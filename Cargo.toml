@@ -20,6 +20,7 @@ once_cell = "1.19.0"
 rand = "0.8.5"
 rstest = "0.19.0"
 rstest_reuse = "0.6.0"
+serde = "1.0.215"
 serde_yaml = "0.9"
 serde_json = "1.0"
 serial_test = "3.2.0"
@@ -57,13 +58,19 @@ rgb-psbt = { path = "./rgb/psbt", features = ["bp"] }
 rgb-std = { path = "./rgb-std", features = ["fs"] }
 ## rust-amplify
 amplify = { path = "./rust-amplify" }
+amplify_derive = { path = "./amplify-derive" }
 ## strict-encoding
-strict_encoding = { path = "./strict-encoding/rust" }
+strict_encoding = { path = "./strict-encoding/rust", features = ["serde"] }
 ## strict-types
 strict_types = { path = "./strict-types" }
 ## commit_verify
 commit_verify = { path = "./client_side_validation/commit_verify" }
+## sonic
+hypersonic = { path = "./sonic" }
+## single_use_seals
+single_use_seals = { path = "./client_side_validation/single_use_seals", features = ["strict_encoding"] }
 tabled = "0.18.0"
+
 
 
 [patch.crates-io]
@@ -99,7 +106,7 @@ bp-wallet = { path = "./bp-wallet" }
 ## client_side_validation
 commit_verify = { path = "./client_side_validation/commit_verify" }
 commit_encoding_derive = { path = "./client_side_validation/commit_verify/derive" }
-single_use_seals = { path = "./client_side_validation/single_use_seals" }
+single_use_seals = { path = "./client_side_validation/single_use_seals"}
 ## rgb
 rgb-runtime = { path = "./rgb" }
 rgb-psbt = { path = "./rgb/psbt" }
