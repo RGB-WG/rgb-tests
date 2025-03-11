@@ -250,6 +250,8 @@ where
         }
     };
 
+    println!("rebuild_consignment: contract_id: {}", contract_id);
+
     // Write contract ID
     writer = contract_id.strict_encode(writer)?;
 
@@ -323,6 +325,7 @@ where
 
     // Process each operation
     for (op_index, op_file) in operation_files.iter().enumerate() {
+        println!("Processing operation: {}", op_file.display());
         let op_count = op_index + 1; // Operation count starts from 1
 
         // Load and write operation
@@ -382,14 +385,33 @@ pub fn create_attack_consignment(
     attack_type: &str,
 ) -> Result<PathBuf, ConsignmentParseError> {
     // Create a temporary directory for parsing
-    let temp_dir_path = PathBuf::from("tests/fixtures/temp");
-    fs::create_dir_all(&temp_dir_path)?;
+    let temp_dir_path = PathBuf::from("tests/fixtures/v0.12/temp").join(attack_type);
+
+    // If the directory exists, clear it; otherwise, create a new directory
+    if temp_dir_path.exists() {
+        // Check if the directory is empty
+        if temp_dir_path.read_dir()?.next().is_some() {
+            // The directory is not empty, clear it
+            for entry in fs::read_dir(&temp_dir_path)? {
+                let entry = entry?;
+                let path = entry.path();
+                if path.is_dir() {
+                    fs::remove_dir_all(path)?;
+                } else {
+                    fs::remove_file(path)?;
+                }
+            }
+        }
+    } else {
+        // The directory does not exist, create it
+        fs::create_dir_all(&temp_dir_path)?;
+    }
 
     // Parse the consignment
     parse_consignment::<WTxoSeal>(src, &temp_dir_path)?;
 
     // Create the attack path
-    let attack_path = PathBuf::from(format!("tests/fixtures/attack_{}.yaml", attack_type));
+    let attack_path = PathBuf::from(format!("tests/fixtures/attack_{}.rgb", attack_type));
 
     // Modify files based on attack type
     match attack_type {
@@ -419,9 +441,13 @@ pub fn create_attack_consignment(
                     .lines()
                     .find(|line| line.contains("codexId:"))
                 {
-                    let original_codex_id = line.trim();
-                    modify_file(&contract_path, original_codex_id, "codexId: xxx#yyy")?;
-                    modify_file(&schema_path, original_codex_id, "codexId: xxx#yyy")?;
+                    // let original_codex_id = line.trim();
+                    let original_codex_id = line.split("codexId:").nth(1).unwrap().trim();
+                    let mut modified_codex_id = original_codex_id.to_owned();
+                    modified_codex_id.push('1');
+
+                    modify_file(&contract_path, &original_codex_id, &modified_codex_id)?;
+                    modify_file(&schema_path, &original_codex_id, &modified_codex_id)?;
                     println!("Modified codexId in contract.yaml and schema.yaml");
                 } else {
                     return Err(ConsignmentParseError::InvalidData(
@@ -447,8 +473,8 @@ pub fn create_attack_consignment(
                 ));
             }
         }
-        "bundles_pubWitness_data_input_sequence" => {
-            // Attack type: bundles_pubWitness_data_input_sequence
+        "bundles_pubwitness_data_input_sequence" => {
+            // Attack type: bundles_pubwitness_data_input_sequence
             // Modify sequence from 0 to 1 in operations/0001-witness-01.yml
             let witness_path = temp_dir_path.join("operations").join("0001-witness-01.yml");
             if witness_path.exists() {
@@ -483,8 +509,29 @@ pub fn create_attack_consignment(
     rebuild_consignment::<WTxoSeal>(&temp_dir_path, &attack_path)?;
 
     // Clean up temporary directory
-    fs::remove_dir_all(&temp_dir_path)?;
+    // fs::remove_dir_all(&temp_dir_path)?;
 
     println!("Created attack consignment at {}", attack_path.display());
     Ok(attack_path)
+}
+
+#[test]
+fn test_create_attack_consignment() {
+    let src = Path::new("test-data/integration/00d99ed6/consignment-551.rgb");
+    let chain_attack_path = create_attack_consignment(src, "chain").unwrap();
+    assert!(chain_attack_path.exists());
+
+    let genesis_schema_id_attack_path =
+        create_attack_consignment(src, "genesis_schema_id").unwrap();
+    assert!(genesis_schema_id_attack_path.exists());
+
+    let genesis_testnet_attack_path = create_attack_consignment(src, "genesis_testnet").unwrap();
+    assert!(genesis_testnet_attack_path.exists());
+
+    let bundles_pubwitness_data_input_sequence_attack_path =
+        create_attack_consignment(src, "bundles_pubwitness_data_input_sequence").unwrap();
+    assert!(bundles_pubwitness_data_input_sequence_attack_path.exists());
+
+    let resolver_error_attack_path = create_attack_consignment(src, "resolver_error").unwrap();
+    assert!(resolver_error_attack_path.exists());
 }
