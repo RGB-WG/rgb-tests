@@ -7,6 +7,7 @@ use utils::{
     DescriptorType, *,
 };
 
+#[allow(dead_code)]
 const MEDIA_FPATH: &str = "tests/fixtures/rgb_logo.jpeg";
 
 #[template]
@@ -121,7 +122,7 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
     let mut params = CFAIssueParams::new("Multi_UTXO_CFA", "centiMilli", 999);
 
     // Get multiple UTXOs and add allocations
-    let amounts = vec![222, 444, 333];
+    let amounts = [222, 444, 333];
     for amount in amounts.iter() {
         let outpoint = wallet.get_utxo(None);
         params.add_allocation(outpoint, *amount);
@@ -163,7 +164,7 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType) {
     let mut params = NIAIssueParams::new("Multi_UTXO_NIA", "MUTX", "centiMilli", 999);
 
     // Get multiple UTXOs and add allocations
-    let amounts = vec![333, 333, 333];
+    let amounts = [333, 333, 333];
     for amount in amounts.iter() {
         let outpoint = wallet.get_utxo(None);
         params.add_allocation(outpoint, *amount);

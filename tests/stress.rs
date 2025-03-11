@@ -36,7 +36,6 @@ use utils::{
 pub mod utils;
 
 // Aliases for shorter test case definitions
-type TT = TransferType;
 type DT = DescriptorType;
 
 #[rstest]

@@ -8,7 +8,6 @@ use std::sync::OnceLock;
 use std::time::Duration;
 use std::time::Instant;
 
-use bp::Weight;
 use bp::{seals::WTxoSeal, Outpoint};
 use commit_verify::{Digest, DigestExt, Sha256};
 use psbt::TxParams;
@@ -17,8 +16,8 @@ use rgb::invoice::{RgbBeneficiary, RgbInvoice};
 use rgb::popls::bp::file::{BpDirMound, DirBarrow};
 use rgb::popls::bp::{Coinselect, OpRequestSet, WalletProvider};
 use rgb::{
-    Assignment, AuthToken, CallScope, CellAddr, CodexId, Consensus, ContractId, ContractInfo,
-    CreateParams, EitherSeal, MethodName, NamedState, RgbSealDef, StateAtom, StateCalc,
+    Assignment, AuthToken, CellAddr, CodexId, Consensus, ContractId, ContractInfo, CreateParams,
+    EitherSeal, NamedState, RgbSealDef, StateAtom, StateCalc,
 };
 use rgbp::{descriptor::RgbDescr, RgbDirRuntime, RgbWallet};
 use rgbp::{CoinselectStrategy, PayError};
@@ -34,11 +33,8 @@ use super::{
     *,
 };
 
-use tabled::settings::{
-    object::{Columns, Rows},
-    Alignment, Modify, Style,
-};
-use tabled::{builder::Builder, Table, Tabled};
+use tabled::settings::{object::Columns, Alignment, Modify, Style};
+use tabled::{Table, Tabled};
 
 /// RGB Asset creation parameters builder
 #[derive(Clone)]
@@ -427,10 +423,7 @@ impl Report {
     /// Get file handle
     fn get_file(&mut self) -> Result<&mut File, ReportError> {
         if self.file.is_none() {
-            let file = OpenOptions::new()
-                .write(true)
-                .append(true)
-                .open(&self.report_path)?;
+            let file = OpenOptions::new().append(true).open(&self.report_path)?;
 
             self.file = Some(file);
         }
@@ -730,7 +723,7 @@ impl Report {
                 json.push_str(&format!("{}", value));
             }
 
-            json.push_str("]");
+            json.push(']');
         }
 
         json.push_str("\n}");
@@ -942,7 +935,7 @@ fn make_runtime(descriptor: &RgbDescr, network: Network, wallet_dir: &PathBuf) -
     let wallet = RgbWallet::create(provider, descriptor.clone(), network, true)
         .expect("Unable to create wallet");
 
-    let mound = BpDirMound::load_testnet(Consensus::Bitcoin, &wallet_dir, false);
+    let mound = BpDirMound::load_testnet(Consensus::Bitcoin, wallet_dir, false);
     RgbDirRuntime::from(DirBarrow::with(wallet, mound))
 }
 
@@ -1007,12 +1000,11 @@ fn broadcast_tx(tx: &Tx, indexer_url: &str) {
         AnyIndexer::Esplora(inner) => {
             inner
                 .broadcast(tx)
-                .map_err(|e| {
+                .inspect_err(|e| {
                     dbg!(
                         tx.inputs.iter().map(|i| i.prev_output).collect::<Vec<_>>(),
-                        &e
+                        e
                     );
-                    e
                 })
                 .unwrap();
         }
@@ -1236,10 +1228,7 @@ impl TestWallet {
         mut report: Option<&mut Report>,
     ) -> (PathBuf, Tx) {
         // We need to handle the report parameter carefully to avoid moving it
-        let transfer_report = match &mut report {
-            Some(r) => Some(&mut **r),
-            None => None,
-        };
+        let transfer_report = report.as_deref_mut();
 
         let (consignment, tx) = self.transfer(invoice, sats, fee, true, transfer_report);
         broadcast_tx_and_mine(&tx, self.instance);
@@ -1535,7 +1524,7 @@ impl TestWallet {
     /// Get contract state with parsed data structures
     pub fn contract_state(&mut self, contract_id: ContractId) -> Option<ContractState> {
         self.contract_state_internal(contract_id)
-            .map(|(immutable, owned, computed)| {
+            .map(|(immutable, owned, _)| {
                 // Parse immutable state
                 let name = immutable
                     .get(&VariantName::from_str("name").unwrap())
@@ -1568,7 +1557,7 @@ impl TestWallet {
                 let circulating_supply = immutable
                     .get(&VariantName::from_str("circulating").unwrap())
                     .and_then(|m: &BTreeMap<CellAddr, StateAtom>| m.values().next())
-                    .and_then(|v| Some(v.verified.unwrap_num().unwrap_uint::<u64>()))
+                    .map(|v| v.verified.unwrap_num().unwrap_uint::<u64>())
                     .unwrap_or_default();
 
                 // Parse ownership state

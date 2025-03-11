@@ -7,7 +7,9 @@ pub static INDEXER: OnceLock<Indexer> = OnceLock::new();
 // Node addresses
 const NODE2_ADDR: &str = "172.30.2.205:18444";
 const NODE3_ADDR: &str = "172.30.2.206:18444";
+#[allow(dead_code)]
 const NODE2_IP: &str = "172.30.2.205";
+#[allow(dead_code)]
 const NODE3_IP: &str = "172.30.2.206";
 
 #[derive(Clone, Default, PartialEq, Eq, Debug)]

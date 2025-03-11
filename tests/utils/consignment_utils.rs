@@ -1,20 +1,17 @@
-use std::collections::BTreeMap;
 use std::fs::{self, File};
-use std::io::{self, Read, Write};
+use std::io;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use amplify::confinement::SmallOrdMap;
 use amplify::hex::ToHex;
 use amplify::{Bytes16, Display, From};
 use bp::seals::WTxoSeal;
 use commit_verify::ReservedBytes;
-use hypersonic::aora::Aora;
-use hypersonic::{Articles, ContractId, FileSupply, Operation};
+use hypersonic::{Articles, ContractId, Operation};
 use rgb::sigs::ContentSigs;
 use rgb::{
-    Contract, FilePile, Index, MoundConsumeError, Pile, PublishedWitness, RgbSealDef, Schema,
-    SealWitness, SingleUseSeal, Stockpile, MAGIC_BYTES_CONSIGNMENT,
+    Contract, PublishedWitness, RgbSealDef, Schema, SealWitness, SingleUseSeal,
+    MAGIC_BYTES_CONSIGNMENT,
 };
 use serde::{Deserialize, Serialize};
 use strict_encoding::{
@@ -446,8 +443,8 @@ pub fn create_attack_consignment(
                     let mut modified_codex_id = original_codex_id.to_owned();
                     modified_codex_id.push('1');
 
-                    modify_file(&contract_path, &original_codex_id, &modified_codex_id)?;
-                    modify_file(&schema_path, &original_codex_id, &modified_codex_id)?;
+                    modify_file(&contract_path, original_codex_id, &modified_codex_id)?;
+                    modify_file(&schema_path, original_codex_id, &modified_codex_id)?;
                     println!("Modified codexId in contract.yaml and schema.yaml");
                 } else {
                     return Err(ConsignmentParseError::InvalidData(

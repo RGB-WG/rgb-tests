@@ -80,7 +80,7 @@ fn simple_transfer(wout: bool) {
     let (consignment_1, tx) = wlt_1.transfer(invoice, Some(3000), Some(500), true, None);
 
     // Receiver accepts the transfer
-    wlt_2.accept_transfer(&consignment_1, None);
+    wlt_2.accept_transfer(&consignment_1, None).unwrap();
 
     // Broadcast and confirm transaction
     wlt_1.mine_tx(&tx.txid(), true);
@@ -101,7 +101,7 @@ fn simple_transfer(wout: bool) {
     );
     // Sats cost: 500 fee + 2000 sats(default) = 2500
     let (consignment_2, tx) = wlt_2.transfer(invoice, None, Some(500), true, None);
-    wlt_1.accept_transfer(&consignment_2, None);
+    wlt_1.accept_transfer(&consignment_2, None).unwrap();
     wlt_2.mine_tx(&tx.txid(), true);
 
     // // Sync both wallets
@@ -159,7 +159,7 @@ fn rbf_transfer() {
     let (consignment_1, _) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
 
     // Receiver accepts the transfer
-    wlt_2.accept_transfer(&consignment_1, None);
+    wlt_2.accept_transfer(&consignment_1, None).unwrap();
 
     // Verify block height hasn't changed (transaction not confirmed)
     let mid_height = get_height();
@@ -176,7 +176,7 @@ fn rbf_transfer() {
     wlt_1.mine_tx(&tx.txid(), true);
 
     // Receiver accepts final transfer
-    wlt_2.accept_transfer(&consignment_2, None);
+    wlt_2.accept_transfer(&consignment_2, None).unwrap();
 
     // Sync both wallets
     wlt_1.sync();
@@ -558,7 +558,7 @@ fn transfer_loop(
 #[case(TransferType::Blinded)]
 #[ignore = "Awaiting new rollback procedure API in RGB v0.12"]
 #[case(TransferType::Witness)]
-fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {}
+fn same_transfer_twice_update_witnesses(#[case] _transfer_type: TransferType) {}
 
 // Complex test cases - Implementation deferred to final phase
 // These test cases will be implemented last, after evaluating:
@@ -620,12 +620,12 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     dbg!(wlt_1
         .runtime()
         .state_all(None)
-        .map(|(c, s)| { s.owned })
+        .map(|(_, s)| { s.owned })
         .collect::<Vec<_>>());
     dbg!(wlt_1
         .runtime()
         .state_own(None)
-        .map(|(c, s)| { s.owned })
+        .map(|(_, s)| { s.owned })
         .collect::<Vec<_>>());
 
     // dbg!(wlt_2
@@ -642,7 +642,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     // TODO: called `Result::unwrap()` on an `Err` value: Fulfill(StateInsufficient)
     let (consignment, _) = wlt_1.transfer(invoice, None, Some(1000), true, None);
 
-    wlt_2.accept_transfer(&consignment, None);
+    wlt_2.accept_transfer(&consignment, None).unwrap();
 
     let wlt_2_contract_state = wlt_2.runtime().state_own(None).map(|s| s.1.owned);
     dbg!(wlt_2_contract_state.collect::<Vec<_>>());
@@ -702,7 +702,7 @@ fn accept_0conf() {
     let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, None, true, None);
     let txid = tx.txid();
 
-    wlt_2.accept_transfer(&consignment, None);
+    wlt_2.accept_transfer(&consignment, None).unwrap();
 
     // wlt_2 sees the allocation even if TX has not been mined
     wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![amt]);
@@ -819,7 +819,7 @@ fn send_to_oneself() {
     let invoice = wlt.invoice(contract_id, amt, true, Some(0), None);
     let (consignment, tx) = wlt.transfer(invoice.clone(), None, None, true, None);
     wlt.mine_tx(&tx.txid(), false);
-    wlt.accept_transfer(&consignment, None);
+    wlt.accept_transfer(&consignment, None).unwrap();
     wlt.sync();
 
     // debug contract state
@@ -1438,7 +1438,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     let invoice = wlt_2.invoice(contract_id, 100, false, None, Some(utxo));
 
     // Create transfer but do not broadcast its TX
-    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+    let (_consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
     let txid = tx.txid();
 
     // Note: The following code needs to be redesigned in RGB v0.12
