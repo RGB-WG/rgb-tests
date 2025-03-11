@@ -23,7 +23,6 @@
 
 pub mod utils;
 
-use bp::Tx;
 use rstest_reuse::{self, *};
 use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -1411,8 +1410,16 @@ fn sync_mainnet_wlt() {
 }
 
 #[test]
-#[ignore = "Needs to be updated to accommodate API changes to RGB v0.12"]
 #[serial]
+// TODO: This test case cannot pass currently
+//
+// The background is as follows:
+// wallet 1 first transfers RGB assets to wallet 2, where wallet 2 receives the assets
+// in a blinded manner (using an existing UTXO create rgb-invoice).
+// The witness transaction generated between them has not been broadcasted to the network,
+// wallet 2 accepts the consignment, use the received assets to transfer to wallet 3
+// finally, the transfer is completed, the asset results of wallet 2 and wallet 3 are correct,
+// but the asset result of wallet 1 is incorrect
 fn receive_from_unbroadcasted_transfer_to_blinded() {
     initialize();
 
@@ -1432,87 +1439,47 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
 
     // Get UTXO and create invoice
     let utxo = wlt_2.get_utxo(None);
-    broadcast_tx_and_mine(&Tx::from_str(&utxo.txid.to_string()).unwrap(), 0);
 
     // In RGB v0.12, the invoice API has been changed
     let invoice = wlt_2.invoice(contract_id, 100, false, None, Some(utxo));
 
     // Create transfer but do not broadcast its TX
-    let (_consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
-    let txid = tx.txid();
+    let (consignment, _tx) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+    wlt_2.accept_transfer(&consignment, None).unwrap();
 
-    // Note: The following code needs to be redesigned in RGB v0.12
-    // The original test used a custom OffchainResolver to handle unbroadcasted transactions
-    // In RGB v0.12, the validation and parsing mechanisms may have changed
+    // The following three lines are debug code,
+    // used to debug the transfer under normal broadcast logic
 
-    // TODO: Implement a custom resolver for RGB v0.12
-    // The original code:
-    /*
-    struct OffchainResolver<'a, 'cons, const TRANSFER: bool> {
-        witness_id: XWitnessId,
-        consignment: &'cons IndexedConsignment<'cons, TRANSFER>,
-        fallback: &'a AnyResolver,
-    }
-    impl<const TRANSFER: bool> ResolveWitness for OffchainResolver<'_, '_, TRANSFER> {
-        fn resolve_pub_witness(
-            &self,
-            witness_id: XWitnessId,
-        ) -> Result<XWitnessTx, WitnessResolverError> {
-            self.consignment
-                .pub_witness(witness_id)
-                .and_then(|p| p.map_ref(|pw| pw.tx().cloned()).transpose())
-                .ok_or(WitnessResolverError::Unknown(witness_id))
-                .or_else(|_| self.fallback.resolve_pub_witness(witness_id))
-        }
-        fn resolve_pub_witness_ord(
-            &self,
-            witness_id: XWitnessId,
-        ) -> Result<WitnessOrd, WitnessResolverError> {
-            if witness_id != self.witness_id {
-                return self.fallback.resolve_pub_witness_ord(witness_id);
-            }
-            Ok(WitnessOrd::Tentative)
-        }
-    }
+    // wlt_1.broadcast_tx(&tx);
+    // wlt_1.mine_tx(&tx.txid(), false);
+    // wlt_1.sync();
 
-    let resolver = OffchainResolver {
-        witness_id: XChain::Bitcoin(txid),
-        consignment: &IndexedConsignment::new(&consignment),
-        fallback: &wlt_2.get_resolver(),
-    };
-    */
+    dbg!(wlt_2
+        .runtime()
+        .state_own(Some(contract_id))
+        .map(|s| s.1.owned)
+        .collect::<Vec<_>>());
 
-    // In RGB v0.12, the API for accepting transfers may have changed
-    // The original code:
-    // wlt_2.accept_transfer_custom_resolver(consignment.clone(), None, &resolver);
-
-    // Due to API changes, this test is temporarily ignored
-    println!("The test needs to be updated to adapt to the API changes in RGB v0.12");
-    println!("Transaction ID: {}", txid);
-
-    // The following steps are from the original test, need to be adjusted according to the API changes in RGB v0.12
-    /*
-    let invoice = wlt_3.invoice(
-        contract_id,
-        &iface_type_name,
-        50,
-        wlt_2.close_method(),
-        InvoiceType::Witness,
-    );
+    let invoice = wlt_3.invoice(contract_id, 50, true, None, None);
     let (consignment, tx) = wlt_2.transfer(invoice, Some(2000), None, true, None);
     wlt_2.mine_tx(&tx.txid(), false);
+    wlt_2.sync();
+    wlt_1.sync();
+    let res = wlt_3.accept_transfer(&consignment, None);
+    let wlt_3_states = wlt_3
+        .runtime()
+        .state_own(Some(contract_id))
+        .map(|s| s.1.owned)
+        .collect::<Vec<_>>();
+    let wlt_2_states = wlt_2
+        .runtime()
+        .state_own(Some(contract_id))
+        .map(|s| s.1.owned)
+        .collect::<Vec<_>>();
+    assert!(res.is_ok(), "accept transfer failed");
+    dbg!(wlt_3_states, wlt_2_states);
 
-    // consignment validation fails because it notices an unbroadcasted TX in the history
-    let res = consignment.validate(&wlt_3.get_resolver(), wlt_3.testnet());
-    assert!(res.is_err());
-    let validation_status = match res {
-        Ok(validated_consignment) => validated_consignment.validation_status().clone(),
-        Err((status, _consignment)) => status,
-    };
-    assert_eq!(validation_status.failures.len(), 1);
-    assert!(matches!(
-        validation_status.failures[0],
-        Failure::SealNoPubWitness(_, _, _)
-    ));
-    */
+    wlt_3.check_allocations(contract_id, AssetSchema::Nia, vec![50]);
+    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![50]);
+    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![500]);
 }
