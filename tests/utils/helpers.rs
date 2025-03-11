@@ -1068,8 +1068,16 @@ impl TestWallet {
         self.instance = instance;
     }
 
+    // TODO: Dr. Maxim mentioned in the meeting that
+    // He will support rollback state related APIs in the reorg and rbf scenarios
+    // Because it is not implemented at the moment, only sync is included for now
+    pub fn sync_and_rollback_state(&mut self) {
+        self.sync();
+    }
+
     pub fn switch_to_instance(&mut self, instance: u8) {
         self.change_instance(instance);
+        self.sync_and_rollback_state();
     }
 
     pub fn indexer_url(&self) -> String {
