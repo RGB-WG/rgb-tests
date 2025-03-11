@@ -362,7 +362,7 @@ name = "bp-electrum"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
- "bp-std",
+ "bp-core",
  "byteorder",
  "libc",
  "log",
@@ -379,7 +379,8 @@ name = "bp-esplora"
 version = "0.11.1-alpha.1"
 dependencies = [
  "amplify",
- "bp-std",
+ "bp-core",
+ "bp-invoice",
  "log",
  "minreq",
  "reqwest",
@@ -1837,8 +1838,6 @@ dependencies = [
  "amplify",
  "baid64",
  "bp-core",
- "bp-electrum",
- "bp-esplora",
  "bp-std",
  "bp-wallet",
  "chrono",
@@ -1905,6 +1904,8 @@ dependencies = [
  "baid64",
  "base85",
  "bp-core",
+ "bp-electrum",
+ "bp-esplora",
  "chrono",
  "commit_verify",
  "getrandom 0.2.15",
