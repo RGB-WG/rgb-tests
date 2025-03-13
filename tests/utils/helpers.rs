@@ -28,7 +28,7 @@ enum Filter<'w> {
 }
 
 impl AssignmentsFilter for Filter<'_> {
-    fn should_include(&self, outpoint: impl Into<XOutpoint>, id: Option<XWitnessId>) -> bool {
+    fn should_include(&self, outpoint: impl Into<Outpoint>, id: Option<Txid>) -> bool {
         match self {
             Filter::Wallet(wallet) => wallet
                 .wallet()
@@ -43,11 +43,7 @@ impl AssignmentsFilter for Filter<'_> {
     }
 }
 impl Filter<'_> {
-    fn comment(&self, outpoint: XOutpoint) -> &'static str {
-        let outpoint = outpoint
-            .into_bp()
-            .into_bitcoin()
-            .expect("liquid is not yet supported");
+    fn comment(&self, outpoint: Outpoint) -> &'static str {
         match self {
             Filter::Wallet(rgb) if rgb.wallet().is_unspent(outpoint) => "",
             Filter::WalletAll(rgb) | Filter::WalletTentative(rgb)
@@ -90,7 +86,7 @@ pub enum ReorgType {
     Revert,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum TransferType {
     Blinded,
     Witness,
@@ -246,27 +242,27 @@ impl AssetInfo {
         }
     }
 
-    fn iface_type_name(&self) -> TypeName {
+    pub fn iface_type_name(&self) -> TypeName {
         self.asset_schema().iface_type_name()
     }
 
-    fn schema(&self) -> Schema {
+    pub fn schema(&self) -> Schema {
         self.asset_schema().schema()
     }
 
-    fn issue_impl(&self) -> IfaceImpl {
+    pub fn issue_impl(&self) -> IfaceImpl {
         self.asset_schema().issue_impl()
     }
 
-    fn scripts(&self) -> Scripts {
+    pub fn scripts(&self) -> Scripts {
         self.asset_schema().scripts()
     }
 
-    fn types(&self) -> TypeSystem {
+    pub fn types(&self) -> TypeSystem {
         self.asset_schema().types()
     }
 
-    fn iface(&self) -> Iface {
+    pub fn iface(&self) -> Iface {
         self.asset_schema().iface()
     }
 
@@ -371,7 +367,7 @@ impl AssetInfo {
         }
     }
 
-    fn add_global_state(&self, mut builder: ContractBuilder) -> ContractBuilder {
+    pub fn add_global_state(&self, mut builder: ContractBuilder) -> ContractBuilder {
         match self {
             Self::Nia {
                 spec,
@@ -427,38 +423,16 @@ impl AssetInfo {
         }
     }
 
-    fn add_asset_owner(
+    pub fn add_asset_owner(
         &self,
         mut builder: ContractBuilder,
-        close_method: CloseMethod,
         outpoints: Vec<Outpoint>,
     ) -> ContractBuilder {
-        fn get_genesis_seal(
-            close_method: CloseMethod,
-            outpoint: Outpoint,
-        ) -> BuilderSeal<BlindSeal<Txid>> {
-            let blind_seal = match close_method {
-                CloseMethod::TapretFirst => {
-                    BlindSeal::tapret_first_rand(outpoint.txid, outpoint.vout)
-                }
-                CloseMethod::OpretFirst => {
-                    BlindSeal::opret_first_rand(outpoint.txid, outpoint.vout)
-                }
-            };
-            let genesis_seal = GenesisSeal::from(blind_seal);
-            let seal: XChain<BlindSeal<Txid>> = XChain::with(Layer1::Bitcoin, genesis_seal);
-            BuilderSeal::from(seal)
-        }
-
         match self {
             Self::Nia { issue_amounts, .. } | Self::Cfa { issue_amounts, .. } => {
                 for (amt, outpoint) in issue_amounts.iter().zip(outpoints.iter().cycle()) {
                     builder = builder
-                        .add_fungible_state(
-                            "assetOwner",
-                            get_genesis_seal(close_method, *outpoint),
-                            *amt,
-                        )
+                        .add_fungible_state("assetOwner", get_builder_seal(*outpoint), *amt)
                         .unwrap();
                 }
                 builder
@@ -467,11 +441,7 @@ impl AssetInfo {
                 let fraction = OwnedFraction::from(1);
                 let allocation = Allocation::with(token_data.index, fraction);
                 builder
-                    .add_data(
-                        "assetOwner",
-                        get_genesis_seal(close_method, outpoints[0]),
-                        allocation,
-                    )
+                    .add_data("assetOwner", get_builder_seal(outpoints[0]), allocation)
                     .unwrap()
             }
         }
@@ -510,6 +480,11 @@ impl Report {
             .unwrap();
         file.write_all("\n".as_bytes()).unwrap();
     }
+}
+
+pub fn get_builder_seal(outpoint: Outpoint) -> BuilderSeal<BlindSeal<Txid>> {
+    let blind_seal = BlindSeal::new_random(outpoint.txid, outpoint.vout);
+    BuilderSeal::from(blind_seal)
 }
 
 fn _get_wallet(
@@ -578,10 +553,7 @@ fn _get_wallet(
         instance,
     };
 
-    // TODO: remove if once found solution for esplora 'Too many requests' error
-    if network.is_testnet() {
-        wallet.sync();
-    }
+    wallet.sync();
 
     wallet
 }
@@ -711,6 +683,16 @@ impl TestWallet {
         self.wallet.wallet().network()
     }
 
+    pub fn chain_net(&self) -> ChainNet {
+        match self.network() {
+            Network::Mainnet => ChainNet::BitcoinMainnet,
+            Network::Regtest => ChainNet::BitcoinRegtest,
+            Network::Signet => ChainNet::BitcoinSignet,
+            Network::Testnet3 => ChainNet::BitcoinTestnet3,
+            Network::Testnet4 => ChainNet::BitcoinTestnet4,
+        }
+    }
+
     pub fn testnet(&self) -> bool {
         self.network().is_testnet()
     }
@@ -719,16 +701,24 @@ impl TestWallet {
         RgbKeychain::for_method(self.close_method())
     }
 
-    pub fn get_derived_address(&self) -> DerivedAddr {
+    fn get_next_index(&mut self, keychain: impl Into<Keychain>, shift: bool) -> NormalIndex {
         self.wallet
-            .wallet()
-            .addresses(self.keychain())
-            .next()
-            .expect("no addresses left")
+            .wallet_mut()
+            .next_derivation_index(keychain, shift)
     }
 
-    pub fn get_address(&self) -> Address {
-        self.get_derived_address().addr
+    pub fn get_derived_address(&mut self, shift: bool) -> DerivedAddr {
+        let keychain = self.keychain();
+        let index = self.get_next_index(keychain, shift);
+        self.wallet
+            .wallet()
+            .addresses(keychain)
+            .nth(index.index() as usize)
+            .expect("address iterator always can produce address")
+    }
+
+    pub fn get_address(&mut self) -> Address {
+        self.get_derived_address(true).addr
     }
 
     pub fn get_utxo(&mut self, sats: Option<u64>) -> Outpoint {
@@ -757,7 +747,7 @@ impl TestWallet {
 
     pub fn sync_and_update_witnesses(&mut self, after_height: Option<u32>) {
         self.sync();
-        self.update_witnesses(after_height.unwrap_or(1));
+        self.update_witnesses(after_height.unwrap_or(1), vec![]);
     }
 
     pub fn switch_to_instance(&mut self, instance: u8) {
@@ -782,9 +772,7 @@ impl TestWallet {
     }
 
     pub fn get_witness_ord(&self, txid: &Txid) -> WitnessOrd {
-        self.get_resolver()
-            .resolve_pub_witness_ord(XWitnessId::Bitcoin(*txid))
-            .unwrap()
+        self.get_resolver().resolve_pub_witness_ord(*txid).unwrap()
     }
 
     pub fn get_tx_height(&self, txid: &Txid) -> Option<u32> {
@@ -798,13 +786,13 @@ impl TestWallet {
         let indexer = self.get_indexer();
         self.wallet
             .wallet_mut()
-            .update(&indexer)
+            .sync_from_scratch(&indexer)
             .into_result()
             .unwrap();
     }
 
     pub fn close_method(&self) -> CloseMethod {
-        self.wallet.wallet().seal_close_method()
+        self.wallet.wallet().close_method()
     }
 
     pub fn mine_tx(&self, txid: &Txid, resume: bool) {
@@ -821,10 +809,16 @@ impl TestWallet {
         }
     }
 
+    pub fn import_contract(&mut self, contract: &ValidContract, resolver: impl ResolveWitness) {
+        self.wallet
+            .stock_mut()
+            .import_contract(contract.clone(), resolver)
+            .unwrap();
+    }
+
     pub fn issue_with_info(
         &mut self,
         asset_info: AssetInfo,
-        close_method: CloseMethod,
         outpoints: Vec<Option<Outpoint>>,
     ) -> (ContractId, TypeName) {
         let outpoints = if outpoints.is_empty() {
@@ -843,18 +837,16 @@ impl TestWallet {
             asset_info.issue_impl(),
             asset_info.types(),
             asset_info.scripts(),
+            self.chain_net(),
         );
 
         builder = asset_info.add_global_state(builder);
 
-        builder = asset_info.add_asset_owner(builder, close_method, outpoints);
+        builder = asset_info.add_asset_owner(builder, outpoints);
 
         let contract = builder.issue_contract().expect("failure issuing contract");
         let resolver = self.get_resolver();
-        self.wallet
-            .stock_mut()
-            .import_contract(contract.clone(), resolver)
-            .unwrap();
+        self.import_contract(&contract, resolver);
 
         (contract.contract_id(), asset_info.iface_type_name())
     }
@@ -862,30 +854,24 @@ impl TestWallet {
     pub fn issue_nia(
         &mut self,
         issued_supply: u64,
-        close_method: CloseMethod,
         outpoint: Option<&Outpoint>,
     ) -> (ContractId, TypeName) {
         let asset_info = AssetInfo::default_nia(vec![issued_supply]);
-        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
+        self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
 
-    pub fn issue_uda(
-        &mut self,
-        close_method: CloseMethod,
-        outpoint: Option<&Outpoint>,
-    ) -> (ContractId, TypeName) {
+    pub fn issue_uda(&mut self, outpoint: Option<&Outpoint>) -> (ContractId, TypeName) {
         let asset_info = AssetInfo::default_uda();
-        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
+        self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
 
     pub fn issue_cfa(
         &mut self,
         issued_supply: u64,
-        close_method: CloseMethod,
         outpoint: Option<&Outpoint>,
     ) -> (ContractId, TypeName) {
         let asset_info = AssetInfo::default_cfa(vec![issued_supply]);
-        self.issue_with_info(asset_info, close_method, vec![outpoint.copied()])
+        self.issue_with_info(asset_info, vec![outpoint.copied()])
     }
 
     pub fn invoice(
@@ -893,7 +879,6 @@ impl TestWallet {
         contract_id: ContractId,
         iface_type_name: &TypeName,
         amount: u64,
-        close_method: CloseMethod,
         invoice_type: InvoiceType,
     ) -> RgbInvoice {
         let network = self.wallet.wallet().network();
@@ -904,20 +889,13 @@ impl TestWallet {
                 } else {
                     self.get_utxo(None)
                 };
-                let seal = XChain::Bitcoin(GraphSeal::new_random(
-                    close_method,
-                    outpoint.txid,
-                    outpoint.vout,
-                ));
+                let seal = GraphSeal::new_random(outpoint.txid, outpoint.vout);
                 self.wallet.stock_mut().store_secret_seal(seal).unwrap();
-                Beneficiary::BlindedSeal(*seal.to_secret_seal().as_reduced_unsafe())
+                Beneficiary::BlindedSeal(seal.to_secret_seal())
             }
             InvoiceType::Witness => {
                 let address = self.get_address();
-                Beneficiary::WitnessVout(Pay2Vout {
-                    address: address.payload,
-                    method: close_method,
-                })
+                Beneficiary::WitnessVout(Pay2Vout::new(address.payload))
             }
         };
 
@@ -948,6 +926,18 @@ impl TestWallet {
         psbt.extract().unwrap()
     }
 
+    pub fn pay(
+        &mut self,
+        invoice: RgbInvoice,
+        sats: Option<u64>,
+        fee: Option<u64>,
+    ) -> (Psbt, PsbtMeta, Transfer) {
+        let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
+        let sats = Sats::from_sats(sats.unwrap_or(2000));
+        let params = TransferParams::with(fee, sats);
+        self.wallet.pay(&invoice, params).unwrap()
+    }
+
     pub fn transfer(
         &mut self,
         invoice: RgbInvoice,
@@ -958,11 +948,8 @@ impl TestWallet {
     ) -> (Transfer, Tx) {
         self.sync();
 
-        let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
-        let sats = Sats::from_sats(sats.unwrap_or(2000));
-        let params = TransferParams::with(fee, sats);
         let pay_start = Instant::now();
-        let (mut psbt, _psbt_meta, consignment) = self.wallet.pay(&invoice, params).unwrap();
+        let (mut psbt, _psbt_meta, consignment) = self.pay(invoice, sats, fee);
         let pay_duration = pay_start.elapsed();
         if let Some(report) = report {
             report.write_duration(pay_duration);
@@ -1009,7 +996,7 @@ impl TestWallet {
 
     pub fn accept_transfer(&mut self, consignment: Transfer, report: Option<&Report>) {
         let mut resolver = self.get_resolver();
-        resolver.add_terminals(&consignment);
+        resolver.add_consignment_txes(&consignment);
         self.accept_transfer_custom_resolver(consignment, report, &resolver);
     }
 
@@ -1022,7 +1009,7 @@ impl TestWallet {
         self.sync();
         let validate_start = Instant::now();
         let validated_consignment = consignment
-            .validate(&resolver, self.testnet())
+            .validate(&resolver, self.chain_net())
             .map_err(|(status, _)| status)
             .unwrap();
         let validate_duration = validate_start.elapsed();
@@ -1273,13 +1260,7 @@ impl TestWallet {
         sats: u64,
         report: Option<&Report>,
     ) -> (Transfer, Tx) {
-        let invoice = recv_wlt.invoice(
-            contract_id,
-            iface_type_name,
-            amount,
-            recv_wlt.close_method(),
-            transfer_type.into(),
-        );
+        let invoice = recv_wlt.invoice(contract_id, iface_type_name, amount, transfer_type.into());
         self.send_to_invoice(recv_wlt, invoice, Some(sats), None, report)
     }
 
@@ -1318,9 +1299,6 @@ impl TestWallet {
                 actual_fungible_allocations.sort();
                 expected_fungible_allocations.sort();
                 assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
-                assert!(allocations
-                    .iter()
-                    .all(|a| a.seal.method() == self.close_method()));
             }
             AssetSchema::Uda => {
                 let allocations = self.contract_data_allocations(contract_id, iface_type_name);
@@ -1354,9 +1332,7 @@ impl TestWallet {
             .into_iter()
             .find(|co| {
                 co.direction == direction
-                    && co
-                        .witness
-                        .map_or(true, |w| Some(w.id.as_reduced_unsafe()) == txid)
+                    && co.witness.map_or(true, |w| Some(w.id) == txid.copied())
             })
             .unwrap();
         assert!(matches!(operation.state, AllocatedState::Amount(amt) if amt.value() == amount));
@@ -1409,10 +1385,8 @@ impl TestWallet {
         }
 
         let (change_vout, change_terminal) = if remaining_value > Sats::from(546u64) {
-            let change_index = self
-                .wallet
-                .wallet_mut()
-                .next_derivation_index(tx_params.change_keychain, tx_params.change_shift);
+            let change_index =
+                self.get_next_index(tx_params.change_keychain, tx_params.change_shift);
             let change_terminal = Terminal::new(tx_params.change_keychain, change_index);
             let change_vout = psbt
                 .construct_change_expect(
@@ -1503,6 +1477,7 @@ impl TestWallet {
         coloring_info: ColoringInfo,
     ) -> (Fascia, AssetBeneficiariesMap) {
         let asset_beneficiaries = self.color_psbt_init(psbt, coloring_info);
+        psbt.set_rgb_close_method(CloseMethod::OpretFirst);
         psbt.complete_construction();
         let fascia = psbt.rgb_commit().unwrap();
         (fascia, asset_beneficiaries)
@@ -1522,8 +1497,7 @@ impl TestWallet {
             .inputs
             .iter()
             .map(|txin| txin.prev_output)
-            .map(|outpoint| XOutpoint::from(XChain::Bitcoin(outpoint)))
-            .collect::<HashSet<XOutpoint>>();
+            .collect::<HashSet<Outpoint>>();
 
         let mut all_transitions: HashMap<ContractId, Transition> = HashMap::new();
         let mut asset_beneficiaries: AssetBeneficiariesMap = bmap![];
@@ -1548,17 +1522,17 @@ impl TestWallet {
                     prev_outputs
                         .iter()
                         // only retrieve assignments for owned prevouts using coloring_info
-                        .filter(|xop| {
+                        .filter(|op| {
                             coloring_info.asset_info_map[&contract_id]
                                 .input_outpoints
-                                .contains(xop.as_reduced_unsafe())
+                                .contains(op)
                         })
                         .copied(),
                 )
                 .unwrap()
             {
                 for (opout, state) in opout_state_map {
-                    if let PersistedState::Amount(amt, _, _) = &state {
+                    if let PersistedState::Amount(amt) = &state {
                         asset_available_amt += amt.value();
                     }
                     asset_transition_builder =
@@ -1577,22 +1551,15 @@ impl TestWallet {
                     panic!("invalid vout in output_map, does not exist in the given PSBT");
                 }
                 let graph_seal = if let Some(blinding) = asset_coloring_info.static_blinding {
-                    GraphSeal::with_blinded_vout(CloseMethod::OpretFirst, vout, blinding)
+                    GraphSeal::with_blinded_vout(vout, blinding)
                 } else {
-                    GraphSeal::new_random_vout(CloseMethod::OpretFirst, vout)
+                    GraphSeal::new_random_vout(vout)
                 };
-                let seal = BuilderSeal::Revealed(XChain::with(Layer1::Bitcoin, graph_seal));
+                let seal = BuilderSeal::Revealed(graph_seal);
                 beneficiaries.push(seal);
 
-                let blinding_factor = if let Some(blinding) = asset_coloring_info.static_blinding {
-                    let mut blinding_32_bytes: [u8; 32] = [0; 32];
-                    blinding_32_bytes[0..8].copy_from_slice(&blinding.to_le_bytes());
-                    BlindingFactor::try_from(blinding_32_bytes).unwrap()
-                } else {
-                    BlindingFactor::random()
-                };
                 asset_transition_builder = asset_transition_builder
-                    .add_fungible_state_raw(assignment_id, seal, amount, blinding_factor)
+                    .add_fungible_state_raw(assignment_id, seal, amount)
                     .unwrap();
             }
             if sending_amt > asset_available_amt {
@@ -1643,55 +1610,60 @@ impl TestWallet {
                         .unwrap();
                 }
             }
-            psbt.push_rgb_transition(transition, CloseMethod::OpretFirst)
-                .unwrap();
+            psbt.push_rgb_transition(transition).unwrap();
         }
 
         asset_beneficiaries
     }
 
-    pub fn consume_fascia(&mut self, fascia: Fascia, witness_txid: Txid) {
+    pub fn consume_fascia(&mut self, fascia: Fascia, witness_id: Txid) {
         struct FasciaResolver {
-            witness_id: XWitnessId,
+            witness_id: Txid,
         }
         impl ResolveWitness for FasciaResolver {
-            fn resolve_pub_witness(
-                &self,
-                _: XWitnessId,
-            ) -> Result<XWitnessTx, WitnessResolverError> {
+            fn resolve_pub_witness(&self, _: Txid) -> Result<Tx, WitnessResolverError> {
                 unreachable!()
             }
             fn resolve_pub_witness_ord(
                 &self,
-                witness_id: XWitnessId,
+                witness_id: Txid,
             ) -> Result<WitnessOrd, WitnessResolverError> {
                 assert_eq!(witness_id, self.witness_id);
                 Ok(WitnessOrd::Tentative)
             }
+            fn check_chain_net(&self, _: ChainNet) -> Result<(), WitnessResolverError> {
+                unreachable!()
+            }
         }
 
-        let resolver = FasciaResolver {
-            witness_id: XChain::Bitcoin(witness_txid),
-        };
+        let resolver = FasciaResolver { witness_id };
 
+        self.consume_fascia_custom_resolver(fascia, resolver);
+    }
+
+    pub fn consume_fascia_custom_resolver(
+        &mut self,
+        fascia: Fascia,
+        resolver: impl ResolveWitness,
+    ) {
         self.wallet
             .stock_mut()
             .consume_fascia(fascia, resolver)
             .unwrap();
     }
 
-    pub fn update_witnesses(&mut self, after_height: u32) {
+    pub fn update_witnesses(&mut self, after_height: u32, force_witnesses: Vec<Txid>) {
         let resolver = self.get_resolver();
         self.wallet
             .stock_mut()
-            .update_witnesses(resolver, after_height)
+            .update_witnesses(resolver, after_height, force_witnesses)
             .unwrap();
     }
 
     pub fn create_consignments(
         &self,
         asset_beneficiaries: AssetBeneficiariesMap,
-        witness_txid: Txid,
+        witness_id: Txid,
     ) -> Vec<Transfer> {
         let mut transfers = vec![];
         let stock = self.wallet.stock();
@@ -1700,14 +1672,19 @@ impl TestWallet {
             for beneficiary in beneficiaries {
                 match beneficiary {
                     BuilderSeal::Revealed(seal) => {
-                        let explicit_seal = XChain::Bitcoin(ExplicitSeal::new(
-                            seal.method(),
-                            Outpoint::new(witness_txid, seal.as_reduced_unsafe().vout),
-                        ));
-                        transfers.push(stock.transfer(contract_id, [explicit_seal], None).unwrap());
+                        let explicit_seal = ExplicitSeal::new(Outpoint::new(witness_id, seal.vout));
+                        transfers.push(
+                            stock
+                                .transfer(contract_id, [explicit_seal], None, Some(witness_id))
+                                .unwrap(),
+                        );
                     }
                     BuilderSeal::Concealed(seal) => {
-                        transfers.push(stock.transfer(contract_id, vec![], Some(seal)).unwrap());
+                        transfers.push(
+                            stock
+                                .transfer(contract_id, vec![], Some(seal), Some(witness_id))
+                                .unwrap(),
+                        );
                     }
                 }
             }
