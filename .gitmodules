@@ -1,12 +1,9 @@
 [submodule "rgb-std"]
 	path = rgb-std
 	url = https://github.com/RGB-WG/rgb-std.git
-[submodule "rust-aluvm"]
-	path = rust-aluvm
-	url = https://github.com/aluvm/rust-aluvm
-[submodule "rgb-interfaces"]
-	path = rgb-interfaces
-	url = https://github.com/RGB-WG/rgb-interfaces
+[submodule "aluvm"]
+	path = aluvm
+	url = https://github.com/aluvm/aluvm
 [submodule "client_side_validation"]
 	path = client_side_validation
 	url = https://github.com/LNP-BP/client_side_validation/
@@ -19,9 +16,6 @@
 [submodule "bp-std"]
 	path = bp-std
 	url = https://github.com/BP-WG/bp-std
-[submodule "rgb-schemata"]
-	path = rgb-schemata
-	url = https://github.com/RGB-WG/rgb-schemata
 [submodule "strict-types"]
 	path = strict-types
 	url = https://github.com/strict-types/strict-types
@@ -46,9 +40,6 @@
 [submodule "amplify-derive"]
 	path = amplify-derive
 	url = https://github.com/rust-amplify/amplify-derive.git
-[submodule "ascii-armor"]
-	path = ascii-armor
-	url = https://github.com/UBIDECO/ascii-armor.git
 [submodule "bp-esplora-client"]
 	path = bp-esplora-client
 	url = https://github.com/BP-WG/bp-esplora-client.git
@@ -61,3 +52,12 @@
 [submodule "amplify-nonasync"]
 	path = amplify-nonasync
 	url = https://github.com/rust-amplify/amplify-nonasync.git
+[submodule "zk-aluvm"]
+	path = zk-aluvm
+	url = https://github.com/AluVM/zk-aluvm
+[submodule "ultrasonic"]
+	path = ultrasonic
+	url = https://github.com/AluVM/ultrasonic
+[submodule "sonic"]
+	path = sonic
+	url = https://github.com/AluVM/sonic
