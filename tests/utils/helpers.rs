@@ -2,7 +2,6 @@ use super::*;
 
 pub struct TestWallet {
     wallet: RgbWallet<Wallet<XpubDerivable, RgbDescr>>,
-    descriptor: RgbDescr,
     signer: Option<TestnetSigner>,
     wallet_dir: PathBuf,
     instance: u8,
@@ -101,6 +100,7 @@ impl fmt::Display for TransferType {
 pub enum InvoiceType {
     Blinded(Option<Outpoint>),
     Witness,
+    WitnessTapret,
 }
 
 impl From<TransferType> for InvoiceType {
@@ -535,7 +535,6 @@ fn _get_wallet(
 
     let mut wallet = TestWallet {
         wallet,
-        descriptor,
         signer,
         wallet_dir,
         instance,
@@ -783,6 +782,10 @@ impl TestWallet {
         self.wallet.wallet().close_method()
     }
 
+    pub fn descriptor(&self) -> &RgbDescr {
+        self.wallet.wallet().descriptor()
+    }
+
     pub fn mine_tx(&self, txid: &Txid, resume: bool) {
         let mut attempts = 10;
         loop {
@@ -886,7 +889,24 @@ impl TestWallet {
             }
             InvoiceType::Witness => {
                 let address = self.get_address();
-                Beneficiary::WitnessVout(Pay2Vout::new(address.payload))
+                Beneficiary::WitnessVout(Pay2Vout::new(address.payload), None)
+            }
+            InvoiceType::WitnessTapret => {
+                let keychain = self.keychain();
+                let index = self.get_next_index(keychain, true);
+                let descr = self.descriptor();
+                let tap_internal_key = descr
+                    .derive(keychain, index)
+                    .next()
+                    .unwrap()
+                    .to_internal_pk()
+                    .expect("not a taproot wallet");
+                let address = Address::with(
+                    &ScriptPubkey::p2tr_key_only(tap_internal_key),
+                    self.network(),
+                )
+                .unwrap();
+                Beneficiary::WitnessVout(Pay2Vout::new(address.payload), Some(tap_internal_key))
             }
         };
 
@@ -910,7 +930,7 @@ impl TestWallet {
 
     pub fn sign_finalize(&self, psbt: &mut Psbt) {
         let _sig_count = psbt.sign(self.signer.as_ref().unwrap()).unwrap();
-        psbt.finalize(&self.descriptor);
+        psbt.finalize(self.descriptor());
     }
 
     pub fn sign_finalize_extract(&self, psbt: &mut Psbt) -> Tx {
@@ -1022,6 +1042,13 @@ impl TestWallet {
         }
     }
 
+    pub fn try_add_tapret_tweak(&mut self, consignment: Transfer, txid: &Txid) {
+        self.wallet
+            .wallet_mut()
+            .try_add_tapret_tweak(consignment, txid)
+            .unwrap();
+    }
+
     pub fn contract_data(
         &self,
         contract_id: ContractId,
@@ -1072,6 +1099,10 @@ impl TestWallet {
 
     pub fn utxos(&self) -> Vec<WalletUtxo> {
         self.wallet.wallet().utxos().collect()
+    }
+
+    pub fn balance(&self) -> u64 {
+        self.wallet.wallet().balance().0
     }
 
     pub fn debug_contracts(&self) {
@@ -1159,9 +1190,8 @@ impl TestWallet {
             }
         }
 
-        let bp_runtime = self.wallet.wallet();
         println!("\nHeight\t{:>12}\t{:68}", "Amount, ṩ", "Outpoint");
-        for (derived_addr, utxos) in bp_runtime.address_coins() {
+        for (derived_addr, utxos) in self.wallet.wallet().address_coins() {
             println!("{}\t{}", derived_addr.addr, derived_addr.terminal);
             for row in utxos {
                 println!("{}\t{: >12}\t{:68}", row.height, row.amount, row.outpoint);
@@ -1169,7 +1199,7 @@ impl TestWallet {
             println!()
         }
 
-        println!("\nWallet total balance: {} ṩ", bp_runtime.balance());
+        println!("\nWallet total balance: {} ṩ", self.balance());
     }
 
     pub fn debug_history(&self, contract_id: ContractId, details: bool) {
@@ -1315,7 +1345,7 @@ impl TestWallet {
         for (outpoint, value, terminal, spk) in input_outpoints {
             psbt.construct_input_expect(
                 Prevout::new(outpoint, Sats::from(value)),
-                self.wallet.wallet().descriptor(),
+                self.descriptor(),
                 terminal,
                 spk,
                 tx_params.seq_no,
@@ -1356,11 +1386,7 @@ impl TestWallet {
                 self.get_next_index(tx_params.change_keychain, tx_params.change_shift);
             let change_terminal = Terminal::new(tx_params.change_keychain, change_index);
             let change_vout = psbt
-                .construct_change_expect(
-                    self.wallet.wallet().descriptor(),
-                    change_terminal,
-                    remaining_value,
-                )
+                .construct_change_expect(self.descriptor(), change_terminal, remaining_value)
                 .index();
             (
                 Some(Vout::from_u32(change_vout as u32)),
@@ -1426,13 +1452,13 @@ impl TestWallet {
     }
 
     pub fn psbt_add_input(&self, psbt: &mut Psbt, utxo: Outpoint) {
-        for account in self.descriptor.xpubs() {
+        for account in self.descriptor().xpubs() {
             psbt.xpubs.insert(*account.xpub(), account.origin().clone());
         }
         let (input, spk) = self.wallet.wallet().utxo(utxo).unwrap();
         psbt.construct_input_expect(
             input.to_prevout(),
-            self.wallet.wallet().descriptor(),
+            self.descriptor(),
             input.terminal,
             spk,
             SeqNo::ZERO,

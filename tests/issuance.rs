@@ -331,7 +331,7 @@ fn issue_on_different_layers(#[case] scenario: &str) {
         }
         "liquid_testnet_invoice" => {
             let address = wlt_2.get_address();
-            let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload));
+            let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload), None);
             let builder = RgbInvoiceBuilder::new(XChainNet::LiquidTestnet(beneficiary))
                 .set_contract(contract_id)
                 .set_amount_raw(amt);
@@ -340,7 +340,7 @@ fn issue_on_different_layers(#[case] scenario: &str) {
         }
         "liquid_mainnet_invoice" => {
             let address = wlt_2.get_address();
-            let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload));
+            let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload), None);
             let builder = RgbInvoiceBuilder::new(XChainNet::LiquidMainnet(beneficiary))
                 .set_contract(contract_id)
                 .set_amount_raw(issued_amt);

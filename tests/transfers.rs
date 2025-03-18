@@ -1255,6 +1255,114 @@ fn multiple_transitions_per_vin() {
 }
 
 #[cfg(not(feature = "altered"))]
+#[test]
+fn tapret_commitments_on_beneficiary_output() {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Tr);
+    let mut wlt_2 = get_wallet(&DescriptorType::Tr);
+
+    let sats = 3000;
+    let issued_amt = 600;
+
+    let utxo = wlt_1.get_utxo(Some(sats));
+    let contract_id = wlt_1.issue_nia(issued_amt, Some(&utxo));
+    let schema_id = wlt_1.schema_id(contract_id);
+
+    // put tapret commitment on beneficiary output
+    let invoice_1 = wlt_2.invoice(
+        contract_id,
+        schema_id,
+        issued_amt,
+        InvoiceType::WitnessTapret,
+    );
+    let (consignment, tx) = wlt_1.send_to_invoice(
+        &mut wlt_2,
+        invoice_1.clone(),
+        Some(sats - DEFAULT_FEE_ABS),
+        None,
+        None,
+    );
+    assert_eq!(tx.outputs.len(), 1);
+    let mut beneficiary_address_1 = None;
+    if let Beneficiary::WitnessVout(pay2vout, _) = invoice_1.beneficiary.into_inner() {
+        beneficiary_address_1 = Some(pay2vout.into_address(wlt_2.network().into()));
+    }
+    if tx.outputs().last().unwrap().script_pubkey != beneficiary_address_1.unwrap().script_pubkey()
+    {
+        wlt_2.try_add_tapret_tweak(consignment.clone(), &tx.txid());
+        wlt_2.sync();
+    } else {
+        panic!("unexpected");
+    }
+    wlt_2.check_allocations(contract_id, schema_id, vec![issued_amt], false);
+
+    // make sure that tapret commitment goes on bitcoin change if it exists
+    let change_amt = 1;
+    let amt = issued_amt - change_amt;
+    let invoice_2 = wlt_1.invoice(contract_id, schema_id, amt, InvoiceType::WitnessTapret);
+    let (_, tx) = wlt_2.send_to_invoice(&mut wlt_1, invoice_2.clone(), Some(1000), None, None);
+    assert_eq!(tx.outputs.len(), 2);
+    let mut beneficiary_address = None;
+    if let Beneficiary::WitnessVout(pay2vout, _) = invoice_2.beneficiary.into_inner() {
+        beneficiary_address = Some(pay2vout.into_address(wlt_1.network().into()));
+    }
+    assert_eq!(
+        tx.outputs().last().unwrap().script_pubkey,
+        beneficiary_address.unwrap().script_pubkey()
+    );
+    wlt_1.check_allocations(contract_id, schema_id, vec![amt], false);
+    wlt_2.check_allocations(contract_id, schema_id, vec![change_amt], false);
+
+    // send back assets to allow invoice reuse at next step
+    wlt_2.send(
+        &mut wlt_1,
+        TransferType::Blinded,
+        contract_id,
+        change_amt,
+        500,
+        None,
+    );
+    wlt_1.check_allocations(contract_id, schema_id, vec![change_amt, amt], false);
+
+    // invoice reuse to check multiple tweaks work
+    let (consignment, tx) =
+        wlt_1.send_to_invoice(&mut wlt_2, invoice_1.clone(), Some(100000600), None, None);
+    assert_eq!(tx.outputs.len(), 1);
+    let mut beneficiary_address_2 = None;
+    if let Beneficiary::WitnessVout(pay2vout, _) = invoice_1.beneficiary.into_inner() {
+        beneficiary_address_2 = Some(pay2vout.into_address(wlt_2.network().into()));
+    }
+    if tx.outputs().last().unwrap().script_pubkey != beneficiary_address_2.unwrap().script_pubkey()
+    {
+        wlt_2.try_add_tapret_tweak(consignment.clone(), &tx.txid());
+        wlt_2.sync();
+    } else {
+        panic!("unexpected");
+    }
+    if let RgbDescr::TapretKey(tr) = wlt_2.descriptor() {
+        assert_eq!(tr.tweaks.len(), 3);
+        assert_eq!(tr.tweaks.values().flatten().count(), 4);
+        // 2 tweaks on the same terminal
+        assert!(tr.tweaks.iter().any(|(_, c)| c.len() == 2));
+    } else {
+        unreachable!()
+    }
+    wlt_2.check_allocations(contract_id, schema_id, vec![issued_amt], false);
+
+    // send bitcoins to untweaked address
+    let sats_pre = wlt_2.balance();
+    fund_wallet(
+        beneficiary_address_1.unwrap().to_string(),
+        Some(sats),
+        INSTANCE_1,
+    );
+    wlt_2.sync();
+    let sats_post = wlt_2.balance();
+    assert_eq!(sats_post, sats_pre + sats);
+}
+
+#[cfg(not(feature = "altered"))]
 #[rstest]
 #[case(HistoryType::Linear, ReorgType::ChangeOrder)]
 #[case(HistoryType::Linear, ReorgType::Revert)]

@@ -48,9 +48,9 @@ pub use bp::{
     ConsensusDecode, LockTime, Outpoint, Sats, ScriptPubkey, SeqNo, Tx, Txid, Vout,
 };
 pub use bpstd::{
-    h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, DerivedAddr, Descriptor,
-    HardenedIndex, IdxBase, Keychain, Network, NormalIndex, Terminal, XkeyOrigin, Xpriv,
-    XprivAccount, Xpub, XpubAccount, XpubDerivable, XpubFp,
+    h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, Derive, DerivedAddr,
+    Descriptor, HardenedIndex, IdxBase, Keychain, Network, NormalIndex, Terminal, XkeyOrigin,
+    Xpriv, XprivAccount, Xpub, XpubAccount, XpubDerivable, XpubFp,
 };
 pub use bpwallet::{
     fs::FsTextStore, indexers::esplora::Client as EsploraClient, AnyIndexer, Indexer as BpIndexer,
