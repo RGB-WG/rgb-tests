@@ -1306,17 +1306,18 @@ impl TestWallet {
 
     fn _construct_psbt_offchain(
         &mut self,
-        input_outpoints: Vec<(Outpoint, u64, Terminal)>,
+        input_outpoints: Vec<(Outpoint, u64, Terminal, ScriptPubkey)>,
         beneficiaries: Vec<&PsbtBeneficiary>,
         tx_params: TxParams,
     ) -> (Psbt, PsbtMeta) {
         let mut psbt = Psbt::create(PsbtVer::V2);
 
-        for (outpoint, value, terminal) in input_outpoints {
+        for (outpoint, value, terminal, spk) in input_outpoints {
             psbt.construct_input_expect(
                 Prevout::new(outpoint, Sats::from(value)),
                 self.wallet.wallet().descriptor(),
                 terminal,
+                spk,
                 tx_params.seq_no,
             );
         }
@@ -1397,7 +1398,7 @@ impl TestWallet {
 
     pub fn construct_psbt_offchain(
         &mut self,
-        input_outpoints: Vec<(Outpoint, u64, Terminal)>,
+        input_outpoints: Vec<(Outpoint, u64, Terminal, ScriptPubkey)>,
         beneficiaries: Vec<(Address, Option<u64>)>,
         fee: Option<u64>,
     ) -> (Psbt, PsbtMeta) {
@@ -1428,11 +1429,12 @@ impl TestWallet {
         for account in self.descriptor.xpubs() {
             psbt.xpubs.insert(*account.xpub(), account.origin().clone());
         }
-        let input = self.wallet.wallet().utxo(utxo).unwrap();
+        let (input, spk) = self.wallet.wallet().utxo(utxo).unwrap();
         psbt.construct_input_expect(
             input.to_prevout(),
             self.wallet.wallet().descriptor(),
             input.terminal,
+            spk,
             SeqNo::ZERO,
         );
     }

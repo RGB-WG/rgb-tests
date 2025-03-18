@@ -683,7 +683,12 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     let input_outpoint = Outpoint::new(txid, htlc_vout);
     let beneficiaries = vec![(wlt_1.get_address(), None)];
     let (mut psbt, _meta) = wlt_1.construct_psbt_offchain(
-        vec![(input_outpoint, htlc_btc_amt, htlc_derived_addr.terminal)],
+        vec![(
+            input_outpoint,
+            htlc_btc_amt,
+            htlc_derived_addr.terminal,
+            htlc_derived_addr.addr.script_pubkey(),
+        )],
         beneficiaries,
         None,
     );
@@ -758,7 +763,12 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     let input_outpoint = Outpoint::new(txid, htlc_vout);
     let beneficiaries = vec![(wlt_1.get_address(), None)];
     let (mut psbt, _meta) = wlt_1.construct_psbt_offchain(
-        vec![(input_outpoint, htlc_btc_amt, htlc_derived_addr.terminal)],
+        vec![(
+            input_outpoint,
+            htlc_btc_amt,
+            htlc_derived_addr.terminal,
+            htlc_derived_addr.addr.script_pubkey(),
+        )],
         beneficiaries,
         None,
     );
@@ -827,7 +837,12 @@ fn ln_transfers(#[case] update_witnesses_before_htlc: bool) {
     let input_outpoint = Outpoint::new(txid, htlc_vout);
     let beneficiaries = vec![(wlt_1.get_address(), None)];
     let (mut psbt, _meta) = wlt_1.construct_psbt_offchain(
-        vec![(input_outpoint, htlc_btc_amt, htlc_derived_addr.terminal)],
+        vec![(
+            input_outpoint,
+            htlc_btc_amt,
+            htlc_derived_addr.terminal,
+            htlc_derived_addr.addr.script_pubkey(),
+        )],
         beneficiaries,
         None,
     );
