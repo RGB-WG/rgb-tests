@@ -1,19 +1,19 @@
 consensus: bitcoin
 testnet: true
-codexId: 6bl9LdZ_-BU8Skh9-f~4UazR-TFwyotq-ac4yebi-zodXJnw#weather-motif-patriot
-name: DemoCFA
+codexId: V7PSoqY~-Ki2PmBY-mNH~fq6-dQDDaDf-M0l09jz-8ThY4LI#diagram-fantasy-bazaar
+name: DemoFUA
 method: issue
-timestamp: "2024-12-18T10:32:00-02:00"
+timestamp: "2025-03-17T10:32:00-02:00"
 
 global:
   - name: name
-    verified: DemoCFA
+    verified: FUA
   - name: precision
     verified: centiMilli
   - name: circulating
     verified: 10000
 
 owned:
-  - name: owned
+  - name: amount
     seal: b7116550736fbe5d3e234d0141c6bc8d1825f94da78514a3cede5674e9a5eae9:1
     data: 10000

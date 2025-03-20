@@ -50,10 +50,10 @@ impl AssetParamsBuilder {
         }
     }
 
-    /// Create a new builder instance for collectible fungible asset
-    pub fn default_cfa() -> Self {
+    /// Create a new builder instance for fractional unique asset
+    pub fn default_fua() -> Self {
         Self {
-            params: Self::from_file(COLLECTIBLE_FUNGIBLE_ASSET_TEMPLATE_PATH),
+            params: Self::from_file(FRACTIONAL_UNIQUE_ASSET_TEMPLATE_PATH),
         }
     }
 
@@ -104,6 +104,20 @@ impl AssetParamsBuilder {
             .find(|s| s.name == "name".into())
         {
             state.state.verified = value.into();
+        }
+        self
+    }
+
+    /// Update details state in global states
+    pub fn update_details_state(mut self, value: &str) -> Self {
+        if let Some(state) = self
+            .params
+            .global
+            .iter_mut()
+            .find(|s| s.name == "details".into())
+        {
+            state.state.verified = StrictVal::Unit;
+            state.state.unverified = Some(value.into());
         }
         self
     }
@@ -181,7 +195,7 @@ impl AssetParamsBuilder {
     /// Add owned state
     pub fn add_owned_state(mut self, seal: Outpoint, val: u64) -> Self {
         self.params.owned.push(NamedState {
-            name: "owned".into(),
+            name: "amount".into(),
             state: Assignment {
                 seal: EitherSeal::Alt(seal),
                 data: val.into(),
@@ -297,9 +311,9 @@ pub struct ColoringInfo {
 
 #[derive(Debug, EnumIter, Copy, Clone, PartialEq)]
 pub enum AssetSchema {
-    Nia,
-    Uda,
-    Cfa,
+    RGB20,
+    RGB21,
+    RGB25,
 }
 
 impl fmt::Display for AssetSchema {
@@ -1369,11 +1383,13 @@ impl TestWallet {
         mut expected_fungible_allocations: Vec<u64>,
     ) {
         match asset_schema {
-            AssetSchema::Nia | AssetSchema::Cfa => {
+            AssetSchema::RGB20 | AssetSchema::RGB25 => {
+                // For fungible assets, we need to check the "amount" allocation
                 let state = self.runtime.state_own(Some(contract_id)).next().unwrap().1;
+                let allocation_field = "amount";
                 let mut actual_fungible_allocations = state
                     .owned
-                    .get("owned")
+                    .get(allocation_field)
                     .unwrap()
                     .iter()
                     .map(|(_, assignment)| assignment.data.unwrap_num().unwrap_uint::<u64>())
@@ -1382,7 +1398,8 @@ impl TestWallet {
                 expected_fungible_allocations.sort();
                 assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
             }
-            AssetSchema::Uda => {
+            AssetSchema::RGB21 => {
+                // TODO: Implement UDA asset allocation checking once RGB core library support is ready
                 todo!()
             }
         }
@@ -1570,7 +1587,7 @@ impl TestWallet {
 
                 // Parse ownership state
                 let mut allocations = vec![];
-                if let Some(owned_map) = owned.get(&VariantName::from_str("owned").unwrap()) {
+                if let Some(owned_map) = owned.get(&VariantName::from_str("amount").unwrap()) {
                     for assignment in owned_map.values() {
                         allocations.push((
                             assignment.seal,
@@ -1592,11 +1609,13 @@ impl TestWallet {
     }
 }
 
-/// Parameters for CFA (Collectible Fungible Asset) issuance
+/// Parameters for FUA (Fractional unique asset) issuance
 #[derive(Clone)]
-pub struct CFAIssueParams {
+pub struct FUAIssueParams {
     /// Asset name
     pub name: String,
+    /// Asset details
+    pub details: String,
     /// Decimal precision for the asset
     pub precision: String,
     /// Total circulating supply
@@ -1605,10 +1624,11 @@ pub struct CFAIssueParams {
     pub initial_allocations: Vec<(Outpoint, u64)>,
 }
 
-impl Default for CFAIssueParams {
+impl Default for FUAIssueParams {
     fn default() -> Self {
         Self {
-            name: "Demo CFA".to_string(),
+            name: "DemoFUA".to_string(),
+            details: "Demo FUA details".to_string(),
             precision: "centiMilli".to_string(),
             circulating_supply: 10_000,
             initial_allocations: vec![],
@@ -1616,15 +1636,17 @@ impl Default for CFAIssueParams {
     }
 }
 
-impl CFAIssueParams {
+impl FUAIssueParams {
     /// Create new CFA issuance parameters
     pub fn new(
         name: impl Into<String>,
+        details: impl Into<String>,
         precision: impl Into<String>,
         circulating_supply: u64,
     ) -> Self {
         Self {
             name: name.into(),
+            details: details.into(),
             precision: precision.into(),
             circulating_supply,
             initial_allocations: vec![],
@@ -1639,11 +1661,12 @@ impl CFAIssueParams {
 }
 
 impl TestWallet {
-    /// Issue a CFA contract with custom parameters
-    pub fn issue_cfa_with_params(&mut self, params: CFAIssueParams) -> ContractId {
-        let mut builder = AssetParamsBuilder::default_cfa()
+    /// Issue a FUA contract with custom parameters
+    pub fn issue_fua_with_params(&mut self, params: FUAIssueParams) -> ContractId {
+        let mut builder = AssetParamsBuilder::default_fua()
             .name(params.name.as_str())
             .update_name_state(params.name.as_str())
+            .update_details_state(params.details.as_str())
             .update_precision_state(params.precision.as_str())
             .update_circulating_state(params.circulating_supply)
             .clear_owned_state();

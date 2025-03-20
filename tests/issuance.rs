@@ -3,7 +3,7 @@ pub mod utils;
 use rstest_reuse::{self, *};
 use utils::{
     chain::initialize,
-    helpers::{get_wallet, CFAIssueParams, NIAIssueParams},
+    helpers::{get_wallet, CFAIssueParams, FUAIssueParams, NIAIssueParams},
     DescriptorType, *,
 };
 
@@ -69,10 +69,14 @@ fn issue_nia(wallet_desc: DescriptorType) {
         .allocations
         .iter()
         .any(|(outpoint, amount)| *outpoint == fake_outpoint_one && *amount == 500_000));
+    dbg!(wallet
+        .runtime()
+        .state_all(Some(contract_id))
+        .collect::<Vec<_>>());
 }
 
 #[apply(descriptor_and_close_method)]
-fn issue_cfa(wallet_desc: DescriptorType) {
+fn issue_fua(wallet_desc: DescriptorType) {
     println!("wallet_desc {wallet_desc:?}");
 
     initialize();
@@ -80,7 +84,7 @@ fn issue_cfa(wallet_desc: DescriptorType) {
     let mut wallet = get_wallet(&wallet_desc);
 
     // Create CFA issuance parameters
-    let mut params = CFAIssueParams::new("DemoCFA", "centiMilli", 10_000);
+    let mut params = FUAIssueParams::new("DemoCFA", "details", "centiMilli", 10_000);
 
     // Add initial allocation
     let fake_outpoint =
@@ -89,7 +93,7 @@ fn issue_cfa(wallet_desc: DescriptorType) {
     params.add_allocation(fake_outpoint, 10_000);
 
     // Issue the contract
-    let contract_id = wallet.issue_cfa_with_params(params);
+    let contract_id = wallet.issue_fua_with_params(params);
 
     // Verify contract state
     let state = wallet
@@ -108,18 +112,22 @@ fn issue_cfa(wallet_desc: DescriptorType) {
         .allocations
         .iter()
         .any(|(outpoint, amount)| *outpoint == fake_outpoint && *amount == 10_000));
+    dbg!(wallet
+        .runtime()
+        .state_all(Some(contract_id))
+        .collect::<Vec<_>>());
 }
 
 #[apply(descriptor_and_close_method)]
-fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
+fn issue_fua_multiple_utxos(wallet_desc: DescriptorType) {
     println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
     let mut wallet = get_wallet(&wallet_desc);
 
-    // Create CFA issuance parameters with multiple allocations
-    let mut params = CFAIssueParams::new("Multi_UTXO_CFA", "centiMilli", 999);
+    // Create FUA issuance parameters with multiple allocations
+    let mut params = FUAIssueParams::new("Multi_UTXO_CFA", "details", "centiMilli", 999);
 
     // Get multiple UTXOs and add allocations
     let amounts = [222, 444, 333];
@@ -129,7 +137,7 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
     }
 
     // Issue the contract
-    let contract_id = wallet.issue_cfa_with_params(params);
+    let contract_id = wallet.issue_fua_with_params(params);
 
     // Verify contract state
     let state = wallet

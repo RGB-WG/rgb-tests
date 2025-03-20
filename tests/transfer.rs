@@ -27,7 +27,7 @@ use rstest_reuse::{self, *};
 use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::str::FromStr;
-use utils::helpers::CustomCoinselectStrategy;
+use utils::helpers::{CustomCoinselectStrategy, FUAIssueParams};
 use utils::{
     chain::{
         connect_reorg_nodes, disconnect_reorg_nodes, get_height, get_height_custom, initialize,
@@ -88,8 +88,8 @@ fn simple_transfer(wout: bool) {
     wlt_1.sync();
     wlt_2.sync();
 
-    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![supply - assign]);
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![assign]);
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![supply - assign]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![assign]);
 
     let assign_wlt1 = 200;
     let invoice = wlt_1.invoice(contract_id, assign_wlt1, wout, Some(0), None);
@@ -121,10 +121,10 @@ fn simple_transfer(wout: bool) {
 
     wlt_1.check_allocations(
         contract_id,
-        AssetSchema::Nia,
+        AssetSchema::RGB20,
         vec![supply - assign, assign_wlt1],
     );
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![assign - assign_wlt1]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![assign - assign_wlt1]);
 }
 
 #[test]
@@ -182,8 +182,8 @@ fn rbf_transfer() {
     wlt_2.sync();
 
     // Verify asset allocations in both wallets
-    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![200]);
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![400]);
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![200]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![400]);
 
     // Transfer assets back to sender
     wlt_2.send(
@@ -200,28 +200,20 @@ fn rbf_transfer() {
 
 #[rstest]
 // blinded: nia - nia
-#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::Nia, AS::Nia)]
-#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::Nia, AS::Nia)]
-#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::Nia, AS::Nia)]
-#[case(TT::Blinded, DT::Tr, DT::Tr, AS::Nia, AS::Nia)]
+#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::RGB20, AS::RGB20)]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::RGB20, AS::RGB20)]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::RGB20, AS::RGB20)]
+#[case(TT::Blinded, DT::Tr, DT::Tr, AS::RGB20, AS::RGB20)]
 // blinded: nia - cfa
-#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::Nia, AS::Cfa)]
-#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::Nia, AS::Cfa)]
-#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::Nia, AS::Cfa)]
-#[case(TT::Blinded, DT::Tr, DT::Tr, AS::Nia, AS::Cfa)]
+#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::RGB20, AS::RGB25)]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::RGB20, AS::RGB25)]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::RGB20, AS::RGB25)]
+#[case(TT::Blinded, DT::Tr, DT::Tr, AS::RGB20, AS::RGB25)]
 // blinded: cfa - cfa
-#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::Cfa, AS::Cfa)]
-#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::Cfa, AS::Cfa)]
-#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::Cfa, AS::Cfa)]
-#[case(TT::Blinded, DT::Tr, DT::Tr, AS::Cfa, AS::Cfa)]
-// FIXME: `calling to method absent in Codex API`
-// When using the same utxo for issue, the transfer will report an error
-//
-// There is also a strange phenomenon that when all assets issued using the same utxo are CFA types, no errors are reported.
-// rgb-test cmd: cargo test transfer_loop::case_09
-// If both are NIA or the first asset NIA, an error will occur.
-// rgb-test cmd: cargo test transfer_loop::case_01
-//
+#[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::RGB25, AS::RGB25)]
+#[case(TT::Blinded, DT::Wpkh, DT::Tr, AS::RGB25, AS::RGB25)]
+#[case(TT::Blinded, DT::Tr, DT::Wpkh, AS::RGB25, AS::RGB25)]
+#[case(TT::Blinded, DT::Tr, DT::Tr, AS::RGB25, AS::RGB25)]
 // TODO: UDA related asset feature, RGB core library is being improved,
 // And the test case for UDA assets will be added later
 
@@ -252,18 +244,19 @@ fn transfer_loop(
 
     // Issue first asset
     let contract_id_1 = match asset_schema_1 {
-        AssetSchema::Nia => {
+        AssetSchema::RGB20 => {
             let mut params =
                 NIAIssueParams::new("TestAsset1", "TEST1", "centiMilli", issued_supply_1);
             params.add_allocation(utxo, issued_supply_1);
             wlt_1.issue_nia_with_params(params)
         }
-        AssetSchema::Cfa => {
-            let mut params = CFAIssueParams::new("TestAsset1", "centiMilli", issued_supply_1);
+        AssetSchema::RGB25 => {
+            let mut params =
+                FUAIssueParams::new("TestAsset1", "details", "centiMilli", issued_supply_1);
             params.add_allocation(utxo, issued_supply_1);
-            wlt_1.issue_cfa_with_params(params)
+            wlt_1.issue_fua_with_params(params)
         }
-        AssetSchema::Uda => {
+        AssetSchema::RGB21 => {
             // TODO: UDA is not supported yet
             panic!("UDA is not supported yet");
         }
@@ -271,18 +264,19 @@ fn transfer_loop(
 
     // Issue second asset
     let contract_id_2 = match asset_schema_2 {
-        AssetSchema::Nia => {
+        AssetSchema::RGB20 => {
             let mut params =
                 NIAIssueParams::new("TestAsset2", "TEST2", "centiMilli", issued_supply_2);
             params.add_allocation(utxo, issued_supply_2);
             wlt_1.issue_nia_with_params(params)
         }
-        AssetSchema::Cfa => {
-            let mut params = CFAIssueParams::new("TestAsset2", "centiMilli", issued_supply_2);
+        AssetSchema::RGB25 => {
+            let mut params =
+                FUAIssueParams::new("TestAsset2", "details", "centiMilli", issued_supply_2);
             params.add_allocation(utxo, issued_supply_2);
-            wlt_1.issue_cfa_with_params(params)
+            wlt_1.issue_fua_with_params(params)
         }
-        AssetSchema::Uda => {
+        AssetSchema::RGB21 => {
             // TODO: UDA is not supported yet
             panic!("UDA is not supported yet");
         }
@@ -298,7 +292,7 @@ fn transfer_loop(
     wlt_1.check_allocations(contract_id_2, asset_schema_2, vec![issued_supply_2]);
 
     // wlt_1 spends asset 1
-    let amount_1 = if asset_schema_1 != AssetSchema::Uda {
+    let amount_1 = if asset_schema_1 != AssetSchema::RGB21 {
         99
     } else {
         1
@@ -328,7 +322,7 @@ fn transfer_loop(
     wlt_2.check_allocations(contract_id_1, asset_schema_1, vec![amount_1]);
 
     // wlt_1 spends asset 1 change (only if possible)
-    if asset_schema_1 != AssetSchema::Uda {
+    if asset_schema_1 != AssetSchema::RGB21 {
         let amount_2 = 33;
         wlt_1.send(
             &mut wlt_2,
@@ -350,7 +344,7 @@ fn transfer_loop(
     }
 
     // wlt_1 spends asset 2
-    let amount_3 = if asset_schema_2 != AssetSchema::Uda {
+    let amount_3 = if asset_schema_2 != AssetSchema::RGB21 {
         22
     } else {
         1
@@ -367,7 +361,7 @@ fn transfer_loop(
     );
 
     // Verify final allocations
-    if asset_schema_1 != AssetSchema::Uda {
+    if asset_schema_1 != AssetSchema::RGB21 {
         let amount_2 = 33;
         wlt_1.check_allocations(
             contract_id_1,
@@ -389,12 +383,12 @@ fn transfer_loop(
     wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3]);
 
     // wlt_2 spends received allocation(s) of asset 1
-    let amount_4 = if asset_schema_1 != AssetSchema::Uda {
+    let amount_4 = if asset_schema_1 != AssetSchema::RGB21 {
         111
     } else {
         1
     };
-    let amount_2 = if asset_schema_1 != AssetSchema::Uda {
+    let amount_2 = if asset_schema_1 != AssetSchema::RGB21 {
         33
     } else {
         0
@@ -428,7 +422,7 @@ fn transfer_loop(
     wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3]);
 
     // wlt_2 spends asset 2
-    let amount_5 = if asset_schema_2 != AssetSchema::Uda {
+    let amount_5 = if asset_schema_2 != AssetSchema::RGB21 {
         11
     } else {
         1
@@ -469,7 +463,7 @@ fn transfer_loop(
     wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3 - amount_5]);
 
     // wlt_1 spends asset 1, received back
-    let amount_6 = if asset_schema_1 != AssetSchema::Uda {
+    let amount_6 = if asset_schema_1 != AssetSchema::RGB21 {
         issued_supply_1 - amount_1 - amount_2 + amount_4
     } else {
         1
@@ -520,7 +514,7 @@ fn transfer_loop(
     wlt_2.check_allocations(contract_id_2, asset_schema_2, vec![amount_3 - amount_5]);
 
     // wlt_1 spends asset 2, received back
-    let amount_7 = if asset_schema_2 != AssetSchema::Uda {
+    let amount_7 = if asset_schema_2 != AssetSchema::RGB21 {
         issued_supply_2 - amount_3 + amount_5
     } else {
         1
@@ -646,7 +640,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     let wlt_2_contract_state = wlt_2.runtime().state_own(None).map(|s| s.1.owned);
     dbg!(wlt_2_contract_state.collect::<Vec<_>>());
 
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![amount]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount]);
 
     wlt_2.send(
         &mut wlt_1,
@@ -704,7 +698,7 @@ fn accept_0conf() {
     wlt_2.accept_transfer(&consignment, None).unwrap();
 
     // wlt_2 sees the allocation even if TX has not been mined
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![amt]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amt]);
 
     wlt_1.sync();
 
@@ -717,7 +711,7 @@ fn accept_0conf() {
     // after mining, wlt_1 doesn't need to get tentative allocations to see the change
     wlt_1.mine_tx(&txid, false);
     wlt_1.sync();
-    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_change_amt]);
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_change_amt]);
 }
 
 #[test]
@@ -751,8 +745,8 @@ fn tapret_wlt_receiving_opret() {
     // Fifth transfer: wlt_1 -> wlt_2, transfer 570
     wlt_1.send(&mut wlt_2, false, contract_id, 570, 1000, None, None, None);
 
-    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![30, 570]);
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![30, 570]);
 }
 
 #[test]
@@ -797,8 +791,8 @@ fn check_fungible_history() {
         .collect::<Vec<_>>());
 
     // check allocations
-    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![issue_supply - amt]);
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![amt]);
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![issue_supply - amt]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amt]);
 }
 
 #[test]
@@ -829,17 +823,17 @@ fn send_to_oneself() {
         .collect::<Vec<_>>());
 
     // check allocations
-    wlt.check_allocations(contract_id, AssetSchema::Nia, vec![amt, issue_supply - amt]);
+    wlt.check_allocations(
+        contract_id,
+        AssetSchema::RGB20,
+        vec![amt, issue_supply - amt],
+    );
 }
 
 #[rstest]
-#[ignore = "fix needed (calling to method absent in Codex API)"]
 #[case(DescriptorType::Tr, DescriptorType::Tr)]
-#[ignore = "fix needed (calling to method absent in Codex API)"]
 #[case(DescriptorType::Tr, DescriptorType::Wpkh)]
-#[ignore = "fix needed (calling to method absent in Codex API)"]
 #[case(DescriptorType::Wpkh, DescriptorType::Tr)]
-#[ignore = "fix needed (calling to method absent in Codex API)"]
 #[case(DescriptorType::Wpkh, DescriptorType::Wpkh)]
 fn blank_tapret_opret(
     #[case] descriptor_type_0: DescriptorType,
@@ -891,10 +885,10 @@ fn blank_tapret_opret(
     );
 
     // Verify final allocations
-    wlt_1.check_allocations(contract_id_0, AssetSchema::Nia, vec![]);
-    wlt_1.check_allocations(contract_id_1, AssetSchema::Nia, vec![]);
-    wlt_2.check_allocations(contract_id_0, AssetSchema::Nia, vec![200]);
-    wlt_2.check_allocations(contract_id_1, AssetSchema::Nia, vec![100]);
+    wlt_1.check_allocations(contract_id_0, AssetSchema::RGB20, vec![]);
+    wlt_1.check_allocations(contract_id_1, AssetSchema::RGB20, vec![]);
+    wlt_2.check_allocations(contract_id_0, AssetSchema::RGB20, vec![200]);
+    wlt_2.check_allocations(contract_id_1, AssetSchema::RGB20, vec![100]);
 }
 
 #[rstest]
@@ -1063,12 +1057,12 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             let wlt_2_alloc_2 = 80;
             wlt_1.check_allocations(
                 contract_id,
-                AssetSchema::Nia,
+                AssetSchema::RGB20,
                 vec![wlt_1_alloc_1, wlt_1_alloc_2],
             );
             wlt_2.check_allocations(
                 contract_id,
-                AssetSchema::Nia,
+                AssetSchema::RGB20,
                 vec![wlt_2_alloc_1, wlt_2_alloc_2],
             );
         }
@@ -1078,8 +1072,8 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             wlt_1.switch_to_instance(INSTANCE_3);
             wlt_2.switch_to_instance(INSTANCE_3);
             let wlt_1_alloc_1 = 600;
-            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_alloc_1]);
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
         }
         (HistoryType::Branching, ReorgType::ChangeOrder) => {
             broadcast_tx_and_mine(&txs[1], INSTANCE_3);
@@ -1092,10 +1086,10 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             let wlt_2_alloc_1 = 1;
             wlt_1.check_allocations(
                 contract_id,
-                AssetSchema::Nia,
+                AssetSchema::RGB20,
                 vec![wlt_1_alloc_1, wlt_1_alloc_2],
             );
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_2_alloc_1]);
         }
         (HistoryType::Merging, ReorgType::ChangeOrder) => {
             broadcast_tx_and_mine(&txs[1], INSTANCE_3);
@@ -1105,8 +1099,8 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             wlt_2.switch_to_instance(INSTANCE_3);
             let wlt_1_alloc_1 = 599;
             let wlt_2_alloc_1 = 1;
-            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_alloc_1]);
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+            wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_2_alloc_1]);
         }
         (HistoryType::Merging, ReorgType::Revert) => {
             broadcast_tx_and_mine(&txs[1], INSTANCE_3);
@@ -1115,8 +1109,8 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             wlt_2.switch_to_instance(INSTANCE_3);
             let wlt_1_alloc_1 = 400;
             let wlt_2_alloc_1 = 200;
-            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_alloc_1]);
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+            wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_2_alloc_1]);
         }
     }
 
@@ -1138,12 +1132,12 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             let wlt_2_amt = wlt_2_alloc_1 + wlt_2_alloc_2;
             wlt_1.check_allocations(
                 contract_id,
-                AssetSchema::Nia,
+                AssetSchema::RGB20,
                 vec![wlt_1_alloc_1, wlt_1_alloc_2],
             );
             wlt_2.check_allocations(
                 contract_id,
-                AssetSchema::Nia,
+                AssetSchema::RGB20,
                 vec![wlt_2_alloc_1, wlt_2_alloc_2],
             );
 
@@ -1170,9 +1164,9 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 None,
                 None,
             );
-            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
-            wlt_3.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_amt, wlt_2_amt]);
+            wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+            wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_amt, wlt_2_amt]);
         }
         HistoryType::Branching => {
             let wlt_1_alloc_1 = 200;
@@ -1181,10 +1175,10 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             let wlt_2_alloc_1 = 1;
             wlt_1.check_allocations(
                 contract_id,
-                AssetSchema::Nia,
+                AssetSchema::RGB20,
                 vec![wlt_1_alloc_1, wlt_1_alloc_2],
             );
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_2_alloc_1]);
 
             // Test spending the final allocations
             wlt_1.send_contract("TestAsset", &mut wlt_3);
@@ -1209,19 +1203,19 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 None,
                 None,
             );
-            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
             wlt_3.check_allocations(
                 contract_id,
-                AssetSchema::Nia,
+                AssetSchema::RGB20,
                 vec![wlt_1_amt, wlt_2_alloc_1],
             );
         }
         HistoryType::Merging => {
             let wlt_1_alloc_1 = 599;
             let wlt_2_alloc_1 = 1;
-            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_1_alloc_1]);
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![wlt_2_alloc_1]);
+            wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_alloc_1]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_2_alloc_1]);
 
             // Test spending the final allocations
             wlt_1.send_contract("TestAsset", &mut wlt_3);
@@ -1246,11 +1240,11 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
                 None,
                 None,
             );
-            wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![]);
-            wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![]);
+            wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+            wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
             wlt_3.check_allocations(
                 contract_id,
-                AssetSchema::Nia,
+                AssetSchema::RGB20,
                 vec![wlt_1_alloc_1, wlt_2_alloc_1],
             );
         }
@@ -1280,7 +1274,7 @@ fn revert_genesis(#[case] with_transfers: bool) {
     params.add_allocation(utxo, issued_supply);
     let contract_id = wlt.issue_nia_with_params(params);
 
-    wlt.check_allocations(contract_id, AssetSchema::Nia, vec![issued_supply]);
+    wlt.check_allocations(contract_id, AssetSchema::RGB20, vec![issued_supply]);
 
     if with_transfers {
         let mut recv_wlt = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
@@ -1297,7 +1291,7 @@ fn revert_genesis(#[case] with_transfers: bool) {
             None,
             None,
         );
-        wlt.check_allocations(contract_id, AssetSchema::Nia, vec![issued_supply - amt]);
+        wlt.check_allocations(contract_id, AssetSchema::RGB20, vec![issued_supply - amt]);
     }
 
     // TODO: The following code uses APIs that have been removed in RGB v0.12
@@ -1312,7 +1306,7 @@ fn revert_genesis(#[case] with_transfers: bool) {
     //
     // wlt.check_allocations(
     //     contract_id,
-    //     AssetSchema::Nia,
+    //     AssetSchema::RGB20,
     //     vec![],
     // );
 }
@@ -1385,8 +1379,8 @@ fn invoice_reuse(#[case] transfer_type: TransferType) {
     // or should they correspond to two transfers?
 
     // Check asset allocations
-    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![100, 200]);
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![amount, amount]);
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![100, 200]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount, amount]);
 
     // FIXME: The following code needs to be redesigned in RGB v0.12
     // Note: In RGB v0.12, the type of consignment has been changed to PathBuf, no longer directly containing the bundles field
@@ -1479,7 +1473,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     assert!(res.is_ok(), "accept transfer failed");
     dbg!(wlt_3_states, wlt_2_states);
 
-    wlt_3.check_allocations(contract_id, AssetSchema::Nia, vec![50]);
-    wlt_2.check_allocations(contract_id, AssetSchema::Nia, vec![50]);
-    wlt_1.check_allocations(contract_id, AssetSchema::Nia, vec![500]);
+    wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![50]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![50]);
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![500]);
 }
