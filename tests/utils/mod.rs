@@ -45,12 +45,12 @@ pub use amplify::{
 use bitcoin_hashes::{sha256, Hash};
 pub use bp::{
     seals::txout::{BlindSeal, CloseMethod, ExplicitSeal},
-    ConsensusDecode, Outpoint, Sats, ScriptPubkey, SeqNo, Tx, Txid, Vout,
+    ConsensusDecode, LockTime, Outpoint, Sats, ScriptPubkey, SeqNo, Tx, Txid, Vout,
 };
 pub use bpstd::{
-    h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, DerivedAddr, Descriptor,
-    HardenedIndex, IdxBase, Keychain, Network, NormalIndex, Terminal, XkeyOrigin, Xpriv,
-    XprivAccount, Xpub, XpubAccount, XpubDerivable, XpubFp,
+    h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, Derive, DerivedAddr,
+    Descriptor, HardenedIndex, IdxBase, Keychain, Network, NormalIndex, Terminal, XkeyOrigin,
+    Xpriv, XprivAccount, Xpub, XpubAccount, XpubDerivable, XpubFp,
 };
 pub use bpwallet::{
     fs::FsTextStore, indexers::esplora::Client as EsploraClient, AnyIndexer, Indexer as BpIndexer,
@@ -59,11 +59,6 @@ pub use bpwallet::{
 pub use descriptors::Wpkh;
 pub use electrum::{Client as ElectrumClient, ElectrumApi, Param};
 pub use file_format::FileFormat;
-pub use ifaces::{
-    rgb20, rgb21,
-    rgb21::{EmbeddedMedia, TokenData},
-    rgb25, IssuerWrapper, Rgb20, Rgb21, Rgb25,
-};
 pub use once_cell::sync::Lazy;
 pub use psbt::{
     Beneficiary as PsbtBeneficiary, Payment, Prevout, Psbt, PsbtConstructor, PsbtMeta, PsbtVer,
@@ -75,52 +70,55 @@ pub use psrgbt_altered::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 #[cfg(not(feature = "altered"))]
 pub use rgb::{
-    containers::ValidContract,
+    containers::{PubWitness, ValidContract},
+    contract::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     info::ContractInfo,
-    interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
     persistence::{MemContract, MemContractState, Stock},
-    resolvers::AnyResolver,
     stl::ContractTerms,
-    validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
+    validation::{Failure, ResolveWitness, Scripts, Validity, Warning, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos},
-    DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
-    TapretKey, TransferParams, Transition, WalletProvider,
+    AssignmentType, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
+    RgbWallet, StateType, TapretKey, TransferParams, Transition, WalletProvider,
 };
 #[cfg(feature = "altered")]
 pub use rgb_altered::{
-    containers::ValidContract,
+    containers::{PubWitness, ValidContract},
+    contract::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     info::ContractInfo,
-    interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
     persistence::{MemContract, MemContractState, Stock},
-    resolvers::AnyResolver,
     stl::ContractTerms,
-    validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
+    validation::{Failure, ResolveWitness, Scripts, Validity, Warning, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos},
-    DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
-    TapretKey, TransferParams, Transition, WalletProvider,
+    AssignmentType, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
+    RgbWallet, StateType, TapretKey, TransferParams, Transition, WalletProvider,
 };
 pub use rgbstd::{
     containers::{
         BuilderSeal, ConsignmentExt, Fascia, FileContent, IndexedConsignment, Kit, Transfer,
         ValidKit,
     },
-    interface::{
-        ContractBuilder, ContractIface, DataAllocation, FilterExclude, FungibleAllocation, Iface,
-        IfaceClass, IfaceId, IfaceImpl, NamedField,
+    contract::{
+        ContractBuilder, ContractData, DataAllocation, FilterExclude, FungibleAllocation,
+        IssuerWrapper, TransitionBuilder,
     },
+    indexers::AnyResolver,
     invoice::{Beneficiary, RgbInvoice, RgbInvoiceBuilder, XChainNet},
-    persistence::{fs::FsBinStore, PersistedState, SchemaIfaces, StashReadProvider},
+    persistence::{fs::FsBinStore, PersistedState, StashReadProvider},
     schema::SchemaId,
     stl::{
-        AssetSpec, Attachment, Details, MediaType, Name, ProofOfReserves, RicardianContract, Ticker,
+        AssetSpec, Attachment, Details, EmbeddedMedia, MediaType, Name, ProofOfReserves,
+        RicardianContract, Ticker, TokenData,
     },
     Allocation, Amount, ChainNet, ContractId, GlobalStateType, KnownState, Layer1, Operation,
     OutputAssignment, OwnedFraction, Precision, Schema, TokenIndex, TxoSeal,
 };
 pub use rstest::rstest;
-pub use schemata::{CollectibleFungibleAsset, NonInflatableAsset, UniqueDigitalAsset};
+pub use schemata::{
+    CollectibleFungibleAsset, NonInflatableAsset, UniqueDigitalAsset, CFA_SCHEMA_ID, NIA_SCHEMA_ID,
+    UDA_SCHEMA_ID,
+};
 pub use serial_test::serial;
 pub use strict_encoding::{fname, tn, FieldName, StrictSerialize, TypeName};
 pub use strict_types::{StrictVal, TypeSystem};

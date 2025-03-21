@@ -48,7 +48,7 @@ fn back_and_forth(
 
     let issued_supply = u64::MAX;
 
-    let (contract_id, iface_type_name) = wlt_1.issue_nia(issued_supply, None);
+    let contract_id = wlt_1.issue_nia(issued_supply, None);
 
     let loops = match std::env::var("LOOPS") {
         Ok(val) if u16::from_str(&val).is_ok() => u16::from_str(&val).unwrap(),
@@ -69,7 +69,6 @@ fn back_and_forth(
             &mut wlt_2,
             transfer_type,
             contract_id,
-            &iface_type_name,
             issued_supply - i as u64,
             sats_send,
             Some(&report),
@@ -81,7 +80,6 @@ fn back_and_forth(
             &mut wlt_1,
             transfer_type,
             contract_id,
-            &iface_type_name,
             issued_supply - i as u64 - 1,
             sats_send,
             Some(&report),

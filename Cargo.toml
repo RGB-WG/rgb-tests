@@ -7,7 +7,7 @@ authors = [
     "Nicola Busanello <nicola.busanello@gmail.com>",
 ]
 edition = "2021"
-rust-version = "1.77.0"
+rust-version = "1.80.0"
 repository = "https://github.com/RGB-WG/rgb-tests"
 homepage = "https://github.com/RGB-WG/rgb-tests"
 license = "Apache-2.0"
@@ -62,8 +62,6 @@ rgb_altered = { git = "https://github.com/RGB-WG/rgb", branch = "revert_fix_same
     "serde",
 ], optional = true }
 psrgbt_altered = { git = "https://github.com/RGB-WG/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-psbt", optional = true }
-## rgb-interfaces
-rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
 rgb-schemata = { path = "./rgb-schemata" }
 ## rgb-std
@@ -115,8 +113,6 @@ rgb-runtime = { path = "./rgb" }
 rgb-psbt = { path = "./rgb/psbt" }
 ## rgb-core
 rgb-core = { path = "./rgb-core" }
-## rgb-interfaces
-rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
 rgb-schemata = { path = "./rgb-schemata" }
 ## rgb-std
