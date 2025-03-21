@@ -49,8 +49,8 @@ pub use bp::{
 };
 pub use bpstd::{
     h, signers::TestnetSigner, Address, DerivationPath, DerivationSeg, DerivedAddr, Descriptor,
-    HardenedIndex, Keychain, Network, Terminal, XkeyOrigin, Xpriv, XprivAccount, Xpub, XpubAccount,
-    XpubDerivable, XpubFp,
+    HardenedIndex, IdxBase, Keychain, Network, NormalIndex, Terminal, XkeyOrigin, Xpriv,
+    XprivAccount, Xpub, XpubAccount, XpubDerivable, XpubFp,
 };
 pub use bpwallet::{
     fs::FsTextStore, indexers::esplora::Client as EsploraClient, AnyIndexer, Indexer as BpIndexer,
@@ -68,9 +68,14 @@ pub use once_cell::sync::Lazy;
 pub use psbt::{
     Beneficiary as PsbtBeneficiary, Payment, Prevout, Psbt, PsbtConstructor, PsbtMeta, PsbtVer,
 };
+#[cfg(not(feature = "altered"))]
 pub use psrgbt::{RgbExt, RgbInExt, RgbPsbt, TxParams};
+#[cfg(feature = "altered")]
+pub use psrgbt_altered::{RgbExt, RgbInExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
+#[cfg(not(feature = "altered"))]
 pub use rgb::{
+    containers::ValidContract,
     info::ContractInfo,
     interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
     invoice::Pay2Vout,
@@ -78,9 +83,23 @@ pub use rgb::{
     resolvers::AnyResolver,
     stl::ContractTerms,
     validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
-    vm::{WitnessOrd, WitnessPos, XWitnessTx},
-    BlindingFactor, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
-    RgbWallet, TapretKey, TransferParams, Transition, WalletProvider, XOutpoint, XWitnessId,
+    vm::{WitnessOrd, WitnessPos},
+    DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
+    TapretKey, TransferParams, Transition, WalletProvider,
+};
+#[cfg(feature = "altered")]
+pub use rgb_altered::{
+    containers::ValidContract,
+    info::ContractInfo,
+    interface::{AllocatedState, AssignmentsFilter, ContractOp, OpDirection},
+    invoice::Pay2Vout,
+    persistence::{MemContract, MemContractState, Stock},
+    resolvers::AnyResolver,
+    stl::ContractTerms,
+    validation::{Failure, ResolveWitness, Scripts, Validity, WitnessResolverError},
+    vm::{WitnessOrd, WitnessPos},
+    DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain, RgbWallet,
+    TapretKey, TransferParams, Transition, WalletProvider,
 };
 pub use rgbstd::{
     containers::{
@@ -97,8 +116,8 @@ pub use rgbstd::{
     stl::{
         AssetSpec, Attachment, Details, MediaType, Name, ProofOfReserves, RicardianContract, Ticker,
     },
-    Allocation, Amount, ContractId, GlobalStateType, KnownState, Layer1, Operation,
-    OutputAssignment, OwnedFraction, Precision, Schema, TokenIndex, TxoSeal, XChain,
+    Allocation, Amount, ChainNet, ContractId, GlobalStateType, KnownState, Layer1, Operation,
+    OutputAssignment, OwnedFraction, Precision, Schema, TokenIndex, TxoSeal,
 };
 pub use rstest::rstest;
 pub use schemata::{CollectibleFungibleAsset, NonInflatableAsset, UniqueDigitalAsset};

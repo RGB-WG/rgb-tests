@@ -7,19 +7,14 @@ const MEDIA_FPATH: &str = "tests/fixtures/rgb_logo.jpeg";
 
 #[template]
 #[rstest]
-#[case(DescriptorType::Wpkh, CloseMethod::OpretFirst)]
-#[case(DescriptorType::Wpkh, CloseMethod::TapretFirst)]
-#[case(DescriptorType::Tr, CloseMethod::OpretFirst)]
-#[case(DescriptorType::Tr, CloseMethod::TapretFirst)]
-fn descriptor_and_close_method(
-    #[case] wallet_desc: DescriptorType,
-    #[case] close_method: CloseMethod,
-) {
-}
+#[case(DescriptorType::Wpkh)]
+#[case(DescriptorType::Tr)]
+fn descriptor(#[case] wallet_desc: DescriptorType) {}
 
-#[apply(descriptor_and_close_method)]
-fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[cfg(not(feature = "altered"))]
+#[apply(descriptor)]
+fn issue_nia(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -41,7 +36,7 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
         terms_media_fpath,
         vec![issued_supply],
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
     let spec = contract.spec();
@@ -61,13 +56,13 @@ fn issue_nia(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
     assert_eq!(allocations.len(), 1);
     let allocation = allocations[0];
-    assert_eq!(allocation.seal.method(), close_method);
     assert_eq!(allocation.state, Amount::from(issued_supply));
 }
 
-#[apply(descriptor_and_close_method)]
-fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[cfg(not(feature = "altered"))]
+#[apply(descriptor)]
+fn issue_uda(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -114,7 +109,7 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
         terms_media_fpath,
         token_data,
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb21>(contract_id);
     let spec = contract.spec();
@@ -145,13 +140,13 @@ fn issue_uda(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let allocations = wallet.contract_data_allocations(contract_id, &iface_type_name);
     assert_eq!(allocations.len(), 1);
     let allocation = &allocations[0];
-    assert_eq!(allocation.seal.method(), close_method);
     assert_eq!(allocation.state.to_string(), "000000000100000000000000");
 }
 
-#[apply(descriptor_and_close_method)]
-fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[cfg(not(feature = "altered"))]
+#[apply(descriptor)]
+fn issue_cfa(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -171,7 +166,7 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
         terms_media_fpath,
         vec![issued_supply],
     );
-    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, close_method, vec![]);
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, vec![]);
 
     let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
     assert_eq!(contract.name().to_string(), name.to_string());
@@ -193,13 +188,13 @@ fn issue_cfa(wallet_desc: DescriptorType, close_method: CloseMethod) {
     let allocations = wallet.contract_fungible_allocations(contract_id, &iface_type_name, false);
     assert_eq!(allocations.len(), 1);
     let allocation = allocations[0];
-    assert_eq!(allocation.seal.method(), close_method);
     assert_eq!(allocation.state, Amount::from(issued_supply));
 }
 
-#[apply(descriptor_and_close_method)]
-fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[cfg(not(feature = "altered"))]
+#[apply(descriptor)]
+fn issue_nia_multiple_utxos(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -210,8 +205,7 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
         .map(|_| Some(wallet.get_utxo(None)))
         .collect();
     let asset_info = AssetInfo::default_nia(amounts.clone());
-    let (contract_id, iface_type_name) =
-        wallet.issue_with_info(asset_info, close_method, outpoints.clone());
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, outpoints.clone());
 
     let contract = wallet.contract_iface_class::<Rgb20>(contract_id);
     assert_eq!(
@@ -224,17 +218,17 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
     for (amt, outpoint) in amounts.iter().zip(outpoints.into_iter()) {
         assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
             && a.seal
-                == XChain::Bitcoin(ExplicitSeal {
-                    method: close_method,
+                == ExplicitSeal {
                     txid: outpoint.unwrap().txid,
                     vout: outpoint.unwrap().vout
-                })))
+                }))
     }
 }
 
-#[apply(descriptor_and_close_method)]
-fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMethod) {
-    println!("wallet_desc {wallet_desc:?} close_method {close_method:?}");
+#[cfg(not(feature = "altered"))]
+#[apply(descriptor)]
+fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType) {
+    println!("wallet_desc {wallet_desc:?}");
 
     initialize();
 
@@ -245,8 +239,7 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
         .map(|_| Some(wallet.get_utxo(None)))
         .collect();
     let asset_info = AssetInfo::default_cfa(amounts.clone());
-    let (contract_id, iface_type_name) =
-        wallet.issue_with_info(asset_info, close_method, outpoints.clone());
+    let (contract_id, iface_type_name) = wallet.issue_with_info(asset_info, outpoints.clone());
 
     let contract = wallet.contract_iface_class::<Rgb25>(contract_id);
     assert_eq!(
@@ -259,10 +252,110 @@ fn issue_cfa_multiple_utxos(wallet_desc: DescriptorType, close_method: CloseMeth
     for (amt, outpoint) in amounts.iter().zip(outpoints.into_iter()) {
         assert!(allocations.iter().any(|a| a.state == Amount::from(*amt)
             && a.seal
-                == XChain::Bitcoin(ExplicitSeal {
-                    method: close_method,
+                == ExplicitSeal {
                     txid: outpoint.unwrap().txid,
                     vout: outpoint.unwrap().vout
-                })))
+                }))
+    }
+}
+
+#[cfg(not(feature = "altered"))]
+#[rstest]
+#[should_panic(
+    expected = "Invoice requesting chain-network pair BitcoinRegtest but contract commits to a different one (LiquidTestnet)"
+)]
+#[case("standard_invoice")]
+#[should_panic(expected = "NetworkMismatch")]
+#[case("liquid_testnet_invoice")]
+#[should_panic(expected = "ContractChainNetMismatch(BitcoinMainnet)")]
+#[case("liquid_mainnet_invoice")]
+fn issue_on_different_layers(#[case] scenario: &str) {
+    initialize();
+
+    let mut wlt_1 = if scenario == "liquid_mainnet_invoice" {
+        get_mainnet_wallet()
+    } else {
+        get_wallet(&DescriptorType::Wpkh)
+    };
+
+    let issued_amt = 100;
+    let amounts = vec![issued_amt];
+    let asset_info = AssetInfo::default_nia(amounts.clone());
+    let contract_chainnet = if scenario == "liquid_mainnet_invoice" {
+        ChainNet::LiquidMainnet
+    } else {
+        ChainNet::LiquidTestnet
+    };
+    let mut builder = ContractBuilder::with(
+        Identity::default(),
+        asset_info.iface(),
+        asset_info.schema(),
+        asset_info.issue_impl(),
+        asset_info.types(),
+        asset_info.scripts(),
+        contract_chainnet,
+    );
+
+    builder = asset_info.add_global_state(builder);
+
+    let outpoint = if scenario == "liquid_mainnet_invoice" {
+        Outpoint::from_str("bebcfcb200a17763f6932a6d6fca9448a4b46c5b737cc3810769a7403ef79ce6:0")
+            .unwrap()
+    } else {
+        wlt_1.get_utxo(None)
+    };
+
+    builder = builder
+        .add_fungible_state("assetOwner", get_builder_seal(outpoint), amounts[0])
+        .unwrap();
+
+    let contract = builder.issue_contract().expect("failure issuing contract");
+    let resolver = wlt_1.get_resolver();
+    wlt_1.import_contract(&contract, resolver);
+
+    let mut wlt_2 = if scenario == "liquid_mainnet_invoice" {
+        get_mainnet_wallet()
+    } else {
+        get_wallet(&DescriptorType::Wpkh)
+    };
+    let contract_id = contract.contract_id();
+    let iface_type_name = asset_info.iface_type_name();
+    let amt = 60;
+    let sats = 1000;
+
+    match scenario {
+        "standard_invoice" => {
+            wlt_1.send(
+                &mut wlt_2,
+                TransferType::Witness,
+                contract_id,
+                &iface_type_name,
+                amt,
+                sats,
+                None,
+            );
+        }
+        "liquid_testnet_invoice" => {
+            let address = wlt_2.get_address();
+            let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload));
+            let builder = RgbInvoiceBuilder::new(XChainNet::LiquidTestnet(beneficiary))
+                .set_contract(contract_id)
+                .set_interface(iface_type_name)
+                .set_amount_raw(amt);
+            let invoice = builder.finish();
+            wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(sats), None, None);
+        }
+        "liquid_mainnet_invoice" => {
+            let address = wlt_2.get_address();
+            let beneficiary = Beneficiary::WitnessVout(Pay2Vout::new(address.payload));
+            let builder = RgbInvoiceBuilder::new(XChainNet::LiquidMainnet(beneficiary))
+                .set_contract(contract_id)
+                .set_interface(iface_type_name)
+                .set_amount_raw(issued_amt);
+            let invoice = builder.finish();
+            let (_, _, consignment) = wlt_1.pay(invoice, Some(500), Some(100));
+            wlt_2.accept_transfer(consignment.clone(), None);
+        }
+        _ => unreachable!(),
     }
 }

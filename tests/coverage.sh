@@ -62,6 +62,7 @@ _tit "generating coverage report"
 # shellcheck disable=2086
 INDEXER=electrum $COV $COV_OPTS "${CARGO_TEST_OPTS[@]}"
 INDEXER=esplora $COV $COV_OPTS --no-clean "${CARGO_TEST_OPTS[@]}"
+SKIP_INIT=1 INDEXER=esplora $COV $COV_OPTS --no-clean --features altered "${CARGO_TEST_OPTS[@]}"
 
 if [ -z "$CI" ]; then
     ## show html report location
