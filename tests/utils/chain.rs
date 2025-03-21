@@ -61,7 +61,7 @@ fn _service_base_name() -> String {
 }
 
 fn _bitcoin_cli_cmd(instance: u8, args: Vec<&str>) -> String {
-    let compose_file = PathBuf::from("tests").join("docker-compose.yml");
+    let compose_file = PathBuf::from("tests").join("compose.yaml");
     let mut bitcoin_cli = vec![
         s!("-f"),
         compose_file.to_string_lossy().to_string(),

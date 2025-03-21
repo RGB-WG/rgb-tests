@@ -68,7 +68,7 @@ that in this case the first test execution will be slower.
 Also note that there's no automatic shutdown of test services, you'll need to
 manually remove the docker containers with:
 ```sh
-docker compose -f tests/docker-compose.yml --profile='*' down -v --remove-orphans
+docker compose -f tests/compose.yaml --profile='*' down -v --remove-orphans
 ```
 
 The indexer used by the tests is configurable, currently esplora and electrum

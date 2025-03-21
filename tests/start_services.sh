@@ -75,12 +75,12 @@ COMPOSE="docker compose"
 if ! $COMPOSE >/dev/null; then
     _die "could not call docker compose (hint: install docker compose plugin)"
 fi
-COMPOSE="$COMPOSE -f tests/docker-compose.yml"
+COMPOSE="$COMPOSE -f tests/compose.yaml"
 PROFILE=${PROFILE:-"esplora"}
 COMPOSE="$COMPOSE --profile $PROFILE"
 TEST_DATA_DIR="./test-data"
 
-# see docker-compose.yml for the exposed ports
+# see compose.yaml for the exposed ports
 if [ "$PROFILE" == "esplora" ]; then
     BCLI_1="$COMPOSE exec -T esplora_1 cli"
     BCLI_2="$COMPOSE exec -T esplora_2 cli"
