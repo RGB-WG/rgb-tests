@@ -1414,6 +1414,16 @@ fn sync_mainnet_wlt() {
 // wallet 2 accepts the consignment, use the received assets to transfer to wallet 3
 // finally, the transfer is completed, the asset results of wallet 2 and wallet 3 are correct,
 // but the asset result of wallet 1 is incorrect
+//
+// However, I observed that in the original v0.11.0-beta.9 version, this test case expected wallet 3's accept_transfer to fail.
+// The main distinction likely arises from the significant differences in the critical workflow between the two versions:
+// In v0.11.0-beta.9, when wallet 1 transfers assets to wallet 2, if wallet 2 wants to accept the consignment,
+// it must implement a custom Resolver; otherwise, the validation cannot pass (because the transaction hasn't been broadcast to the network).
+// But in v0.12 version, the resolver concept has been removed, so wallet 2 can normally accept the consignment,
+// and the phenomenon of wallet 2 successfully transferring to wallet 3 occurs.
+// There is a significant distinction between the test cases in these two versions. I believe the expected behavior of this test case
+// remains to be determined.
+// We need to wait for the completion of the latest indexer/resolver implementation with the doctor before revisiting this issue.
 fn receive_from_unbroadcasted_transfer_to_blinded() {
     initialize();
 
