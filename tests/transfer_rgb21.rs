@@ -96,24 +96,8 @@ fn simple_fac_transfer(wout: bool) {
     assert_eq!(state.owned.fractions.len(), 1);
     assert_eq!(state.owned.fractions[0].1, total_fractions);
 
-    dbg!(
-        wlt_1
-            .runtime()
-            .state_own(Some(contract_id))
-            .next()
-            .unwrap()
-            .1
-            .owned
-    );
-    dbg!(
-        wlt_2
-            .runtime()
-            .state_own(Some(contract_id))
-            .next()
-            .unwrap()
-            .1
-            .owned
-    );
+    dbg!(wlt_1.runtime().state_own(contract_id).owned);
+    dbg!(wlt_2.runtime().state_own(contract_id).owned);
 
     // Transfer some fractions to wallet 2
     let transfer_amount = 1001;
@@ -130,24 +114,8 @@ fn simple_fac_transfer(wout: bool) {
     wlt_1.sync();
     wlt_2.sync();
 
-    dbg!(
-        wlt_1
-            .runtime()
-            .state_own(Some(contract_id))
-            .next()
-            .unwrap()
-            .1
-            .owned
-    );
-    dbg!(
-        wlt_2
-            .runtime()
-            .state_own(Some(contract_id))
-            .next()
-            .unwrap()
-            .1
-            .owned
-    );
+    dbg!(wlt_1.runtime().state_own(contract_id).owned);
+    dbg!(wlt_2.runtime().state_own(contract_id).owned);
 
     // Verify allocations after transfer
     wlt_1.check_allocations(

@@ -1,5 +1,4 @@
 pub mod chain;
-pub mod consignment_utils;
 pub mod helper;
 
 pub const TEST_DATA_DIR: &str = "test-data";
@@ -62,8 +61,8 @@ pub use bpstd::{
     XpubDerivable, XpubFp,
 };
 pub use bpwallet::{
-    fs::FsTextStore, indexers::esplora::Client as EsploraClient, AnyIndexer, Indexer as BpIndexer,
-    Wallet,
+    fs::FsTextStore, indexers::esplora::Client as EsploraClient, seals::TxoSeal, AnyIndexer,
+    Indexer as BpIndexer, Wallet,
 };
 pub use commit_verify::{Digest, DigestExt, Sha256};
 pub use descriptors::Wpkh;
@@ -82,14 +81,13 @@ pub use psbt::{
 pub use rand::RngCore;
 pub use rgb::{
     invoice::{RgbBeneficiary, RgbInvoice},
-    popls::bp::{
-        file::{BpDirMound, DirBarrow},
-        Coinselect, OpRequestSet, WalletProvider,
-    },
-    AuthToken, CellAddr, CodexId, Consensus, ContractId, ContractInfo, CreateParams, EitherSeal,
-    RgbSealDef, StateCalc,
+    popls::bp::{Coinselect, OpRequestSet, PaymentScript, PrefabBundle, RgbWallet, WalletProvider},
+    AuthToken, CallScope, CellAddr, CodexId, Consensus, ContractId, ContractInfo, Contracts,
+    CreateParams, EitherSeal, RgbSealDef, Schema, StateCalc, StockpileDir,
 };
-pub use rgbp::{descriptor::RgbDescr, CoinselectStrategy, PayError, RgbDirRuntime, RgbWallet};
+pub use rgbp::{
+    descriptor::RgbDescr, CoinselectStrategy, Owner, PayError, RgbRuntime, RgbpRuntimeDir,
+};
 pub use rgpsbt::ScriptResolver;
 pub use rstest::rstest;
 pub use serial_test::serial;
@@ -121,4 +119,5 @@ pub use helper::wallet::{DescriptorType, InvoiceType, TestWallet, TransferType};
 pub use chain::{fund_wallet, indexer_url, is_tx_confirmed, mine_custom, Indexer, INDEXER};
 pub use helper::asset_types::{ContractImmutableState, ContractOwnedState, ContractState};
 pub use rgb::{Assignment, NamedState, StateAtom};
+pub use rgb::{ConsumeError, ImmutableState, OwnedState, StateName};
 pub use strict_types::value::EnumTag;

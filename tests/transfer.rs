@@ -108,16 +108,8 @@ fn simple_transfer(wout: bool) {
     wlt_2.sync();
 
     // owned state
-    dbg!(wlt_1
-        .runtime()
-        .state_own(Some(contract_id))
-        .map(|s| { s.1.owned })
-        .collect::<Vec<_>>());
-    dbg!(wlt_2
-        .runtime()
-        .state_own(Some(contract_id))
-        .map(|s| { s.1.owned })
-        .collect::<Vec<_>>());
+    dbg!(wlt_1.runtime().state_own(contract_id).owned);
+    dbg!(wlt_2.runtime().state_own(contract_id).owned);
 
     wlt_1.check_allocations(
         contract_id,
@@ -449,12 +441,6 @@ fn transfer_loop(
         vec![issued_supply_2 - amount_3, amount_5],
     );
 
-    // for debug
-    {
-        let wlt_1_contract_2_state = wlt_1.runtime().state_own(None).map(|s| s.1.owned);
-        dbg!(wlt_1_contract_2_state.collect::<Vec<_>>());
-    }
-
     wlt_2.check_allocations(
         contract_id_1,
         asset_schema_1,
@@ -480,11 +466,6 @@ fn transfer_loop(
         None,
     );
     wlt_1.check_allocations(contract_id_1, asset_schema_1, vec![]);
-    // for debug
-    {
-        let wlt_1_contract_2_state = wlt_1.runtime().state_own(None).map(|s| s.1.owned);
-        dbg!(wlt_1_contract_2_state.collect::<Vec<_>>());
-    }
 
     // Theoretically, there should be two outputs, one for the change UTXO and one for the income UTXO.
     // But because the change UTXO is associated with two assets (asset 1 and asset 2), asset 1 has been fully transferred to the UTXO of wlt2.
@@ -637,9 +618,6 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
 
     wlt_2.accept_transfer(&consignment, None).unwrap();
 
-    let wlt_2_contract_state = wlt_2.runtime().state_own(None).map(|s| s.1.owned);
-    dbg!(wlt_2_contract_state.collect::<Vec<_>>());
-
     wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount]);
 
     wlt_2.send(
@@ -652,9 +630,6 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
         None,
         None,
     );
-
-    let wlt_1_contract_state = wlt_1.runtime().state_own(None).map(|s| s.1.owned);
-    dbg!(wlt_1_contract_state.collect::<Vec<_>>());
 
     let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
     wlt_1.send_contract("TestAsset", &mut wlt_3);
@@ -670,8 +645,6 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
         None,
         None,
     );
-    let wlt_3_contract_state = wlt_3.runtime().state_own(None).map(|s| s.1.owned);
-    dbg!(wlt_3_contract_state.collect::<Vec<_>>());
 }
 
 #[test]
@@ -703,10 +676,6 @@ fn accept_0conf() {
     wlt_1.sync();
 
     let wlt_1_change_amt = issue_supply - amt;
-
-    // wlt_1 needs to get tentative allocations to see its change from the unmined TX
-    let wlt_1_contract_state = wlt_1.runtime().state_own(None).map(|s| s.1.owned);
-    dbg!(wlt_1_contract_state.collect::<Vec<_>>());
 
     // after mining, wlt_1 doesn't need to get tentative allocations to see the change
     wlt_1.mine_tx(&txid, false);
@@ -767,11 +736,7 @@ fn check_fungible_history() {
 
     // debug contract info
     dbg!(wlt_1.contracts_info());
-    dbg!(wlt_1
-        .runtime()
-        .state_own(Some(contract_id))
-        .map(|s| { s.1.owned })
-        .collect::<Vec<_>>());
+    dbg!(wlt_1.runtime().state_own(contract_id).owned);
 
     // transfer
     let amt = 200;
@@ -779,16 +744,8 @@ fn check_fungible_history() {
     let _txid = tx.txid();
 
     // debug contract state
-    dbg!(wlt_1
-        .runtime()
-        .state_own(Some(contract_id))
-        .map(|s| { s.1.owned })
-        .collect::<Vec<_>>());
-    dbg!(wlt_2
-        .runtime()
-        .state_own(Some(contract_id))
-        .map(|s| { s.1.owned })
-        .collect::<Vec<_>>());
+    dbg!(wlt_1.runtime().state_own(contract_id).owned);
+    dbg!(wlt_2.runtime().state_own(contract_id).owned);
 
     // check allocations
     wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![issue_supply - amt]);
@@ -816,11 +773,7 @@ fn send_to_oneself() {
     wlt.sync();
 
     // debug contract state
-    dbg!(wlt
-        .runtime()
-        .state_own(None)
-        .map(|s| s.1.owned)
-        .collect::<Vec<_>>());
+    dbg!(wlt.runtime().state_own(contract_id).owned);
 
     // check allocations
     wlt.check_allocations(
@@ -1337,7 +1290,7 @@ fn mainnet_wlt_receiving_test_asset() {
     wlt_1.mine_tx(&tx.txid(), false);
     match wlt_2.accept_transfer(&consignment, None) {
         Err(e) => {
-            dbg!(e);
+            dbg!(e.to_string());
         }
         _ => panic!("validation must fail"),
     }
@@ -1458,29 +1411,16 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     // wlt_1.mine_tx(&tx.txid(), false);
     // wlt_1.sync();
 
-    dbg!(wlt_2
-        .runtime()
-        .state_own(Some(contract_id))
-        .map(|s| s.1.owned)
-        .collect::<Vec<_>>());
+    dbg!(wlt_2.runtime().state_own(contract_id).owned);
 
     let invoice = wlt_3.invoice(contract_id, 50, true, None, None);
     let (consignment, tx) = wlt_2.transfer(invoice, Some(2000), None, true, None);
     wlt_2.mine_tx(&tx.txid(), false);
     wlt_2.sync();
     wlt_1.sync();
-    let res = wlt_3.accept_transfer(&consignment, None);
-    let wlt_3_states = wlt_3
-        .runtime()
-        .state_own(Some(contract_id))
-        .map(|s| s.1.owned)
-        .collect::<Vec<_>>();
-    let wlt_2_states = wlt_2
-        .runtime()
-        .state_own(Some(contract_id))
-        .map(|s| s.1.owned)
-        .collect::<Vec<_>>();
-    assert!(res.is_ok(), "accept transfer failed");
+    wlt_3.accept_transfer(&consignment, None).unwrap();
+    let wlt_3_states = wlt_3.runtime().state_own(contract_id).owned;
+    let wlt_2_states = wlt_2.runtime().state_own(contract_id).owned;
     dbg!(wlt_3_states, wlt_2_states);
 
     wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![50]);

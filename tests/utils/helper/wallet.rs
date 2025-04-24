@@ -7,7 +7,7 @@ enum WalletAccount {
 /// Test wallet structure type
 pub struct TestWallet {
     /// RGB runtime for wallet operations
-    pub runtime: RgbDirRuntime,
+    pub runtime: RgbpRuntimeDir,
     /// RGB descriptor for wallet
     pub descriptor: RgbDescr,
     /// Signer for transaction signing
@@ -230,15 +230,32 @@ fn _get_wallet(
     test_wallet
 }
 
+pub fn contracts(network: Network, wallet_dir: PathBuf) -> Contracts<StockpileDir<TxoSeal>> {
+    if !network.is_testnet() {
+        panic!("Non-testnet networks are not yet supported");
+    }
+    let stockpile = StockpileDir::load(wallet_dir, Consensus::Bitcoin, true)
+        .expect("Invalid contracts directory");
+    Contracts::load(stockpile)
+}
+
 /// Create a runtime for the wallet
-fn make_runtime(descriptor: &RgbDescr, network: Network, wallet_dir: &PathBuf) -> RgbDirRuntime {
+fn make_runtime(descriptor: &RgbDescr, network: Network, wallet_dir: &PathBuf) -> RgbpRuntimeDir {
     let name = "bp_wallet.wallet";
     let provider = FsTextStore::new(wallet_dir.join(name)).unwrap();
-    let wallet = RgbWallet::create(provider, descriptor.clone(), network, true)
+
+    // Create wallet using Owner::create
+    let wallet = Owner::create(provider, descriptor.clone(), network, true)
         .expect("Unable to create wallet");
 
-    let mound = BpDirMound::load_testnet(Consensus::Bitcoin, wallet_dir, false);
-    RgbDirRuntime::from(DirBarrow::with(wallet, mound))
+    let contracts = contracts(network, wallet_dir.clone());
+    // Create runtime with wallet and contracts
+    let mut runtime = RgbpRuntimeDir::from(RgbWallet::with(wallet, contracts));
+    let indexer = get_indexer(&indexer_url(INSTANCE_1, network));
+    runtime
+        .sync(&indexer)
+        .expect("Unable to synchronize wallet");
+    runtime
 }
 
 /// Get an indexer instance
@@ -392,21 +409,21 @@ impl TestWallet {
 
     pub fn sync(&mut self) {
         let indexer = self.get_indexer();
-        self.runtime.wallet.update(&indexer).into_result().unwrap();
+        self.runtime.sync(&indexer).expect("Failed to sync wallet");
     }
 
-    pub fn runtime(&mut self) -> &mut RgbDirRuntime {
+    pub fn runtime(&mut self) -> &mut RgbpRuntimeDir {
         &mut self.runtime
     }
 
     pub fn contracts_info(&self) -> Vec<ContractInfo> {
-        self.runtime.mound.contracts_info().collect()
+        self.runtime.contracts.contracts_info().collect()
     }
 
     pub fn issue_with_params(&mut self, params: CreateParams<Outpoint>) -> ContractId {
         let contract_id = self
             .runtime
-            .issue_to_file(params)
+            .issue(params)
             .expect("failed to issue contract");
         println!("A new contract issued with ID {contract_id}");
         contract_id
@@ -561,14 +578,14 @@ impl TestWallet {
             }
         };
 
-        let state = self.runtime.state_own(Some(contract_id)).next().unwrap().1;
+        let state = self.runtime.state_own(contract_id);
 
         let mut actual_fungible_allocations = state
             .owned
             .get(allocation_field)
             .unwrap()
             .iter()
-            .map(|(_, assignment)| assignment.data.unwrap_num().unwrap_uint::<u64>())
+            .map(|(_, state)| state.assignment.data.unwrap_num().unwrap_uint::<u64>())
             .collect::<Vec<_>>();
         actual_fungible_allocations.sort();
         expected_fungible_allocations.sort();
@@ -679,8 +696,8 @@ impl TestWallet {
             .with_extension("rgb");
 
         self.runtime
-            .mound
-            .consign_to_file(invoice.scope, [terminal], &consignment)
+            .contracts
+            .consign_to_file(&consignment, invoice.scope, [terminal])
             .unwrap();
 
         if let Some(report) = report {
@@ -712,10 +729,12 @@ impl TestWallet {
         &mut self,
         consignment: &Path,
         report: Option<&mut Report>,
-    ) -> std::io::Result<()> {
+    ) -> Result<(), String> {
         self.sync();
         let accept_start = Instant::now();
-        self.runtime.consume_from_file(consignment)?;
+        self.runtime
+            .consume_from_file(consignment)
+            .map_err(|e| format!("consume_from_file error: {}", e.to_string()))?;
         let accept_duration = accept_start.elapsed();
         if let Some(report) = report {
             let column_name = format!("{}_accept", self.wallet_id());
@@ -734,23 +753,23 @@ impl TestWallet {
                 let name = immutable
                     .get(&VariantName::from_str("name").unwrap())
                     .and_then(|m| m.values().next())
-                    .map(|v| v.verified.unwrap_string())
+                    .map(|v| v.data.verified.unwrap_string())
                     .unwrap_or_default();
 
                 let ticker = immutable
                     .get(&VariantName::from_str("ticker").unwrap())
                     .and_then(|m| m.values().next())
-                    .map(|v| v.verified.unwrap_string())
+                    .map(|v| v.data.verified.unwrap_string())
                     .unwrap_or_default();
 
                 let precision = immutable
                     .get(&VariantName::from_str("precision").unwrap())
                     .and_then(|m| m.values().next())
                     .inspect(|v| {
-                        dbg!(&v.verified);
+                        dbg!(&v.data.verified);
                     })
                     .map(|v| {
-                        let tag = v.verified.unwrap_enum_tag();
+                        let tag = v.data.verified.unwrap_enum_tag();
                         if let EnumTag::Name(name) = tag {
                             name.to_string()
                         } else {
@@ -761,17 +780,17 @@ impl TestWallet {
 
                 let circulating_supply = immutable
                     .get(&VariantName::from_str("circulating").unwrap())
-                    .and_then(|m: &BTreeMap<CellAddr, StateAtom>| m.values().next())
-                    .map(|v| v.verified.unwrap_num().unwrap_uint::<u64>())
+                    .and_then(|m: &BTreeMap<CellAddr, ImmutableState>| m.values().next())
+                    .map(|v| v.data.verified.unwrap_num().unwrap_uint::<u64>())
                     .unwrap_or_default();
 
                 // Parse ownership state
                 let mut allocations = vec![];
                 if let Some(owned_map) = owned.get(&VariantName::from_str("amount").unwrap()) {
-                    for assignment in owned_map.values() {
+                    for state in owned_map.values() {
                         allocations.push((
-                            assignment.seal,
-                            assignment.data.unwrap_num().unwrap_uint::<u64>(),
+                            state.assignment.seal,
+                            state.assignment.data.unwrap_num().unwrap_uint::<u64>(),
                         ));
                     }
                 }
@@ -792,20 +811,17 @@ impl TestWallet {
         &mut self,
         contract_id: ContractId,
     ) -> Option<(
-        BTreeMap<VariantName, BTreeMap<CellAddr, StateAtom>>,
-        BTreeMap<VariantName, BTreeMap<CellAddr, Assignment<Outpoint>>>,
-        BTreeMap<VariantName, StrictVal>,
+        BTreeMap<StateName, BTreeMap<CellAddr, ImmutableState>>,
+        BTreeMap<StateName, BTreeMap<CellAddr, OwnedState<TxoSeal>>>,
+        BTreeMap<StateName, StrictVal>,
     )> {
-        self.runtime()
-            .state_all(Some(contract_id))
-            .next()
-            .map(|(_, state)| {
-                (
-                    state.immutable.clone(),
-                    state.owned.clone(),
-                    state.computed.clone(),
-                )
-            })
+        let rgb_contract_state = self.runtime().state_all(contract_id);
+
+        Some((
+            rgb_contract_state.immutable,
+            rgb_contract_state.owned,
+            rgb_contract_state.computed,
+        ))
     }
 }
 
@@ -863,7 +879,7 @@ pub struct ReserveData {
 /// Owned state part of RGB21 contract
 #[derive(Debug, Clone)]
 pub struct RGB21ContractOwnedState {
-    pub fractions: Vec<(Outpoint, u64)>, // (outpoint, amount)
+    pub fractions: Vec<(TxoSeal, u64)>, // (outpoint, amount)
 }
 
 /// Complete RGB21 contract state
@@ -1213,13 +1229,13 @@ impl TestWallet {
                 let name = immutable
                     .get(&VariantName::from_str("name").unwrap())
                     .and_then(|m| m.values().next())
-                    .map(|v| v.verified.unwrap_string())
+                    .map(|v| v.data.verified.unwrap_string())
                     .unwrap_or_default();
 
                 let total_fractions = immutable
                     .get(&VariantName::from_str("fractions").unwrap())
                     .and_then(|m| m.values().next())
-                    .map(|v| v.verified.unwrap_num().unwrap_uint::<u64>())
+                    .map(|v| v.data.verified.unwrap_num().unwrap_uint::<u64>())
                     .unwrap_or_default();
 
                 // Parse token/NFT metadata
@@ -1231,7 +1247,7 @@ impl TestWallet {
                         let mut amount = 0u64;
 
                         // Parse verified token data
-                        if let StrictVal::Struct(ref s) = v.verified {
+                        if let StrictVal::Struct(ref s) = v.data.verified {
                             if let Some(StrictVal::Number(n)) =
                                 s.get(&FieldName::from_str("index").unwrap())
                             {
@@ -1253,7 +1269,7 @@ impl TestWallet {
                         let mut attachments = BTreeMap::new();
                         let mut reserves = None;
 
-                        if let Some(ref unverified) = v.unverified {
+                        if let Some(ref unverified) = v.data.unverified {
                             if let StrictVal::Struct(ref s) = unverified {
                                 if let Some(StrictVal::Union(_, t)) =
                                     s.get(&FieldName::from_str("ticker").unwrap())
@@ -1523,9 +1539,9 @@ impl TestWallet {
                 // Parse ownership state (fractions)
                 let mut fractions = vec![];
                 if let Some(owned_map) = owned.get(&VariantName::from_str("fractions").unwrap()) {
-                    for assignment in owned_map.values() {
-                        let amt_val = assignment.data.unwrap_num().unwrap_uint::<u64>();
-                        fractions.push((assignment.seal, amt_val));
+                    for state in owned_map.values() {
+                        let amt_val = state.assignment.data.unwrap_num().unwrap_uint::<u64>();
+                        fractions.push((state.assignment.seal, amt_val));
                     }
                 }
 

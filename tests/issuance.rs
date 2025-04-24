@@ -58,16 +58,13 @@ fn issue_nia(wallet_desc: DescriptorType) {
         .owned
         .allocations
         .iter()
-        .any(|(outpoint, amount)| *outpoint == fake_outpoint_zero && *amount == 500_000));
+        .any(|(outpoint, amount)| outpoint.primary == fake_outpoint_zero && *amount == 500_000));
     assert!(state
         .owned
         .allocations
         .iter()
-        .any(|(outpoint, amount)| *outpoint == fake_outpoint_one && *amount == 500_000));
-    dbg!(wallet
-        .runtime()
-        .state_all(Some(contract_id))
-        .collect::<Vec<_>>());
+        .any(|(outpoint, amount)| outpoint.primary == fake_outpoint_one && *amount == 500_000));
+    dbg!(wallet.runtime().state_all(contract_id));
 }
 
 #[apply(descriptor_and_close_method)]
@@ -106,11 +103,8 @@ fn issue_fua(wallet_desc: DescriptorType) {
         .owned
         .allocations
         .iter()
-        .any(|(outpoint, amount)| *outpoint == fake_outpoint && *amount == 10_000));
-    dbg!(wallet
-        .runtime()
-        .state_all(Some(contract_id))
-        .collect::<Vec<_>>());
+        .any(|(outpoint, amount)| outpoint.primary == fake_outpoint && *amount == 10_000));
+    dbg!(wallet.runtime().state_all(contract_id));
 }
 
 #[apply(descriptor_and_close_method)]

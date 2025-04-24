@@ -65,7 +65,7 @@ pub struct ContractImmutableState {
 /// Contract's ownership state
 #[derive(Debug)]
 pub struct ContractOwnedState {
-    pub allocations: Vec<(Outpoint, u64)>,
+    pub allocations: Vec<(TxoSeal, u64)>,
 }
 
 /// Parameters for FUA (Fractional unique asset) issuance
