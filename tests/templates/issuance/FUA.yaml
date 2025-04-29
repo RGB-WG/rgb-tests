@@ -1,11 +1,15 @@
 consensus: bitcoin
 testnet: true
-codexId: V7PSoqY~-Ki2PmBY-mNH~fq6-dQDDaDf-M0l09jz-8ThY4LI#diagram-fantasy-bazaar
+codexId: WAHKjUOZ-gjaVJj0-IeQ8OHE-1lysvcD-E~Y~gnx-ZwsOezQ#rapid-forever-nice
 name: DemoFUA
 method: issue
 timestamp: "2025-03-17T10:32:00-02:00"
 
 global:
+# TODO: why name is first, it can't issue contract?
+  - name: details
+    verified:
+    unverified: first
   - name: name
     verified: FUA
   - name: precision

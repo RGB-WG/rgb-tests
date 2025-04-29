@@ -1,14 +1,15 @@
 consensus: bitcoin
 testnet: true
-codexId: dLmJMaGC-A4CjS2t-cauJxL1-3f1_osG-0kuj~XB-n8KCQ1k#ranger-beast-puma
+codexId: C11V4boH-t0lNXdS-U6MDKet-us0NCCo-1cWX7xU-7ahdfqw#regard-genius-belgium
 name: DemoToken
 method: issue
-timestamp: "2025-03-17T10:32:00-02:00"
+timestamp: "2025-04-27T10:32:00-02:00"
 
 global:
-  - name: name
-    verified: NFA
   - name: ticker
+    verified: NFA
+# TODO: why name is first, it can't issue contract?
+  - name: name
     verified: NFA
   - name: precision
     verified: centiMilli

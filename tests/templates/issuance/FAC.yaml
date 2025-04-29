@@ -1,14 +1,15 @@
 consensus: bitcoin
 testnet: true
-codexId: rlRZvs8I-GisCpaD-0L9GTZc-SHPBkK8-S0xp24p-eSZ3iNo#distant-recycle-paprika
+codexId: cv343X_v-prQy_G7-utFnpPb-T2BpYVE-ibgujHd-zYzSLEw#horse-journal-voyage
 
-# This is the correct codexId
-# codexId: rlRZvs8I-GisCpaD-0L9GTZc-SHPBkK8-S0xp24p-eSZ3iNo#distant-recycle-paprika
 name: DemoFAC
 method: issue
 timestamp: "2025-03-17T10:32:00-02:00"
 
 global:
+  - name: details
+    verified:
+    unverified: first
   - name: name
     verified: FractionableAssetCollection
   - name: fractions

@@ -174,25 +174,6 @@ fn _get_wallet(
     std::fs::create_dir_all(&wallet_dir).unwrap();
     println!("wallet dir: {wallet_dir:?}");
 
-    // create consensus_dir for managing RGB smart contracts
-    let mut consensus_dir = wallet_dir.join(Consensus::Bitcoin.to_string());
-    if network.is_testnet() {
-        consensus_dir.set_extension("testnet");
-    }
-    std::fs::create_dir_all(&consensus_dir).unwrap();
-
-    // copy schema files from template directory to wallet_dir
-    let schemata_dir = PathBuf::from(SCHEMATA_DIR);
-    if schemata_dir.exists() {
-        for entry in std::fs::read_dir(schemata_dir).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_file() {
-                std::fs::copy(&path, wallet_dir.join(path.file_name().unwrap())).unwrap();
-            }
-        }
-    }
-
     let xpub_account = match wallet_account {
         WalletAccount::Private(ref xpriv_account) => xpriv_account.to_xpub_account(),
         WalletAccount::Public(ref xpub_account) => xpub_account.clone(),
@@ -222,10 +203,22 @@ fn _get_wallet(
         wallet_id: None,
     };
 
-    // TODO: remove if once found solution for esplora 'Too many requests' error
-    if network.is_testnet() {
-        test_wallet.sync();
+    // Import all issuer files from the schemata directory
+    let issuer_dir = PathBuf::from(SCHEMATA_DIR);
+    if issuer_dir.exists() {
+        for entry in std::fs::read_dir(issuer_dir).unwrap() {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            if path.is_file() && path.extension().map_or(false, |ext| ext == "issuer") {
+                println!("Auto-importing issuer file: {}", path.display());
+                if let Err(err) = test_wallet.import(path) {
+                    println!("Warning: Failed to import issuer: {}", err);
+                }
+            }
+        }
     }
+
+    test_wallet.sync();
 
     test_wallet
 }
@@ -349,9 +342,6 @@ impl TestWallet {
         self.instance = instance;
     }
 
-    // TODO: Dr. Maxim mentioned in the meeting that
-    // He will support rollback state related APIs in the reorg and rbf scenarios
-    // Because it is not implemented at the moment, only sync is included for now
     pub fn sync_and_rollback_state(&mut self) {
         self.sync();
     }
@@ -449,14 +439,17 @@ impl TestWallet {
     }
 
     pub fn send_contract(&mut self, contract_name: &str, to_wallet: &mut TestWallet) {
-        let mut src_consensus_dir = self.wallet_dir.join(Consensus::Bitcoin.to_string());
-        let mut dst_consensus_dir = to_wallet.wallet_dir.join(Consensus::Bitcoin.to_string());
-        if self.network().is_testnet() {
-            src_consensus_dir.set_extension("testnet");
-            dst_consensus_dir.set_extension("testnet");
-        }
-        let src_contract_dir = src_consensus_dir.join(format!("{contract_name}.contract"));
-        let dst_contract_dir = dst_consensus_dir.join(format!("{contract_name}.contract"));
+        let src_consensus_dir = self.wallet_dir.clone();
+        let dst_consensus_dir = to_wallet.wallet_dir.clone();
+
+        let contract_id = self
+            .runtime
+            .contracts
+            .find_contract_id(TypeName::from_str(contract_name).unwrap())
+            .expect("Contract not found");
+        let contract_file_name = format!("{}.{:-}.contract", contract_name, contract_id);
+        let src_contract_dir = src_consensus_dir.join(&contract_file_name);
+        let dst_contract_dir = dst_consensus_dir.join(&contract_file_name);
         std::fs::create_dir_all(&dst_contract_dir).unwrap();
         let read_dir = std::fs::read_dir(&src_contract_dir).unwrap();
         for entry in read_dir {
@@ -740,6 +733,47 @@ impl TestWallet {
             let column_name = format!("{}_accept", self.wallet_id());
             report.add_duration(&column_name, accept_duration).unwrap();
         }
+        Ok(())
+    }
+
+    /// Import an RGB schema(.issuer) file
+    ///
+    /// # Arguments
+    /// * `schema_path` - Path to the schema file to import
+    pub fn import(&mut self, schema_path: impl AsRef<Path>) -> Result<(), String> {
+        let schema_path = schema_path.as_ref();
+
+        // Check if file exists
+        if !schema_path.exists() {
+            return Err(format!(
+                "Schema file '{}' does not exist",
+                schema_path.display()
+            ));
+        }
+
+        print!(
+            "Processing '{}' ... ",
+            schema_path.file_name().unwrap().to_string_lossy()
+        );
+
+        // Load schema and get codex ID
+        let schema = Schema::load(schema_path)?;
+        let codex_id = schema.codex.codex_id();
+
+        print!("codex id {} ... ", codex_id);
+
+        // Import the schema into contracts
+        if self.runtime.contracts.has_issuer(codex_id) {
+            println!("already known, skipping");
+            return Ok(());
+        }
+
+        self.runtime
+            .contracts
+            .import(schema)
+            .map_err(|e| format!("import error: {}", e.to_string()))?;
+        println!("success");
+
         Ok(())
     }
 }
