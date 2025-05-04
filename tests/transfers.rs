@@ -1,6 +1,7 @@
 mod utils;
 
 use rstest::rstest;
+use std::path::PathBuf;
 
 use crate::utils::chain::initialize;
 use crate::utils::runtime::TestRuntime;
@@ -147,22 +148,28 @@ fn transfer_loop(
     };
     println!("send 1");
 
+    let path1 = PathBuf::from("tests")
+        .join("test-data")
+        .with_file_name("contract1.rgb");
+    let path2 = PathBuf::from("tests")
+        .join("test-data")
+        .with_file_name("contract2.rgb");
+    wlt_1
+        .contracts
+        .consign_to_file(&path1, contract_id_1, &[])
+        .unwrap();
+    wlt_1
+        .contracts
+        .consign_to_file(&path2, contract_id_2, &[])
+        .unwrap();
     wlt_2
-        .mound
-        .import_articles(&wlt_1.build_path(match asset_schema_1{
-            AssetSchema::Nia => "Nia1",
-            AssetSchema::Uda => "Uda1",
-            AssetSchema::Cfa => "Cfa1",
-        }))
-        .expect("wlt2 should import wlt1's assets");
+        .rt
+        .consume_from_file(path1)
+        .unwrap_or_else(|e| panic!("{e}"));
     wlt_2
-        .mound
-        .import_articles(&wlt_1.build_path(match asset_schema_2{
-            AssetSchema::Nia => "Nia2",
-            AssetSchema::Uda => "Uda2",
-            AssetSchema::Cfa => "Cfa2",
-        }))
-        .expect("wlt2 should import wlt1's assets");
+        .rt
+        .consume_from_file(path2)
+        .unwrap_or_else(|e| panic!("{e}"));
     wlt_2.get_utxo(None); // make sure wlt_2 has some coins so it can invoice
     wlt_1.send(&mut wlt_2, wout, contract_id_1, amount_1, sats, None);
     println!("-- DEBUG: wlt_1 checks allocations after spending asset 1");

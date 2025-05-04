@@ -1,5 +1,4 @@
 pub mod utils;
-use rgb::Pile;
 use rstest::rstest;
 
 use rstest_reuse::{self, *};
@@ -21,7 +20,6 @@ fn descriptor_and_close_method(#[case] wallet_desc: DescriptorType) {}
 
 #[apply(descriptor_and_close_method)]
 fn issue_nia(#[case] wallet_desc: DescriptorType) {
-    use rgb::aora::Aora;
     use utils::runtime::TestRuntime;
 
     initialize();
@@ -34,34 +32,33 @@ fn issue_nia(#[case] wallet_desc: DescriptorType) {
 
     wallet.check_allocations(contract_id, AS::Nia, vec![10_000], false);
 
-    let stockpile = wallet.mound.contract_mut(contract_id);
-
-    let contract = &stockpile.stock().articles().contract;
-    assert_eq!(contract.meta.name.to_string(), "DemoNIA");
+    let articles = wallet.contracts.contract_articles(contract_id);
+    assert_eq!(articles.issue.meta.name.to_string(), "DemoNIA");
 
     let mut found_name = false;
     let mut found_ticker = false;
     let mut found_precision = false;
     let mut found_circulating = false;
 
-    let imm_state = &stockpile.stock().state().main.immutable;
+    let state = wallet.contracts.contract_state(contract_id);
+    let imm_state = &state.immutable;
     for (name, map) in imm_state {
-        for (addr, atom) in map {
+        for (_, state) in map {
             match name.as_str() {
                 "name" => {
-                    assert_eq!(atom.verified.to_string(), "\"DemoNIA\"");
+                    assert_eq!(state.data.verified.to_string(), "\"DemoNIA\"");
                     found_name = true;
                 }
                 "ticker" => {
-                    assert_eq!(atom.verified.to_string(), "\"NIA\"");
+                    assert_eq!(state.data.verified.to_string(), "\"NIA\"");
                     found_ticker = true;
                 }
                 "precision" => {
-                    assert_eq!(atom.verified.to_string(), "centiMilli");
+                    assert_eq!(state.data.verified.to_string(), "centiMilli");
                     found_precision = true;
                 }
                 "circulating" => {
-                    let supply = atom.verified.unwrap_uint::<u64>();
+                    let supply = state.data.verified.unwrap_uint::<u64>();
                     assert_eq!(supply, 10_000);
                     found_circulating = true;
                 }
@@ -74,25 +71,18 @@ fn issue_nia(#[case] wallet_desc: DescriptorType) {
     assert!(found_precision, "Precision field not found");
     assert!(found_circulating, "Circulating supply field not found");
 
-    let owned_states = stockpile
-        .stock()
-        .state()
-        .main
+    let owned_states = state
         .owned
-        .get("owned")
+        .get("amount")
         .expect("Owned state should exist")
         .clone();
 
     let mut found = false;
-    for (addr, assignment) in owned_states.iter() {
-        let keep = stockpile.pile_mut().keep_mut(); // mutable borrow
-        let seals = keep.read(addr.opid);
-        if let Some(seal) = seals.get(&addr.pos) {
-            let utxo_match = seal.primary == bpstd::seals::WOutpoint::Extern(utxo);
-            if utxo_match && assignment.unwrap_num().unwrap_uint::<u64>() == 10_000 {
-                found = true;
-                break;
-            }
+    for (_, state) in owned_states.iter() {
+        let utxo_match = state.assignment.seal.primary == utxo;
+        if utxo_match && state.assignment.data.unwrap_num().unwrap_uint::<u64>() == 10_000 {
+            found = true;
+            break;
         }
     }
     assert!(
@@ -103,7 +93,6 @@ fn issue_nia(#[case] wallet_desc: DescriptorType) {
 
 #[apply(descriptor_and_close_method)]
 fn issue_cfa(#[case] wallet_desc: DescriptorType) {
-    use rgb::aora::Aora;
     use utils::runtime::TestRuntime;
 
     initialize();
@@ -116,29 +105,28 @@ fn issue_cfa(#[case] wallet_desc: DescriptorType) {
 
     wallet.check_allocations(contract_id, AS::Cfa, vec![10_000], true);
 
-    let stockpile = wallet.mound.contract_mut(contract_id);
-
-    let contract = &stockpile.stock().articles().contract;
-    assert_eq!(contract.meta.name.to_string(), "DemoCFA");
+    let articles = wallet.contracts.contract_articles(contract_id);
+    assert_eq!(articles.issue.meta.name.to_string(), "DemoCFA");
 
     let mut found_name = false;
     let mut found_precision = false;
     let mut found_circulating = false;
 
-    let imm_state = &stockpile.stock().state().main.immutable;
+    let state = wallet.contracts.contract_state(contract_id);
+    let imm_state = &state.immutable;
     for (name, map) in imm_state {
-        for (addr, atom) in map {
+        for (_, state) in map {
             match name.as_str() {
                 "name" => {
-                    assert_eq!(atom.verified.to_string(), "\"DemoCFA\"");
+                    assert_eq!(state.data.verified.to_string(), "\"DemoCFA\"");
                     found_name = true;
                 }
                 "precision" => {
-                    assert_eq!(atom.verified.to_string(), "centiMilli");
+                    assert_eq!(state.data.verified.to_string(), "centiMilli");
                     found_precision = true;
                 }
                 "circulating" => {
-                    let supply = atom.verified.unwrap_uint::<u64>();
+                    let supply = state.data.verified.unwrap_uint::<u64>();
                     assert_eq!(supply, 10_000);
                     found_circulating = true;
                 }
@@ -150,26 +138,19 @@ fn issue_cfa(#[case] wallet_desc: DescriptorType) {
     assert!(found_precision, "Precision field not found in global state");
     assert!(found_circulating, "Circulating supply field not found");
 
-    let owned_states = stockpile
-        .stock()
-        .state()
-        .main
+    let owned_states = state
         .owned
-        .get("owned")
+        .get("amount")
         .expect("Owned state should exist")
         .clone();
 
     let mut found = false;
 
-    for (addr, assignment) in owned_states.iter() {
-        let keep = stockpile.pile_mut().keep_mut(); // mutable borrow
-        let seals = keep.read(addr.opid);
-        if let Some(seal) = seals.get(&addr.pos) {
-            let utxo_match = seal.primary == bpstd::seals::WOutpoint::Extern(utxo);
-            if utxo_match && assignment.unwrap_num().unwrap_uint::<u64>() == 10_000 {
-                found = true;
-                break;
-            }
+    for (_, state) in owned_states.iter() {
+        let utxo_match = state.assignment.seal.primary == utxo;
+        if utxo_match && state.assignment.data.unwrap_num().unwrap_uint::<u64>() == 10_000 {
+            found = true;
+            break;
         }
     }
 
@@ -193,11 +174,7 @@ fn issue_cfa_multiple_utxos(#[case] wallet_desc: DescriptorType) {
     let utxo3 = wallet.get_utxo(Some(10_000));
 
     // Define allocations
-    let allocations = vec![
-        (utxo1, 222),
-        (utxo2, 444),
-        (utxo3, 333),
-    ];
+    let allocations = vec![(utxo1, 222), (utxo2, 444), (utxo3, 333)];
 
     // Issue CFA with multiple allocations
     let contract_id = wallet.issue_cfa_with_allocations("MultiCFA", allocations);
@@ -205,8 +182,8 @@ fn issue_cfa_multiple_utxos(#[case] wallet_desc: DescriptorType) {
     // Verify total supply and allocations
     wallet.check_allocations(contract_id, AS::Cfa, vec![222, 444, 333], true);
 
-    let stockpile = wallet.mound.contract_mut(contract_id);
-    let imm_state = &stockpile.stock().state().main.immutable;
+    let state = wallet.contracts.contract_state(contract_id);
+    let imm_state = &state.immutable;
 
     // Check global circulating supply
     let circulating = imm_state
@@ -215,20 +192,16 @@ fn issue_cfa_multiple_utxos(#[case] wallet_desc: DescriptorType) {
         .values()
         .next()
         .unwrap()
+        .data
         .verified
         .unwrap_uint::<u64>();
     assert_eq!(circulating, 999);
 
     // Verify allocation amounts
-    let owned_states = stockpile
-        .stock()
-        .state()
-        .main
-        .owned
-        .get("owned")
-        .unwrap();
-    let amounts: Vec<u64> = owned_states.iter()
-        .map(|(_, assignment)| assignment.unwrap_num().unwrap_uint::<u64>())
+    let owned_states = state.owned.get("amount").unwrap();
+    let amounts: Vec<u64> = owned_states
+        .iter()
+        .map(|(_, state)| state.assignment.data.unwrap_num().unwrap_uint::<u64>())
         .collect();
     let mut sorted_amounts = amounts.clone();
     sorted_amounts.sort();
@@ -249,11 +222,7 @@ fn issue_nia_multiple_utxos(#[case] wallet_desc: DescriptorType) {
     let utxo3 = wallet.get_utxo(Some(10_000));
 
     // Define allocations
-    let allocations = vec![
-        (utxo1, 333),
-        (utxo2, 333),
-        (utxo3, 333),
-    ];
+    let allocations = vec![(utxo1, 333), (utxo2, 333), (utxo3, 333)];
 
     // Issue NIA with multiple allocations
     let contract_id = wallet.issue_nia_with_allocations("MultiNIA", allocations);
@@ -261,8 +230,8 @@ fn issue_nia_multiple_utxos(#[case] wallet_desc: DescriptorType) {
     // Verify total supply and allocations
     wallet.check_allocations(contract_id, AS::Nia, vec![333, 333, 333], false);
 
-    let stockpile = wallet.mound.contract_mut(contract_id);
-    let imm_state = &stockpile.stock().state().main.immutable;
+    let state = wallet.contracts.contract_state(contract_id);
+    let imm_state = &state.immutable;
 
     // Check global circulating supply
     let circulating = imm_state
@@ -271,20 +240,16 @@ fn issue_nia_multiple_utxos(#[case] wallet_desc: DescriptorType) {
         .values()
         .next()
         .unwrap()
+        .data
         .verified
         .unwrap_uint::<u64>();
     assert_eq!(circulating, 999);
 
     // Verify allocation amounts
-    let owned_states = stockpile
-        .stock()
-        .state()
-        .main
-        .owned
-        .get("owned")
-        .unwrap();
-    let amounts: Vec<u64> = owned_states.iter()
-        .map(|(_, assignment)| assignment.unwrap_num().unwrap_uint::<u64>())
+    let owned_states = state.owned.get("amount").unwrap();
+    let amounts: Vec<u64> = owned_states
+        .iter()
+        .map(|(_, state)| state.assignment.data.unwrap_num().unwrap_uint::<u64>())
         .collect();
     assert_eq!(amounts, vec![333, 333, 333]);
 }

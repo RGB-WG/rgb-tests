@@ -10,20 +10,19 @@ use std::{io, thread};
 use bpstd::psbt::{PsbtConstructor, TxParams};
 use bpstd::signers::TestnetSigner;
 use bpstd::{
-    h, Address, HardenedIndex, Keychain, Network, Psbt, Sats, Tx, Txid, Vout, Wpkh, XprivAccount,
-    XpubDerivable,
+    h, Address, Keychain, Network, Psbt, Sats, Tx, Txid, Vout, Wpkh, XprivAccount, XpubDerivable,
 };
 use bpwallet::fs::FsTextStore;
 use bpwallet::AnyIndexer;
 use rand::RngCore;
 use rgb::invoice::{RgbBeneficiary, RgbInvoice};
-use rgb::popls::bp::file::{BpDirMound, DirBarrow};
+use rgb::popls::bp::RgbWallet;
 use rgb::{
-    Assignment, CodexId, Consensus, ContractId, CreateParams, EitherSeal, NamedState, Outpoint,
-    StateAtom,
+    Assignment, CodexId, Consensus, ContractId, Contracts, CreateParams, EitherSeal, NamedState,
+    Outpoint, Schema, StateAtom, StockpileDir,
 };
 use rgbp::descriptor::RgbDescr;
-use rgbp::{CoinselectStrategy, RgbDirRuntime, RgbWallet};
+use rgbp::{CoinselectStrategy, Owner, RgbpRuntimeDir};
 use strict_types::{svenum, svnum, svstr, tn, vname, StrictVal};
 
 use crate::utils::chain::{
@@ -56,14 +55,14 @@ impl Drop for LockGuard {
 }
 
 pub struct TestRuntime {
-    pub rt: RgbDirRuntime,
+    pub rt: RgbpRuntimeDir,
     signer: TestnetSigner,
     instance: u8,
     alias: String,
 }
 
 impl Deref for TestRuntime {
-    type Target = RgbDirRuntime;
+    type Target = RgbpRuntimeDir;
     fn deref(&self) -> &Self::Target {
         &self.rt
     }
@@ -101,20 +100,20 @@ impl TestRuntime {
         instance: u8,
         alias: &str,
     ) -> Self {
-        std::fs::create_dir_all(&wallet_dir).unwrap();
+        fs::create_dir_all(&wallet_dir).unwrap();
         println!("wallet dir: {wallet_dir:?}");
 
         let xpub = account.to_xpub_account();
         let xpub = XpubDerivable::with(xpub, &[Keychain::OUTER, Keychain::INNER]);
         let signer = TestnetSigner::new(account);
 
-        let mut mound = BpDirMound::load_testnet(Consensus::Bitcoin, &wallet_dir, true);
-        mound
-            .load_issuer("tests/fixtures/NonInflatableAsset.issuer")
-            .unwrap();
-        mound
-            .load_issuer("tests/fixtures/CollectibleFungibleAsset.issuer")
-            .unwrap();
+        let stockpile = StockpileDir::load(wallet_dir.clone(), Consensus::Bitcoin, true)
+            .expect("Invalid contracts directory");
+        let mut contracts = Contracts::load(stockpile);
+        let issuer = Schema::load("tests/fixtures/NonInflatableAsset.issuer").unwrap();
+        contracts.import(issuer).unwrap();
+        let issuer = Schema::load("tests/fixtures/CollectibleFungibleAsset.issuer").unwrap();
+        contracts.import(issuer).unwrap();
 
         let provider = FsTextStore::new(wallet_dir).expect("Broken directory structure");
         let noise = xpub.xpub().chain_code().to_byte_array();
@@ -122,8 +121,8 @@ impl TestRuntime {
             DescriptorType::Wpkh => RgbDescr::new_unfunded(Wpkh::from(xpub), noise),
             DescriptorType::Tr => RgbDescr::key_only_unfunded(xpub, noise),
         };
-        let wallet = RgbWallet::create(provider, descr, Network::Regtest, true).unwrap();
-        let rt = RgbDirRuntime::from(DirBarrow::with(wallet, mound));
+        let wallet = Owner::create(provider, descr, Network::Regtest, true).unwrap();
+        let rt = RgbpRuntimeDir::from(RgbWallet::with(wallet, contracts));
 
         let mut me = Self {
             rt,
@@ -218,7 +217,7 @@ impl TestRuntime {
                 },
             }],
         };
-        self.rt.issue_to_file(params).unwrap()
+        self.rt.issue(params).unwrap()
     }
 
     pub fn issue_cfa(
@@ -276,7 +275,7 @@ impl TestRuntime {
                 },
             }],
         };
-        self.rt.issue_to_file(params).unwrap()
+        self.rt.issue(params).unwrap()
     }
 
     pub fn issue_cfa_with_allocations(
@@ -336,7 +335,7 @@ impl TestRuntime {
                 })
                 .collect(),
         };
-        self.rt.issue_to_file(params).unwrap()
+        self.rt.issue(params).unwrap()
     }
 
     pub fn issue_nia_with_allocations(
@@ -396,14 +395,7 @@ impl TestRuntime {
                 })
                 .collect(),
         };
-        self.rt.issue_to_file(params).unwrap()
-    }
-
-    pub fn build_path(&self, contract_name: &str) -> PathBuf {
-        self.rt
-            .mound
-            .path()
-            .join(contract_name.to_string() + ".contract")
+        self.rt.issue(params).unwrap()
     }
 
     pub fn invoice(
@@ -477,7 +469,7 @@ impl TestRuntime {
         let strategy = CoinselectStrategy::Aggregate;
         let pay_start = Instant::now();
         let params = TxParams::with(fee);
-        let (mut psbt, terminal) = self
+        let (mut psbt, payment) = self
             .pay_invoice(&invoice, strategy, params, Some(sats))
             .unwrap();
 
@@ -502,8 +494,9 @@ impl TestRuntime {
             .join("test-data")
             .join(format!("consignment-{consignment_no}"))
             .with_extension("rgb");
-        self.mound
-            .consign_to_file(invoice.scope, [terminal], &consignment)
+        self.rt
+            .contracts
+            .consign_to_file(&consignment, invoice.scope, payment.terminals)
             .unwrap();
 
         (consignment, tx)
@@ -512,7 +505,8 @@ impl TestRuntime {
     pub fn accept_transfer(&mut self, consignment: &Path, report: Option<&Report>) {
         self.sync();
         let accept_start = Instant::now();
-        self.consume_from_file(consignment).unwrap();
+        self.consume_from_file(consignment)
+            .unwrap_or_else(|e| panic!("{e}"));
         let accept_duration = accept_start.elapsed();
         if let Some(report) = report {
             report.write_duration(accept_duration);
@@ -528,13 +522,13 @@ impl TestRuntime {
     ) {
         match asset_schema {
             AssetSchema::Nia | AssetSchema::Cfa => {
-                let state = self.rt.state_own(Some(contract_id)).next().unwrap().1;
+                let state = self.rt.state_own(contract_id);
                 let mut actual_fungible_allocations = state
                     .owned
                     .get("owned")
                     .unwrap()
                     .iter()
-                    .map(|(_, assignment)| assignment.data.unwrap_num().unwrap_uint::<u64>())
+                    .map(|(_, owned)| owned.assignment.data.unwrap_num().unwrap_uint::<u64>())
                     .collect::<Vec<_>>();
                 actual_fungible_allocations.sort();
                 expected_fungible_allocations.sort();
