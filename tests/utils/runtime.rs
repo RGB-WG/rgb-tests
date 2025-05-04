@@ -110,9 +110,9 @@ impl TestRuntime {
         let stockpile = StockpileDir::load(wallet_dir.clone(), Consensus::Bitcoin, true)
             .expect("Invalid contracts directory");
         let mut contracts = Contracts::load(stockpile);
-        let issuer = Schema::load("tests/fixtures/NonInflatableAsset.issuer").unwrap();
+        let issuer = Schema::load("tests/fixtures/RGB20-NFA.issuer").unwrap();
         contracts.import(issuer).unwrap();
-        let issuer = Schema::load("tests/fixtures/CollectibleFungibleAsset.issuer").unwrap();
+        let issuer = Schema::load("tests/fixtures/RGB25-FUA.issuer").unwrap();
         contracts.import(issuer).unwrap();
 
         let provider = FsTextStore::new(wallet_dir).expect("Broken directory structure");
