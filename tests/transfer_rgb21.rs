@@ -102,7 +102,7 @@ fn simple_fac_transfer(wout: bool) {
     // Transfer some fractions to wallet 2
     let transfer_amount = 1001;
     let invoice = wlt_2.invoice(contract_id, transfer_amount, wout, Some(0), None);
-    let (consignment_1, tx) = wlt_1.transfer(invoice, Some(9000), Some(500), true, None);
+    let (consignment_1, tx, _) = wlt_1.transfer(invoice, Some(9000), Some(500), true, None);
 
     // Receiver accepts the transfer
     wlt_2.accept_transfer(&consignment_1, None).unwrap();
@@ -139,7 +139,7 @@ fn simple_fac_transfer(wout: bool) {
     // Test transferring some fractions back to wallet 1
     let return_amount = 1000;
     let invoice = wlt_1.invoice(contract_id, return_amount, wout, Some(0), None);
-    let (consignment_2, tx) = wlt_2.transfer(invoice, Some(3000), Some(500), true, None);
+    let (consignment_2, tx, _) = wlt_2.transfer(invoice, Some(3000), Some(500), true, None);
 
     // Wallet 1 accepts the transfer
     wlt_1.accept_transfer(&consignment_2, None).unwrap();

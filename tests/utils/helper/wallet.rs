@@ -1,4 +1,5 @@
 use super::*;
+use rgbp::Payment;
 
 enum WalletAccount {
     Private(XprivAccount),
@@ -342,10 +343,6 @@ impl TestWallet {
         self.instance = instance;
     }
 
-    pub fn sync_and_rollback_state(&mut self) {
-        self.sync();
-    }
-
     pub fn issue_nia_with_params(&mut self, params: NIAIssueParams) -> ContractId {
         let mut builder: AssetParamsBuilder = AssetParamsBuilder::default_nia()
             .name(params.name.as_str())
@@ -382,7 +379,7 @@ impl TestWallet {
 
     pub fn switch_to_instance(&mut self, instance: u8) {
         self.change_instance(instance);
-        self.sync_and_rollback_state();
+        self.sync();
     }
 
     pub fn indexer_url(&self) -> String {
@@ -595,7 +592,7 @@ impl TestWallet {
         fee: Option<u64>,
         nonce: Option<u64>,
         report: Option<&mut Report>,
-    ) -> (PathBuf, Tx) {
+    ) -> (PathBuf, Tx, Payment) {
         let invoice = recv_wallet.invoice(contract_id, amount, wout, nonce, None);
         self.send_to_invoice(recv_wallet, invoice, Some(sats), fee, report)
     }
@@ -607,43 +604,16 @@ impl TestWallet {
         sats: Option<u64>,
         fee: Option<u64>,
         mut report: Option<&mut Report>,
-    ) -> (PathBuf, Tx) {
+    ) -> (PathBuf, Tx, Payment) {
         // We need to handle the report parameter carefully to avoid moving it
         let transfer_report = report.as_deref_mut();
 
-        let (consignment, tx) = self.transfer(invoice, sats, fee, true, transfer_report);
+        let (consignment, tx, payment) = self.transfer(invoice, sats, fee, true, transfer_report);
         self.mine_tx(&tx.txid(), false);
         // Now use the original report parameter
         recv_wallet.accept_transfer(&consignment, report).unwrap();
         self.sync();
-        (consignment, tx)
-    }
-
-    /// Pay an invoice producing PSBT ready to be signed.
-    ///
-    /// This is a custom implementation of rgb-runtime's pay_invoice that supports
-    /// custom coinselection strategies.
-    ///
-    /// TODO: Keep this implementation in sync with the official rgb-runtime pay_invoice
-    /// method to ensure consistent behavior and avoid divergence.
-    pub fn pay_invoice(
-        &mut self,
-        invoice: &RgbInvoice<ContractId>,
-        strategy: impl Coinselect,
-        params: TxParams,
-        giveaway: Option<Sats>,
-    ) -> Result<(Psbt, AuthToken), PayError> {
-        let request = self.runtime.fulfill(invoice, strategy, giveaway)?;
-        let script = OpRequestSet::with(request.clone());
-        let psbt = self.runtime.transfer(script, params)?;
-        let terminal = match invoice.auth {
-            RgbBeneficiary::Token(auth) => auth,
-            RgbBeneficiary::WitnessOut(wout) => request
-                .resolve_seal(wout, psbt.script_resolver())
-                .expect("witness out must be present in the PSBT")
-                .auth_token(),
-        };
-        Ok((psbt, terminal))
+        (consignment, tx, payment)
     }
 
     pub fn transfer(
@@ -653,11 +623,7 @@ impl TestWallet {
         fee: Option<u64>,
         broadcast: bool,
         report: Option<&mut Report>,
-    ) -> (PathBuf, Tx) {
-        static COUNTER: OnceLock<AtomicU32> = OnceLock::new();
-        let counter = COUNTER.get_or_init(|| AtomicU32::new(0));
-        counter.fetch_add(1, Ordering::SeqCst);
-        let consignment_no = counter.load(Ordering::SeqCst);
+    ) -> (PathBuf, Tx, Payment) {
         self.sync();
 
         let fee = Sats::from_sats(fee.unwrap_or(DEFAULT_FEE_ABS));
@@ -666,11 +632,60 @@ impl TestWallet {
         let strategy = self.coinselect_strategy;
         let pay_start = Instant::now();
         let params = TxParams::with(fee);
-        let (mut psbt, terminal) = self
+        let (psbt, payment) = self
+            .runtime
             .pay_invoice(&invoice, strategy, params, Some(sats))
             .unwrap();
 
         let pay_duration = pay_start.elapsed();
+
+        let (consignment, tx) = self.consign(
+            invoice.scope,
+            psbt.clone(),
+            &payment.terminals,
+            pay_duration,
+            broadcast,
+            report,
+        );
+        (consignment, tx, payment)
+    }
+
+    pub fn transfer_rbf(
+        &mut self,
+        contract_id: ContractId,
+        payment: Payment,
+        fee: u64,
+        report: Option<&mut Report>,
+    ) -> (PathBuf, Tx) {
+        let pay_start = Instant::now();
+        let pay_duration = pay_start.elapsed();
+
+        let psbt = self.runtime.rbf(&payment, fee).unwrap();
+
+        let (consignment, tx) = self.consign(
+            contract_id,
+            psbt,
+            &payment.terminals,
+            pay_duration,
+            true,
+            report,
+        );
+        (consignment, tx)
+    }
+
+    fn consign<'a>(
+        &mut self,
+        contract_id: ContractId,
+        mut psbt: Psbt,
+        terminals: impl IntoIterator<Item = &'a AuthToken>,
+        pay_duration: Duration,
+        broadcast: bool,
+        report: Option<&mut Report>,
+    ) -> (PathBuf, Tx) {
+        static COUNTER: OnceLock<AtomicU32> = OnceLock::new();
+        let counter = COUNTER.get_or_init(|| AtomicU32::new(0));
+        counter.fetch_add(1, Ordering::SeqCst);
+        let consignment_no = counter.load(Ordering::SeqCst);
 
         let tx = self.sign_finalize_extract(&mut psbt);
 
@@ -690,7 +705,7 @@ impl TestWallet {
 
         self.runtime
             .contracts
-            .consign_to_file(&consignment, invoice.scope, [terminal])
+            .consign_to_file(&consignment, contract_id, terminals)
             .unwrap();
 
         if let Some(report) = report {

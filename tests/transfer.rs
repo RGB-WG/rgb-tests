@@ -76,7 +76,7 @@ fn simple_transfer(wout: bool) {
     // send asset to wlt2
     // if `wout` is true (WitnessOut),
     // wlt2 will have a 3000 Sats UTXO, which will be spent to transfer assets to wlt1 in the next step
-    let (consignment_1, tx) = wlt_1.transfer(invoice, Some(3000), Some(500), true, None);
+    let (consignment_1, tx, _) = wlt_1.transfer(invoice, Some(3000), Some(500), true, None);
 
     // Receiver accepts the transfer
     wlt_2.accept_transfer(&consignment_1, None).unwrap();
@@ -99,7 +99,7 @@ fn simple_transfer(wout: bool) {
         wlt_2.runtime().wallet.coins().collect::<Vec<_>>()
     );
     // Sats cost: 500 fee + 2000 sats(default) = 2500
-    let (consignment_2, tx) = wlt_2.transfer(invoice, None, Some(500), true, None);
+    let (consignment_2, tx, _) = wlt_2.transfer(invoice, None, Some(500), true, None);
     wlt_1.accept_transfer(&consignment_2, None).unwrap();
     wlt_2.mine_tx(&tx.txid(), false);
 
@@ -120,11 +120,6 @@ fn simple_transfer(wout: bool) {
 }
 
 #[test]
-// FIXME:
-// called `Result::unwrap()` on an `Err` value: Fulfill(StateInsufficient)
-//
-// RBF transfer fails in the second asset transfer,
-// Likely due to the inability to spend the same asset balance twice.
 fn rbf_transfer() {
     initialize();
 
@@ -146,8 +141,9 @@ fn rbf_transfer() {
     stop_mining();
     let initial_height = get_height();
 
-    // First transfer attempt - with lower fee
-    let (consignment_1, _) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
+    // First transfer attempt - with a lower fee
+    let (consignment_1, _tx, payment) =
+        wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
 
     // Receiver accepts the transfer
     wlt_2.accept_transfer(&consignment_1, None).unwrap();
@@ -156,8 +152,8 @@ fn rbf_transfer() {
     let mid_height = get_height();
     assert_eq!(initial_height, mid_height);
 
-    // Second transfer attempt - with higher fee for RBF
-    let (consignment_2, tx) = wlt_1.transfer(invoice, None, Some(1000), true, None);
+    // Second transfer attempt - with a higher fee for RBF
+    let (consignment_2, tx) = wlt_1.transfer_rbf(contract_id, payment, 1000, None);
 
     // Verify block height still hasn't changed
     let final_height = get_height();
@@ -614,7 +610,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     //     .collect::<Vec<_>>());
 
     // TODO: called `Result::unwrap()` on an `Err` value: Fulfill(StateInsufficient)
-    let (consignment, _) = wlt_1.transfer(invoice, None, Some(1000), true, None);
+    let (consignment, _, _) = wlt_1.transfer(invoice, None, Some(1000), true, None);
 
     wlt_2.accept_transfer(&consignment, None).unwrap();
 
@@ -665,7 +661,7 @@ fn accept_0conf() {
 
     let amt = 200;
     let invoice = wlt_2.invoice(contract_id, amt, true, Some(0), None);
-    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, None, true, None);
+    let (consignment, tx, _) = wlt_1.transfer(invoice.clone(), None, None, true, None);
     let txid = tx.txid();
 
     wlt_2.accept_transfer(&consignment, None).unwrap();
@@ -740,7 +736,7 @@ fn check_fungible_history() {
 
     // transfer
     let amt = 200;
-    let (_, tx) = wlt_1.send(&mut wlt_2, true, contract_id, amt, 1000, None, None, None);
+    let (_, tx, _) = wlt_1.send(&mut wlt_2, true, contract_id, amt, 1000, None, None, None);
     let _txid = tx.txid();
 
     // debug contract state
@@ -767,7 +763,7 @@ fn send_to_oneself() {
     // Transfer 200 to yourself
     let amt = 200;
     let invoice = wlt.invoice(contract_id, amt, true, Some(0), None);
-    let (consignment, tx) = wlt.transfer(invoice.clone(), None, None, true, None);
+    let (consignment, tx, _) = wlt.transfer(invoice.clone(), None, None, true, None);
     wlt.mine_tx(&tx.txid(), false);
     wlt.accept_transfer(&consignment, None).unwrap();
     wlt.sync();
@@ -931,7 +927,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             let amt_0 = 590;
             // Create blinded invoice with specific UTXO
             let invoice = wlt_2.invoice(contract_id, amt_0, false, Some(0), Some(utxo_wlt_2_1));
-            let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+            let (_, tx_0, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
             // dbg!(wlt_1
             //     .runtime()
             //     .state_own(Some(contract_id))
@@ -940,7 +936,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
 
             let amt_1 = 100;
             let invoice = wlt_1.invoice(contract_id, amt_1, false, Some(0), Some(utxo_wlt_1_1));
-            let (_, tx_1) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
+            let (_, tx_1, _) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
             // dbg!(wlt_1
             //     .runtime()
             //     .state_own(Some(contract_id))
@@ -949,37 +945,37 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
 
             let amt_2 = 80;
             let invoice = wlt_2.invoice(contract_id, amt_2, false, Some(0), Some(utxo_wlt_2_2));
-            let (_, tx_2) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+            let (_, tx_2, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
 
             vec![tx_0, tx_1, tx_2]
         }
         HistoryType::Branching => {
             let amt_0 = 600;
             let invoice = wlt_2.invoice(contract_id, amt_0, false, Some(0), Some(utxo_wlt_2_1));
-            let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+            let (_, tx_0, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
 
             let amt_1 = 200;
             let invoice = wlt_1.invoice(contract_id, amt_1, false, Some(0), Some(utxo_wlt_1_1));
-            let (_, tx_1) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
+            let (_, tx_1, _) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
 
             let amt_2 = amt_0 - amt_1 - 1;
             let invoice = wlt_1.invoice(contract_id, amt_2, false, Some(0), Some(utxo_wlt_1_2));
-            let (_, tx_2) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
+            let (_, tx_2, _) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
 
             vec![tx_0, tx_1, tx_2]
         }
         HistoryType::Merging => {
             let amt_0 = 400;
             let invoice = wlt_2.invoice(contract_id, amt_0, false, Some(0), Some(utxo_wlt_2_1));
-            let (_, tx_0) = wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
+            let (_, tx_0, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
 
             let amt_1 = 200;
             let invoice = wlt_2.invoice(contract_id, amt_1, false, Some(0), Some(utxo_wlt_2_2));
-            let (_, tx_1) = wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
+            let (_, tx_1, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, None, None, None);
 
             let amt_2 = amt_0 + amt_1 - 1;
             let invoice = wlt_1.invoice(contract_id, amt_2, false, Some(0), Some(utxo_wlt_1_1));
-            let (_, tx_2) = wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
+            let (_, tx_2, _) = wlt_2.send_to_invoice(&mut wlt_1, invoice, None, None, None);
 
             vec![tx_0, tx_1, tx_2]
         }
@@ -1286,7 +1282,7 @@ fn mainnet_wlt_receiving_test_asset() {
             .unwrap();
     let invoice = wlt_2.invoice(contract_id, 150, false, None, Some(utxo));
 
-    let (consignment, tx) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
+    let (consignment, tx, _) = wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
     wlt_1.mine_tx(&tx.txid(), false);
     match wlt_2.accept_transfer(&consignment, None) {
         Err(e) => {
@@ -1325,21 +1321,11 @@ fn invoice_reuse(#[case] transfer_type: TransferType) {
     wlt_1.send_to_invoice(&mut wlt_2, invoice.clone(), Some(500), None, None);
 
     // Second use same invoice
-    let (_, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(600), None, None);
-
-    // FIXME: There is a question here,
-    // should the two transfers of the same invoice be processed as one transfer by RBF,
-    // or should they correspond to two transfers?
+    let (_, _, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(600), None, None);
 
     // Check asset allocations
     wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![100, 200]);
     wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount, amount]);
-
-    // FIXME: The following code needs to be redesigned in RGB v0.12
-    // Note: In RGB v0.12, the type of consignment has been changed to PathBuf, no longer directly containing the bundles field
-    // This test needs to be redesigned in RGB v0.12
-
-    // The original test assertion: assert_eq!(consignment.bundles.len(), 1);
 }
 
 #[test]
@@ -1401,7 +1387,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     let invoice = wlt_2.invoice(contract_id, 100, false, None, Some(utxo));
 
     // Create transfer but do not broadcast its TX
-    let (consignment, _tx) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+    let (consignment, _tx, _) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
     wlt_2.accept_transfer(&consignment, None).unwrap();
 
     // The following three lines are debug code,
@@ -1414,7 +1400,7 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     dbg!(wlt_2.runtime().state_own(contract_id).owned);
 
     let invoice = wlt_3.invoice(contract_id, 50, true, None, None);
-    let (consignment, tx) = wlt_2.transfer(invoice, Some(2000), None, true, None);
+    let (consignment, tx, _) = wlt_2.transfer(invoice, Some(2000), None, true, None);
     wlt_2.mine_tx(&tx.txid(), false);
     wlt_2.sync();
     wlt_1.sync();
