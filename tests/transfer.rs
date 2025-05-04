@@ -552,18 +552,12 @@ fn collaborative_transfer() {
 }
 
 #[rstest]
+#[should_panic(expected = "unknown seal definition for cell address")]
 #[case(TransferType::Blinded)]
+#[should_panic(expected = "Fulfill(StateInsufficient)")]
 #[case(TransferType::Witness)]
 fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) {
     println!("transfer_type {transfer_type:?}");
-
-    // TODO: This test case aims to verify if asset transfers are handled correctly when using RBF (Replace-By-Fee) with the same invoice
-    // In RGB V0.11, there was an inflation attack vulnerability where using RBF with the same invoice would cause the receiver to record two receive states,
-    // while the sender only paid the assets once. This resulted in the total circulating assets exceeding the issued amount.
-    //
-    // In RGB V0.12, since it's not possible to use RBF with the same invoice, we cannot test for this inflation attack.
-    // NOTE: When paying the same invoice for the second time, the error `called `Result::unwrap()` on an `Err` value: Fulfill(StateInsufficient)` occurs
-    // Need to consult with Dr. Maxim on how to construct RBF asset transfer examples using the current API.
 
     initialize();
 
@@ -585,36 +579,18 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
         TransferType::Witness => true,
     };
     let invoice = wlt_2.invoice(contract_id, amount, wout, Some(0), None);
-    let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+    let (_, _tx, payment) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
 
-    // dbg!(wlt_1
-    //     .runtime()
-    //     .state_all(None)
-    //     .map(|(_, s)| { s.owned })
-    //     .collect::<Vec<_>>());
-    // dbg!(wlt_1
-    //     .runtime()
-    //     .state_own(None)
-    //     .map(|(_, s)| { s.owned })
-    //     .collect::<Vec<_>>());
-
-    // dbg!(wlt_2
-    //     .runtime()
-    //     .state_all(None)
-    //     .map(|(c, s)| { s.owned })
-    //     .collect::<Vec<_>>());
-    // dbg!(wlt_2
-    //     .runtime()
-    //     .state_own(None)
-    //     .map(|(c, s)| { s.owned })
-    //     .collect::<Vec<_>>());
-
-    // TODO: called `Result::unwrap()` on an `Err` value: Fulfill(StateInsufficient)
-    let (consignment, _, _) = wlt_1.transfer(invoice, None, Some(1000), true, None);
+    let (consignment, _) = wlt_1.transfer_rbf(contract_id, payment, 1000, None);
 
     wlt_2.accept_transfer(&consignment, None).unwrap();
 
-    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount]);
+    if transfer_type == TransferType::Blinded {
+        wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount]);
+    } else {
+        // Since the receiver state is not updated, it treats the witness transaction as not mined and thus has no state
+        wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+    }
 
     wlt_2.send(
         &mut wlt_1,
@@ -631,6 +607,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     wlt_1.send_contract("TestAsset", &mut wlt_3);
     wlt_3.reload_runtime();
 
+    // The receiver will fail to accept the consignment
     wlt_1.send(
         &mut wlt_3,
         wout,
