@@ -170,7 +170,7 @@ impl TestRuntime {
     ) -> ContractId {
         let params = CreateParams {
             codex_id: CodexId::from_str(
-                "qaeakTdk-FccgZC9-4yYpoHa-quPSbQL-XmyBxtn-2CpD~38#jackson-couple-oberon",
+                "C11V4boH-t0lNXdS-U6MDKet-us0NCCo-1cWX7xU-7ahdfqw#regard-genius-belgium",
             )
             .unwrap(),
             consensus: Consensus::Bitcoin,
@@ -179,18 +179,17 @@ impl TestRuntime {
             name: tn!(name),
             timestamp: None,
             global: vec![
-                // TODO: simplify API for named state creation
-                NamedState {
-                    name: vname!("name"),
-                    state: StateAtom {
-                        verified: svstr!(name),
-                        unverified: None,
-                    },
-                },
                 NamedState {
                     name: vname!("ticker"),
                     state: StateAtom {
                         verified: svstr!("NIA"),
+                        unverified: None,
+                    },
+                },
+                NamedState {
+                    name: vname!("name"),
+                    state: StateAtom {
+                        verified: svstr!(name),
                         unverified: None,
                     },
                 },
@@ -210,7 +209,7 @@ impl TestRuntime {
                 },
             ],
             owned: vec![NamedState {
-                name: vname!("owned"),
+                name: vname!("amount"),
                 state: Assignment {
                     seal: EitherSeal::Alt(outpoint),
                     data: svnum!(issued_supply),
@@ -228,7 +227,7 @@ impl TestRuntime {
     ) -> ContractId {
         let params = CreateParams {
             codex_id: CodexId::from_str(
-                "6bl9LdZ_-BU8Skh9-f~4UazR-TFwyotq-ac4yebi-zodXJnw#weather-motif-patriot",
+                "WAHKjUOZ-gjaVJj0-IeQ8OHE-1lysvcD-E~Y~gnx-ZwsOezQ#rapid-forever-nice",
             )
             .unwrap(),
             consensus: Consensus::Bitcoin,
@@ -237,19 +236,18 @@ impl TestRuntime {
             name: tn!(name),
             timestamp: None,
             global: vec![
-                // TODO: simplify API for named state creation
-                NamedState {
-                    name: vname!("name"),
-                    state: StateAtom {
-                        verified: svstr!(name),
-                        unverified: None,
-                    },
-                },
                 NamedState {
                     name: vname!("details"),
                     state: StateAtom {
                         verified: StrictVal::Unit,
                         unverified: Some(svstr!("Demo CFA asset")),
+                    },
+                },
+                NamedState {
+                    name: vname!("name"),
+                    state: StateAtom {
+                        verified: svstr!(name),
+                        unverified: None,
                     },
                 },
                 NamedState {
@@ -268,7 +266,7 @@ impl TestRuntime {
                 },
             ],
             owned: vec![NamedState {
-                name: vname!("owned"),
+                name: vname!("amount"),
                 state: Assignment {
                     seal: EitherSeal::Alt(outpoint),
                     data: svnum!(issued_supply),
@@ -286,7 +284,7 @@ impl TestRuntime {
         let total_supply: u64 = allocations.iter().map(|(_, amt)| amt).sum();
         let params = CreateParams {
             codex_id: CodexId::from_str(
-                "6bl9LdZ_-BU8Skh9-f~4UazR-TFwyotq-ac4yebi-zodXJnw#weather-motif-patriot",
+                "WAHKjUOZ-gjaVJj0-IeQ8OHE-1lysvcD-E~Y~gnx-ZwsOezQ#rapid-forever-nice",
             )
             .unwrap(),
             consensus: Consensus::Bitcoin,
@@ -296,17 +294,17 @@ impl TestRuntime {
             timestamp: None,
             global: vec![
                 NamedState {
-                    name: vname!("name"),
-                    state: StateAtom {
-                        verified: svstr!(name),
-                        unverified: None,
-                    },
-                },
-                NamedState {
                     name: vname!("details"),
                     state: StateAtom {
                         verified: StrictVal::Unit,
                         unverified: Some(svstr!("Demo CFA asset")),
+                    },
+                },
+                NamedState {
+                    name: vname!("name"),
+                    state: StateAtom {
+                        verified: svstr!(name),
+                        unverified: None,
                     },
                 },
                 NamedState {
@@ -327,7 +325,7 @@ impl TestRuntime {
             owned: allocations
                 .into_iter()
                 .map(|(outpoint, amount)| NamedState {
-                    name: vname!("owned"),
+                    name: vname!("amount"),
                     state: Assignment {
                         seal: EitherSeal::Alt(outpoint),
                         data: svnum!(amount),
@@ -346,7 +344,7 @@ impl TestRuntime {
         let total_supply: u64 = allocations.iter().map(|(_, amt)| amt).sum();
         let params = CreateParams {
             codex_id: CodexId::from_str(
-                "qaeakTdk-FccgZC9-4yYpoHa-quPSbQL-XmyBxtn-2CpD~38#jackson-couple-oberon",
+                "C11V4boH-t0lNXdS-U6MDKet-us0NCCo-1cWX7xU-7ahdfqw#regard-genius-belgium",
             )
             .unwrap(),
             consensus: Consensus::Bitcoin,
@@ -356,16 +354,16 @@ impl TestRuntime {
             timestamp: None,
             global: vec![
                 NamedState {
-                    name: vname!("name"),
+                    name: vname!("ticker"),
                     state: StateAtom {
-                        verified: svstr!(name),
+                        verified: svstr!("NIA"),
                         unverified: None,
                     },
                 },
                 NamedState {
-                    name: vname!("ticker"),
+                    name: vname!("name"),
                     state: StateAtom {
-                        verified: svstr!("NIA"),
+                        verified: svstr!(name),
                         unverified: None,
                     },
                 },
@@ -387,7 +385,7 @@ impl TestRuntime {
             owned: allocations
                 .into_iter()
                 .map(|(outpoint, amount)| NamedState {
-                    name: vname!("owned"),
+                    name: vname!("amount"),
                     state: Assignment {
                         seal: EitherSeal::Alt(outpoint),
                         data: svnum!(amount),
@@ -525,7 +523,7 @@ impl TestRuntime {
                 let state = self.rt.state_own(contract_id);
                 let mut actual_fungible_allocations = state
                     .owned
-                    .get("owned")
+                    .get("amount")
                     .unwrap()
                     .iter()
                     .map(|(_, owned)| owned.assignment.data.unwrap_num().unwrap_uint::<u64>())
