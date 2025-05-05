@@ -785,7 +785,7 @@ impl TestWallet {
 
         self.runtime
             .contracts
-            .import(schema)
+            .import_issuer(schema)
             .map_err(|e| format!("import error: {}", e.to_string()))?;
         println!("success");
 
