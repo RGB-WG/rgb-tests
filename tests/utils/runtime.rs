@@ -111,9 +111,9 @@ impl TestRuntime {
             .expect("Invalid contracts directory");
         let mut contracts = Contracts::load(stockpile);
         let issuer = Schema::load("tests/fixtures/RGB20-NFA.issuer").unwrap();
-        contracts.import(issuer).unwrap();
+        contracts.import_issuer(issuer).unwrap();
         let issuer = Schema::load("tests/fixtures/RGB25-FUA.issuer").unwrap();
-        contracts.import(issuer).unwrap();
+        contracts.import_issuer(issuer).unwrap();
 
         let provider = FsTextStore::new(wallet_dir).expect("Broken directory structure");
         let noise = xpub.xpub().chain_code().to_byte_array();

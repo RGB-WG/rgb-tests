@@ -1,6 +1,7 @@
 mod utils;
 
 use rstest::rstest;
+use std::fs;
 use std::path::PathBuf;
 
 use crate::utils::chain::initialize;
@@ -140,6 +141,11 @@ fn transfer_loop(
     wlt_1.check_allocations(contract_id_1, asset_schema_1, vec![issued_supply_1], true); // A contract 1, [999]
     wlt_1.check_allocations(contract_id_2, asset_schema_2, vec![issued_supply_2], true); // A contract 2, [666]
 
+    let articles1 = wlt_1.contracts.contract_articles(contract_id_1);
+    let articles2 = wlt_1.contracts.contract_articles(contract_id_2);
+    wlt_2.contracts.import_articles(articles1).unwrap();
+    wlt_2.contracts.import_articles(articles2).unwrap();
+
     println!("-- DEBUG: wlt_1 spends asset 1, moving the other with a blank transition");
     let amount_1 = if asset_schema_1 == AssetSchema::Uda {
         1
@@ -148,28 +154,6 @@ fn transfer_loop(
     };
     println!("send 1");
 
-    let path1 = PathBuf::from("tests")
-        .join("test-data")
-        .with_file_name("contract1.rgb");
-    let path2 = PathBuf::from("tests")
-        .join("test-data")
-        .with_file_name("contract2.rgb");
-    wlt_1
-        .contracts
-        .consign_to_file(&path1, contract_id_1, &[])
-        .unwrap();
-    wlt_1
-        .contracts
-        .consign_to_file(&path2, contract_id_2, &[])
-        .unwrap();
-    wlt_2
-        .rt
-        .consume_from_file(path1)
-        .unwrap_or_else(|e| panic!("{e}"));
-    wlt_2
-        .rt
-        .consume_from_file(path2)
-        .unwrap_or_else(|e| panic!("{e}"));
     wlt_2.get_utxo(None); // make sure wlt_2 has some coins so it can invoice
     wlt_1.send(&mut wlt_2, wout, contract_id_1, amount_1, sats, None);
     println!("-- DEBUG: wlt_1 checks allocations after spending asset 1");
