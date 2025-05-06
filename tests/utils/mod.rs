@@ -75,8 +75,8 @@ pub use ifaces::{
 pub use indexmap::IndexMap;
 pub use once_cell::sync::Lazy;
 pub use psbt::{
-    Beneficiary as PsbtBeneficiary, Payment, Prevout, Psbt, PsbtConstructor, PsbtMeta, PsbtVer,
-    TxParams,
+    Beneficiary as PsbtBeneficiary, Payment as PaymentAmount, Prevout, Psbt, PsbtConstructor,
+    PsbtMeta, PsbtVer, TxParams,
 };
 pub use rand::RngCore;
 pub use rgb::{
