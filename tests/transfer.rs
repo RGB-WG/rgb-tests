@@ -1305,6 +1305,67 @@ fn invoice_reuse(#[case] transfer_type: TransferType) {
     wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount, amount]);
 }
 
+#[rstest]
+#[case(TransferType::Blinded)]
+#[case(TransferType::Witness)]
+fn pay_one_invoice_twice(#[case] transfer_type: TransferType) {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let issue_supply = 2000;
+    let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", issue_supply);
+    let outpoint = wlt_1.get_utxo(None);
+    params.add_allocation(outpoint, issue_supply);
+
+    let contract_id = wlt_1.issue_nia_with_params(params);
+
+    let amount = 100;
+    let wout = match transfer_type {
+        TransferType::Blinded => false,
+        TransferType::Witness => true,
+    };
+
+    wlt_1.send_contract("TestAsset", &mut wlt_2);
+    wlt_2.reload_runtime();
+    let invoice = wlt_2.invoice(contract_id, amount, wout, None, None);
+
+    wlt_1.sync();
+
+    let (consignment, tx, _payment) = wlt_1.transfer(invoice.clone(), None, Some(1000), true, None);
+    let (consignment2, tx2, _paytment2) = wlt_1.transfer(invoice, None, Some(1000), true, None);
+
+    wlt_1.sync();
+
+    wlt_1.mine_tx(&tx.txid(), false);
+    let _ = wlt_2.accept_transfer(&consignment, None);
+    wlt_1.sync();
+
+    wlt_1.check_allocations(
+        contract_id,
+        AssetSchema::RGB20,
+        vec![issue_supply - amount - amount],
+    );
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount]);
+
+    println!("first transfer complete. sending second one");
+
+    wlt_1.sync();
+
+    wlt_1.mine_tx(&tx2.txid(), false);
+    wlt_2.sync();
+    let _ = wlt_2.accept_transfer(&consignment2, None);
+    wlt_1.sync();
+
+    wlt_1.check_allocations(
+        contract_id,
+        AssetSchema::RGB20,
+        vec![issue_supply - amount - amount],
+    );
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount, amount]);
+}
+
 #[test]
 #[ignore = "fix needed"] // https://github.com/BP-WG/bp-wallet/issues/70
 #[serial]
