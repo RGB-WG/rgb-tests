@@ -1,4 +1,5 @@
 use super::*;
+use bpwallet::TxStatus;
 
 static INIT: Once = Once::new();
 
@@ -283,6 +284,42 @@ pub fn get_height_custom(instance: u8) -> u32 {
     _bitcoin_cli_cmd(instance, vec!["getblockcount"])
         .parse::<u32>()
         .expect("could not parse blockcount")
+}
+
+pub fn get_tx_height(txid: Txid, instance: u8) -> Option<u32> {
+    let height = match INDEXER.get().unwrap() {
+        Indexer::Electrum => {
+            let status = ElectrumClient::new(&indexer_url(instance, Network::Regtest))
+                .unwrap()
+                .status(txid)
+                .unwrap();
+            match status {
+                TxStatus::Mined(block_height) => Some(block_height.height.into()),
+                _ => None,
+            }
+        }
+        Indexer::Esplora => {
+            EsploraClient::new_esplora(&indexer_url(instance, Network::Regtest))
+                .unwrap()
+                .tx_status(&txid)
+                .unwrap()
+                .block_height
+        }
+    };
+    height
+}
+
+pub fn dbg_tx_status(txid: Txid, instance: u8){
+    match INDEXER.get().unwrap() {
+        Indexer::Esplora => {
+            let status = EsploraClient::new_esplora(&indexer_url(instance, Network::Regtest))
+                .unwrap()
+                .tx_status(&txid)
+                .unwrap();
+            dbg!(txid, &status);
+        }
+        _ => unreachable!(),
+    }
 }
 
 pub fn indexer_url(instance: u8, network: Network) -> String {

@@ -27,6 +27,7 @@ use rstest_reuse::{self, *};
 use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::str::FromStr;
+use utils::chain::{dbg_tx_status, get_tx_height};
 use utils::helper::wallet::{
     broadcast_tx_and_mine, get_mainnet_wallet, get_wallet, get_wallet_custom, AssetSchema,
 };
@@ -818,18 +819,14 @@ fn blank_tapret_opret(
 }
 
 #[rstest]
-// Unable to accept a consignment: unknown seal definition for cell address qMWtQjXCWjJAXdrg7npyI2KZz3vXNVyZhoomqF7v8z4:0.
-#[ignore = "fix needed"]
 #[case(HistoryType::Linear, ReorgType::ChangeOrder)]
 // TODO: This test case does not meet expectations, after (transferring 600 assets to wallet 2) transaction 0 is reverted, wlt_1's expected allocation is 600
 // thread 'reorg_history::case_2' panicked at tests/utils/helpers.rs:909:17:
 // assertion `left == right` failed
 //   left: [10, 20]
 //  right: [600]
-#[ignore = "fix needed"]
+// #[ignore = "fix needed"]
 #[case(HistoryType::Linear, ReorgType::Revert)]
-// Unable to accept a consignment: unknown seal definition for cell address c6z0I0hYqaO6dV9qOjrP1lK4PJprjVAaAOdGCoqAdOY:0.
-#[ignore = "fix needed"]
 #[case(HistoryType::Branching, ReorgType::ChangeOrder)]
 // #[ignore = "fix needed"]
 // TODO: This test case does not meet expectations, after (transferring 600 assets to wallet 2) transaction 0 is reverted, wlt_1's expected allocation is 600
@@ -837,10 +834,8 @@ fn blank_tapret_opret(
 // assertion `left == right` failed
 //   left: [200, 399]
 //  right: [600]
-#[ignore = "fix needed"]
+// #[ignore = "fix needed"]
 #[case(HistoryType::Branching, ReorgType::Revert)]
-// Unable to accept a consignment: unknown seal definition for cell address FrGmm~6ro7YOlE9bEuyCLcLt9AlX2uZOZRmjHEq6yyA:0.
-#[ignore = "fix needed"]
 #[case(HistoryType::Merging, ReorgType::ChangeOrder)]
 // #[ignore = "fix needed"]
 // TODO: This test case does not meet expectations, after (transferring 400 assets to wallet 2) transaction 0 is reverted, wlt_1's expected allocation is 400
@@ -848,7 +843,7 @@ fn blank_tapret_opret(
 // assertion `left == right` failed
 //   left: [599]
 //  right: [400]
-#[ignore = "fix needed"]
+// #[ignore = "fix needed"]
 #[case(HistoryType::Merging, ReorgType::Revert)]
 #[serial]
 fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgType) {
@@ -859,6 +854,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
 
     let mut wlt_1 = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
     let mut wlt_2 = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
+    let mut wlt_3 = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
 
     let issued_supply = 600;
 
@@ -882,6 +878,8 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
 
     wlt_1.send_contract("TestAsset", &mut wlt_2);
     wlt_2.reload_runtime();
+    wlt_1.send_contract("TestAsset", &mut wlt_3);
+    wlt_3.reload_runtime();
 
     // Generate UTXOs before asset transfer to avoid mining blocks during transfer, affecting the test
     let utxo_wlt_1_1 = wlt_1.get_utxo(None);
@@ -905,20 +903,10 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             // Create blinded invoice with specific UTXO
             let invoice = wlt_2.invoice(contract_id, amt_0, false, Some(0), Some(utxo_wlt_2_1));
             let (_, tx_0, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
-            // dbg!(wlt_1
-            //     .runtime()
-            //     .state_own(Some(contract_id))
-            //     .map(|s| { s.1.owned })
-            //     .collect::<Vec<_>>());
 
             let amt_1 = 100;
             let invoice = wlt_1.invoice(contract_id, amt_1, false, Some(0), Some(utxo_wlt_1_1));
             let (_, tx_1, _) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
-            // dbg!(wlt_1
-            //     .runtime()
-            //     .state_own(Some(contract_id))
-            //     .map(|s| { s.1.owned })
-            //     .collect::<Vec<_>>());
 
             let amt_2 = 80;
             let invoice = wlt_2.invoice(contract_id, amt_2, false, Some(0), Some(utxo_wlt_2_2));
@@ -958,16 +946,18 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
         }
     };
 
-    // dbg!(wlt_1
-    //     .runtime()
-    //     .state_own(Some(contract_id))
-    //     .map(|s| { s.1.owned })
-    //     .collect::<Vec<_>>());
-    // dbg!(wlt_2
-    //     .runtime()
-    //     .state_own(Some(contract_id))
-    //     .map(|s| { s.1.owned })
-    //     .collect::<Vec<_>>());
+    dbg!(
+        "before switch",
+        wlt_1.runtime().state_own(contract_id).owned
+    );
+    dbg!(
+        "before switch",
+        wlt_2.runtime().state_own(contract_id).owned
+    );
+
+    let tx_0_instance_2_height = get_tx_height(txs[0].txid(), INSTANCE_2);
+    let tx_1_instance_2_height = get_tx_height(txs[1].txid(), INSTANCE_2);
+    let tx_2_instance_2_height = get_tx_height(txs[2].txid(), INSTANCE_2);
 
     // Test different reorg scenarios
     match (history_type, reorg_type) {
@@ -998,6 +988,9 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             wlt_1.switch_to_instance(INSTANCE_3);
             wlt_2.switch_to_instance(INSTANCE_3);
             let wlt_1_alloc_1 = 600;
+            dbg!(dbg_tx_status(txs[0].txid(), INSTANCE_3));
+            dbg!(wlt_1.runtime().state_own(contract_id).owned);
+            dbg!(wlt_2.runtime().state_own(contract_id).owned);
             wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_alloc_1]);
             wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
         }
@@ -1040,12 +1033,34 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
         }
     }
 
+    let tx_0_instance_3_height = get_tx_height(txs[0].txid(), INSTANCE_3);
+    let tx_1_instance_3_height = get_tx_height(txs[1].txid(), INSTANCE_3);
+    let tx_2_instance_3_height = get_tx_height(txs[2].txid(), INSTANCE_3);
+
+    dbg!(
+        &txs[0].txid(),
+        tx_0_instance_2_height,
+        tx_0_instance_3_height
+    );
+    dbg!(
+        &txs[1].txid(),
+        tx_1_instance_2_height,
+        tx_1_instance_3_height
+    );
+    dbg!(
+        &txs[2].txid(),
+        tx_2_instance_2_height,
+        tx_2_instance_3_height
+    );
     mine_custom(false, INSTANCE_3, 3);
     connect_reorg_nodes();
+    dbg!("final");
     wlt_1.switch_to_instance(INSTANCE_2);
     wlt_2.switch_to_instance(INSTANCE_2);
 
-    let mut wlt_3 = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
+    dbg!(wlt_1.runtime().state_own(contract_id).owned);
+    dbg!(wlt_2.runtime().state_own(contract_id).owned);
+
 
     // Verify final state based on history type
     match history_type {
@@ -1068,8 +1083,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             );
 
             // Test spending the final allocations
-            wlt_1.send_contract("TestAsset", &mut wlt_3);
-            wlt_3.reload_runtime();
             wlt_1.send(
                 &mut wlt_3,
                 false,
@@ -1106,9 +1119,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             );
             wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_2_alloc_1]);
 
-            // Test spending the final allocations
-            wlt_1.send_contract("TestAsset", &mut wlt_3);
-            wlt_3.reload_runtime();
             wlt_1.send(
                 &mut wlt_3,
                 false,
@@ -1143,9 +1153,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_alloc_1]);
             wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_2_alloc_1]);
 
-            // Test spending the final allocations
-            wlt_1.send_contract("TestAsset", &mut wlt_3);
-            wlt_3.reload_runtime();
             wlt_1.send(
                 &mut wlt_3,
                 false,
