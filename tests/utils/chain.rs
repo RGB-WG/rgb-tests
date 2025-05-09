@@ -309,7 +309,7 @@ pub fn get_tx_height(txid: Txid, instance: u8) -> Option<u32> {
     height
 }
 
-pub fn dbg_tx_status(txid: Txid, instance: u8){
+pub fn dbg_tx_status(txid: Txid, instance: u8) {
     match INDEXER.get().unwrap() {
         Indexer::Esplora => {
             let status = EsploraClient::new_esplora(&indexer_url(instance, Network::Regtest))

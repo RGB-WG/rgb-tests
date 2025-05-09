@@ -522,14 +522,55 @@ fn transfer_loop(
     );
 }
 
-// Test case pending new rollback procedure API
-// Will be updated once the high-level API for rollback handling is available
 #[rstest]
-#[ignore = "Awaiting new rollback procedure API in RGB v0.12"]
 #[case(TransferType::Blinded)]
-#[ignore = "Awaiting new rollback procedure API in RGB v0.12"]
 #[case(TransferType::Witness)]
-fn same_transfer_twice_update_witnesses(#[case] _transfer_type: TransferType) {}
+fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
+    println!("transfer_type {transfer_type:?}");
+
+    initialize();
+
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    let issue_supply = 2000;
+    // Create and issue NIA asset
+    let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", issue_supply);
+    let outpoint = wlt_1.get_utxo(None);
+    params.add_allocation(outpoint, issue_supply);
+    let contract_id = wlt_1.issue_nia_with_params(params);
+    wlt_1.send_contract("TestAsset", &mut wlt_2);
+    wlt_2.reload_runtime();
+
+    let amount = 100;
+    let wout = match transfer_type {
+        TransferType::Blinded => false,
+        TransferType::Witness => true,
+    };
+
+    let invoice = wlt_2.invoice(contract_id, amount, wout, Some(0), None);
+    let _ = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+
+    wlt_1.sync();
+
+    let (consignment, tx, _) = wlt_1.transfer(invoice, None, Some(1000), true, None);
+    wlt_1.mine_tx(&tx.txid(), false);
+    wlt_2.accept_transfer(&consignment, None).unwrap();
+    wlt_1.sync();
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![issue_supply - amount]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![amount]);
+
+    wlt_2.send(
+        &mut wlt_1,
+        wout,
+        contract_id,
+        amount,
+        1000,
+        None,
+        None,
+        None,
+    );
+}
 
 // Complex test cases - Implementation deferred to final phase
 // These test cases will be implemented last, after evaluating:
@@ -825,25 +866,20 @@ fn blank_tapret_opret(
 // assertion `left == right` failed
 //   left: [10, 20]
 //  right: [600]
-// #[ignore = "fix needed"]
 #[case(HistoryType::Linear, ReorgType::Revert)]
 #[case(HistoryType::Branching, ReorgType::ChangeOrder)]
-// #[ignore = "fix needed"]
 // TODO: This test case does not meet expectations, after (transferring 600 assets to wallet 2) transaction 0 is reverted, wlt_1's expected allocation is 600
 // thread 'reorg_history::case_4' panicked at tests/utils/helpers.rs:909:17:
 // assertion `left == right` failed
 //   left: [200, 399]
 //  right: [600]
-// #[ignore = "fix needed"]
 #[case(HistoryType::Branching, ReorgType::Revert)]
 #[case(HistoryType::Merging, ReorgType::ChangeOrder)]
-// #[ignore = "fix needed"]
 // TODO: This test case does not meet expectations, after (transferring 400 assets to wallet 2) transaction 0 is reverted, wlt_1's expected allocation is 400
 // thread 'reorg_history::case_6' panicked at tests/utils/helpers.rs:909:17:
 // assertion `left == right` failed
 //   left: [599]
 //  right: [400]
-// #[ignore = "fix needed"]
 #[case(HistoryType::Merging, ReorgType::Revert)]
 #[serial]
 fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgType) {
@@ -1061,7 +1097,6 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
     dbg!(wlt_1.runtime().state_own(contract_id).owned);
     dbg!(wlt_2.runtime().state_own(contract_id).owned);
 
-
     // Verify final state based on history type
     match history_type {
         HistoryType::Linear => {
@@ -1226,6 +1261,13 @@ fn revert_genesis(#[case] with_transfers: bool) {
         );
         wlt.check_allocations(contract_id, AssetSchema::RGB20, vec![issued_supply - amt]);
     }
+
+    mine_custom(false, INSTANCE_2, 1);
+    wlt.sync();
+    // TODO:
+    let state = wlt.runtime().state_own(contract_id).owned;
+    dbg!(state);
+    panic!();
 
     // TODO: The following code uses APIs that have been removed in RGB v0.12
     // Need to implement new rollback procedure once the API is available
