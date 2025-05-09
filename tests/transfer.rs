@@ -23,6 +23,7 @@
 
 pub mod utils;
 
+use rgb::WitnessStatus;
 use rstest_reuse::{self, *};
 use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -861,25 +862,13 @@ fn blank_tapret_opret(
 
 #[rstest]
 #[case(HistoryType::Linear, ReorgType::ChangeOrder)]
-// TODO: This test case does not meet expectations, after (transferring 600 assets to wallet 2) transaction 0 is reverted, wlt_1's expected allocation is 600
-// thread 'reorg_history::case_2' panicked at tests/utils/helpers.rs:909:17:
-// assertion `left == right` failed
-//   left: [10, 20]
-//  right: [600]
+// FIXME: Hope to receive solutions or suggestions from the doctor
 #[case(HistoryType::Linear, ReorgType::Revert)]
 #[case(HistoryType::Branching, ReorgType::ChangeOrder)]
-// TODO: This test case does not meet expectations, after (transferring 600 assets to wallet 2) transaction 0 is reverted, wlt_1's expected allocation is 600
-// thread 'reorg_history::case_4' panicked at tests/utils/helpers.rs:909:17:
-// assertion `left == right` failed
-//   left: [200, 399]
-//  right: [600]
+// FIXME: Hope to receive solutions or suggestions from the doctor
 #[case(HistoryType::Branching, ReorgType::Revert)]
 #[case(HistoryType::Merging, ReorgType::ChangeOrder)]
-// TODO: This test case does not meet expectations, after (transferring 400 assets to wallet 2) transaction 0 is reverted, wlt_1's expected allocation is 400
-// thread 'reorg_history::case_6' panicked at tests/utils/helpers.rs:909:17:
-// assertion `left == right` failed
-//   left: [599]
-//  right: [400]
+// FIXME: Hope to receive solutions or suggestions from the doctor
 #[case(HistoryType::Merging, ReorgType::Revert)]
 #[serial]
 fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgType) {
@@ -1219,20 +1208,15 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
     }
 }
 
-// TODO: Awaiting new rollback procedure API in RGB v0.12
-#[rstest]
-#[case(false)]
-#[case(true)]
-#[serial]
-fn revert_genesis(#[case] with_transfers: bool) {
-    println!("with_transfers {with_transfers}");
-
+#[test]
+fn revert_transfer_state() {
     initialize();
     // connecting before disconnecting since disconnect is not idempotent
     connect_reorg_nodes();
     disconnect_reorg_nodes();
 
     let mut wlt = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
+    let mut recv_wlt = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
 
     let issued_supply = 600;
     let utxo = wlt.get_utxo(None);
@@ -1241,49 +1225,47 @@ fn revert_genesis(#[case] with_transfers: bool) {
     let mut params = NIAIssueParams::new("TestAsset", "TEST", "centiMilli", issued_supply);
     params.add_allocation(utxo, issued_supply);
     let contract_id = wlt.issue_nia_with_params(params);
+    wlt.send_contract("TestAsset", &mut recv_wlt);
+    recv_wlt.reload_runtime();
 
     wlt.check_allocations(contract_id, AssetSchema::RGB20, vec![issued_supply]);
 
-    if with_transfers {
-        let mut recv_wlt = get_wallet_custom(&DescriptorType::Wpkh, INSTANCE_2);
-        let amt = 200;
-        wlt.send_contract("TestAsset", &mut recv_wlt);
-        recv_wlt.reload_runtime();
-        wlt.send(
-            &mut recv_wlt,
-            false,
-            contract_id,
-            amt,
-            1000,
-            None,
-            None,
-            None,
-        );
-        wlt.check_allocations(contract_id, AssetSchema::RGB20, vec![issued_supply - amt]);
-    }
+    let amt = 200;
+
+    wlt.send(
+        &mut recv_wlt,
+        false,
+        contract_id,
+        amt,
+        1000,
+        None,
+        None,
+        None,
+    );
+    wlt.check_allocations(contract_id, AssetSchema::RGB20, vec![issued_supply - amt]);
 
     mine_custom(false, INSTANCE_2, 1);
     wlt.sync();
-    // TODO:
-    let state = wlt.runtime().state_own(contract_id).owned;
-    dbg!(state);
-    panic!();
+    recv_wlt.sync();
 
-    // TODO: The following code uses APIs that have been removed in RGB v0.12
-    // Need to implement new rollback procedure once the API is available
-    //
-    // assert!(matches!(
-    //     wlt.get_witness_ord(&utxo.txid),
-    //     WitnessOrd::Mined(_)
-    // ));
-    // wlt.switch_to_instance(INSTANCE_3);
-    // assert_eq!(wlt.get_witness_ord(&utxo.txid), WitnessOrd::Archived);
-    //
-    // wlt.check_allocations(
-    //     contract_id,
-    //     AssetSchema::RGB20,
-    //     vec![],
-    // );
+    let state = recv_wlt.runtime().state_own(contract_id).owned;
+    let witness_status = state
+        .values()
+        .next()
+        .unwrap()
+        .values()
+        .next()
+        .unwrap()
+        .status;
+    dbg!(state, witness_status);
+    assert!(matches!(witness_status, WitnessStatus::Mined(_)));
+
+    recv_wlt.switch_to_instance(INSTANCE_3);
+    let state = recv_wlt.runtime().state_own(contract_id).owned;
+    let archived = state.values().next().unwrap().is_empty();
+    dbg!(state, archived);
+    assert!(archived);
+    recv_wlt.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
 }
 
 #[test]
