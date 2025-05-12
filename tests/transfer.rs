@@ -28,7 +28,7 @@ use rstest_reuse::{self, *};
 use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::str::FromStr;
-use utils::chain::{dbg_tx_status, get_tx_height};
+use utils::chain::{tx_status, get_tx_height};
 use utils::helper::wallet::{
     broadcast_tx_and_mine, get_mainnet_wallet, get_wallet, get_wallet_custom, AssetSchema,
 };
@@ -146,6 +146,8 @@ fn rbf_transfer() {
     // First transfer attempt - with a lower fee
     let (consignment_1, _tx, payment) =
         wlt_1.transfer(invoice.clone(), None, Some(500), true, None);
+    let first_txid = _tx.txid();
+    dbg!(first_txid, tx_status(first_txid, wlt_1.instance));
 
     // Receiver accepts the transfer
     wlt_2.accept_transfer(&consignment_1, None).unwrap();
@@ -156,13 +158,15 @@ fn rbf_transfer() {
 
     // Second transfer attempt - with a higher fee for RBF
     let (consignment_2, tx) = wlt_1.transfer_rbf(contract_id, payment, 1000, None);
-
+    let second_txid = tx.txid();
     // Verify block height still hasn't changed
     let final_height = get_height();
     assert_eq!(initial_height, final_height);
 
     // Broadcast and confirm transaction
     wlt_1.mine_tx(&tx.txid(), true);
+    dbg!(first_txid, tx_status(first_txid, wlt_1.instance));
+    dbg!(second_txid, tx_status(second_txid, wlt_1.instance));
 
     // Receiver accepts final transfer
     wlt_2.accept_transfer(&consignment_2, None).unwrap();
@@ -1013,7 +1017,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             wlt_1.switch_to_instance(INSTANCE_3);
             wlt_2.switch_to_instance(INSTANCE_3);
             let wlt_1_alloc_1 = 600;
-            dbg!(dbg_tx_status(txs[0].txid(), INSTANCE_3));
+            dbg!(tx_status(txs[0].txid(), INSTANCE_3));
             dbg!(wlt_1.runtime().state_own(contract_id).owned);
             dbg!(wlt_2.runtime().state_own(contract_id).owned);
             wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_alloc_1]);

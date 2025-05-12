@@ -33,7 +33,7 @@
 	url = https://github.com/RGB-WG/rgb
 [submodule "bp-wallet"]
 	path = bp-wallet
-	url = https://github.com/BP-WG/bp-wallet
+	url = https://github.com/BP-WG/bp-wallet.git
 [submodule "amplify-num"]
 	path = amplify-num
 	url = https://github.com/rust-amplify/amplify-num.git
@@ -60,7 +60,7 @@
 	url = https://github.com/AluVM/ultrasonic
 [submodule "sonic"]
 	path = sonic
-	url = https://github.com/AluVM/sonic
+	url = https://github.com/AluVM/sonic.git
 [submodule "rgb-interfaces"]
 	path = rgb-interfaces
 	url = https://github.com/RGB-WG/rgb-interfaces.git
