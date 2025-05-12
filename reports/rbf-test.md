@@ -46,6 +46,9 @@ This test focuses on the following process:
 - **Internal State Complexity**  
   The current internal state management is complex, so we are cautious about making changes to the RBF logic and expect a fix from the Doctor.
 
+- **Why the bp-wallet fix affects the RBF test:**  
+  Previously, the rbf_transfer test could pass because of a bug in esplora: for non-existent transactions, it would still return `TxStatus::Mempool`, allowing the validation to succeed. After the bp-wallet fix, this behavior was corrected, which exposed the underlying issue in consignment serialization.
+
 ### 2.3 Debug Log Excerpts
 
 - The initial transfer's witness transaction is in the mempool, and consignment serialization is correct.
