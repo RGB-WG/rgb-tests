@@ -660,14 +660,22 @@ impl TestWallet {
         let pay_start = Instant::now();
         let pay_duration = pay_start.elapsed();
 
-        let psbt = self.runtime.rbf(&payment, fee).unwrap();
+        // broadcast the transaction immediately after rbf execution,
+        // Wait for the old transaction to be archived, and then actively sync the wallet
+        let mut psbt = self.runtime.rbf(&payment, fee).unwrap();
+
+        let tx = self.sign_finalize_extract(&mut psbt);
+
+        self.broadcast_tx(&tx);
+        std::thread::sleep(Duration::from_secs(10));
+        self.sync();
 
         let (consignment, tx) = self.consign(
             contract_id,
             psbt,
             &payment.terminals,
             pay_duration,
-            true,
+            false,
             report,
         );
         (consignment, tx)
