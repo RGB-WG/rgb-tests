@@ -295,18 +295,14 @@ pub fn get_tx_height(txid: Txid, instance: u8) -> Option<u32> {
 
 pub fn tx_status(txid: Txid, instance: u8) -> TxStatus {
     match INDEXER.get().unwrap() {
-        Indexer::Esplora => {
-            EsploraClient::new_esplora(&indexer_url(instance, Network::Regtest))
-                .unwrap()
-                .status(txid)
-                .unwrap()
-        }
-        Indexer::Electrum => {
-            ElectrumClient::new(&indexer_url(instance, Network::Regtest))
-                .unwrap()
-                .status(txid)
-                .unwrap()
-        }
+        Indexer::Esplora => EsploraClient::new_esplora(&indexer_url(instance, Network::Regtest))
+            .unwrap()
+            .status(txid)
+            .unwrap(),
+        Indexer::Electrum => ElectrumClient::new(&indexer_url(instance, Network::Regtest))
+            .unwrap()
+            .status(txid)
+            .unwrap(),
     }
 }
 

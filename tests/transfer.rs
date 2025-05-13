@@ -28,7 +28,7 @@ use rstest_reuse::{self, *};
 use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::str::FromStr;
-use utils::chain::{tx_status, get_tx_height};
+use utils::chain::{get_tx_height, tx_status};
 use utils::helper::wallet::{
     broadcast_tx_and_mine, get_mainnet_wallet, get_wallet, get_wallet_custom, AssetSchema,
 };
@@ -599,7 +599,7 @@ fn collaborative_transfer() {
 }
 
 #[rstest]
-#[should_panic(expected = "unknown seal definition for cell address")]
+#[should_panic(expected = "Fulfill(StateInsufficient)")]
 #[case(TransferType::Blinded)]
 #[should_panic(expected = "Fulfill(StateInsufficient)")]
 #[case(TransferType::Witness)]

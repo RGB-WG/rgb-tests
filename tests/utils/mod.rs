@@ -69,8 +69,8 @@ pub use descriptors::Wpkh;
 pub use electrum::{Client as ElectrumClient, ElectrumApi, Param};
 pub use file_format::FileFormat;
 pub use ifaces::{
-    AssetName, Attachment, Details, EmbeddedMedia, MediaType, NftSpec, ProofOfReserves, Ticker,
-    TokenIndex,Nft
+    AssetName, Attachment, Details, EmbeddedMedia, MediaType, Nft, NftSpec, ProofOfReserves,
+    Ticker, TokenIndex,
 };
 pub use indexmap::IndexMap;
 pub use once_cell::sync::Lazy;

@@ -1259,9 +1259,18 @@ impl TestWallet {
 
                 let nft = &params.initial_allocation.as_ref().unwrap().1;
                 let nft_data = StrictVal::Struct(IndexMap::from([
-                    (FieldName::from_str("tokenIndex").unwrap(), StrictVal::Number(StrictNum::from(nft.token_index.into_inner()))),
-                    (FieldName::from_str("fraction").unwrap(), StrictVal::Number(StrictNum::from(nft.fraction.into_inner()))),
-                    (FieldName::from_str("align").unwrap(), StrictVal::Bytes(Blob(vec![0; 26]))),
+                    (
+                        FieldName::from_str("tokenIndex").unwrap(),
+                        StrictVal::Number(StrictNum::from(nft.token_index.into_inner())),
+                    ),
+                    (
+                        FieldName::from_str("fraction").unwrap(),
+                        StrictVal::Number(StrictNum::from(nft.fraction.into_inner())),
+                    ),
+                    (
+                        FieldName::from_str("align").unwrap(),
+                        StrictVal::Bytes(Blob(vec![0; 26])),
+                    ),
                 ]));
                 *fractions_data = nft_data;
             }
