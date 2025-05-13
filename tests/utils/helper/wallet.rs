@@ -211,7 +211,7 @@ fn _get_wallet(
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_file() && path.extension().map_or(false, |ext| ext == "issuer") {
-                println!("Auto-importing issuer file: {}", path.display());
+                // println!("Auto-importing issuer file: {}", path.display());
                 if let Err(err) = test_wallet.import(path) {
                     println!("Warning: Failed to import issuer: {}", err);
                 }
@@ -374,7 +374,7 @@ impl TestWallet {
             builder = builder.add_owned_state(outpoint, amount);
         }
 
-        self.issue_with_params(dbg!(builder.build()))
+        self.issue_with_params(builder.build())
     }
 
     pub fn switch_to_instance(&mut self, instance: u8) {
@@ -766,16 +766,16 @@ impl TestWallet {
             ));
         }
 
-        print!(
-            "Processing '{}' ... ",
-            schema_path.file_name().unwrap().to_string_lossy()
-        );
+        // print!(
+        //     "Processing '{}' ... ",
+        //     schema_path.file_name().unwrap().to_string_lossy()
+        // );
 
         // Load schema and get codex ID
         let schema = Schema::load(schema_path)?;
         let codex_id = schema.codex.codex_id();
 
-        print!("codex id {} ... ", codex_id);
+        // print!("codex id {} ... ", codex_id);
 
         // Import the schema into contracts
         if self.runtime.contracts.has_issuer(codex_id) {
@@ -787,7 +787,6 @@ impl TestWallet {
             .contracts
             .import_issuer(schema)
             .map_err(|e| format!("import error: {}", e.to_string()))?;
-        println!("success");
 
         Ok(())
     }
@@ -814,9 +813,6 @@ impl TestWallet {
                 let precision = immutable
                     .get(&VariantName::from_str("precision").unwrap())
                     .and_then(|m| m.values().next())
-                    .inspect(|v| {
-                        dbg!(&v.data.verified);
-                    })
                     .map(|v| {
                         let tag = v.data.verified.unwrap_enum_tag();
                         if let EnumTag::Name(name) = tag {
@@ -1258,11 +1254,16 @@ impl TestWallet {
             let name = VariantName::from_str("fractions").unwrap();
             if name_state.name == name {
                 let fractions = &mut name_state.state;
-                fractions.seal = EitherSeal::Alt(params.initial_allocation.unwrap().0);
+                fractions.seal = EitherSeal::Alt(params.initial_allocation.as_ref().unwrap().0);
                 let fractions_data = &mut fractions.data;
-                *fractions_data = StrictVal::Tuple(vec![StrictVal::Number(StrictNum::from(
-                    params.initial_allocation.unwrap().1,
-                ))]);
+
+                let nft = &params.initial_allocation.as_ref().unwrap().1;
+                let nft_data = StrictVal::Struct(IndexMap::from([
+                    (FieldName::from_str("tokenIndex").unwrap(), StrictVal::Number(StrictNum::from(nft.token_index.into_inner()))),
+                    (FieldName::from_str("fraction").unwrap(), StrictVal::Number(StrictNum::from(nft.fraction.into_inner()))),
+                    (FieldName::from_str("align").unwrap(), StrictVal::Bytes(Blob(vec![0; 26]))),
+                ]));
+                *fractions_data = nft_data;
             }
         }
 

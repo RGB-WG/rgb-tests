@@ -52,7 +52,6 @@ fn issue_nia(wallet_desc: DescriptorType) {
     assert_eq!(state.immutable.circulating_supply, 1_000_000);
 
     // Verify ownership state
-    dbg!(&state.owned.allocations);
     assert_eq!(state.owned.allocations.len(), 2);
     assert!(state
         .owned
@@ -64,7 +63,6 @@ fn issue_nia(wallet_desc: DescriptorType) {
         .allocations
         .iter()
         .any(|(outpoint, amount)| outpoint.primary == fake_outpoint_one && *amount == 500_000));
-    dbg!(wallet.runtime().state_all(contract_id));
 }
 
 #[apply(descriptor_and_close_method)]
@@ -104,7 +102,6 @@ fn issue_fua(wallet_desc: DescriptorType) {
         .allocations
         .iter()
         .any(|(outpoint, amount)| outpoint.primary == fake_outpoint && *amount == 10_000));
-    dbg!(wallet.runtime().state_all(contract_id));
 }
 
 #[apply(descriptor_and_close_method)]

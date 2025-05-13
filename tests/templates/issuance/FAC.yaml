@@ -68,5 +68,10 @@ global:
 owned:
   - name: fractions
     seal: b7116550736fbe5d3e234d0141c6bc8d1825f94da78514a3cede5674e9a5eae9:1
-    data: 10000
+    data: 
+      tokenIndex: 0
+      fraction: 10000
+      # TODO: `align` is a 26-sized U8 array,
+      # Need to rewrite to bytes in code
+      align:
 

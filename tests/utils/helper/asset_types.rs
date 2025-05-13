@@ -130,8 +130,8 @@ pub struct FACIssueParams {
     pub total_fractions: u64,
     /// Token index
     pub index: u32,
-    /// Initial token allocation (outpoint, amount)
-    pub initial_allocation: Option<(Outpoint, u64)>,
+    /// Initial token allocation (outpoint, Nft)
+    pub initial_allocation: Option<(Outpoint, Nft)>,
     /// NFT specification
     pub nft_spec: Option<NftSpec>,
 }
@@ -164,7 +164,8 @@ impl FACIssueParams {
 
     /// Set token allocation
     pub fn with_allocation(&mut self, outpoint: Outpoint, amount: u64) -> &mut Self {
-        self.initial_allocation = Some((outpoint, amount));
+        let nft = Nft::new(self.index, amount);
+        self.initial_allocation = Some((outpoint, nft));
         self
     }
 

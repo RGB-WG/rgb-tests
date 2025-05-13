@@ -70,7 +70,7 @@ pub use electrum::{Client as ElectrumClient, ElectrumApi, Param};
 pub use file_format::FileFormat;
 pub use ifaces::{
     AssetName, Attachment, Details, EmbeddedMedia, MediaType, NftSpec, ProofOfReserves, Ticker,
-    TokenIndex,
+    TokenIndex,Nft
 };
 pub use indexmap::IndexMap;
 pub use once_cell::sync::Lazy;
