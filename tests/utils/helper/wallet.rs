@@ -21,6 +21,8 @@ pub struct TestWallet {
     pub coinselect_strategy: CustomCoinselectStrategy,
     /// Optional wallet identifier for reporting purposes
     pub wallet_id: Option<String>,
+    /// Whether to force stop sync
+    pub force_stop_sync: bool,
 }
 
 pub enum AllocationFilter {
@@ -202,6 +204,7 @@ fn _get_wallet(
         instance,
         coinselect_strategy: CustomCoinselectStrategy::default(),
         wallet_id: None,
+        force_stop_sync: false,
     };
 
     // Import all issuer files from the schemata directory
@@ -300,6 +303,14 @@ impl TestWallet {
         self.network().is_testnet()
     }
 
+    pub fn force_stop_sync(&self) -> bool {
+        self.force_stop_sync
+    }
+
+    pub fn set_force_stop_sync(&mut self, force_stop_sync: bool) {
+        self.force_stop_sync = force_stop_sync;
+    }
+
     pub fn get_derived_address(&self) -> DerivedAddr {
         self.runtime
             .wallet
@@ -395,6 +406,9 @@ impl TestWallet {
     }
 
     pub fn sync(&mut self) {
+        if self.force_stop_sync {
+            return;
+        }
         let indexer = self.get_indexer();
         self.runtime.sync(&indexer).expect("Failed to sync wallet");
     }

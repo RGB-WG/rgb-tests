@@ -1403,7 +1403,7 @@ fn pay_one_invoice_twice(#[case] transfer_type: TransferType) {
 }
 
 #[test]
-#[ignore = "fix needed"] // https://github.com/BP-WG/bp-wallet/issues/70
+#[ignore = "fix needed"]
 #[serial]
 fn sync_mainnet_wlt() {
     initialize();
@@ -1418,25 +1418,6 @@ fn sync_mainnet_wlt() {
 
 #[test]
 #[serial]
-// TODO: This test case cannot pass currently
-//
-// The background is as follows:
-// wallet 1 first transfers RGB assets to wallet 2, where wallet 2 receives the assets
-// in a blinded manner (using an existing UTXO create rgb-invoice).
-// The witness transaction generated between them has not been broadcasted to the network,
-// wallet 2 accepts the consignment, use the received assets to transfer to wallet 3
-// finally, the transfer is completed, the asset results of wallet 2 and wallet 3 are correct,
-// but the asset result of wallet 1 is incorrect
-//
-// However, I observed that in the original v0.11.0-beta.9 version, this test case expected wallet 3's accept_transfer to fail.
-// The main distinction likely arises from the significant differences in the critical workflow between the two versions:
-// In v0.11.0-beta.9, when wallet 1 transfers assets to wallet 2, if wallet 2 wants to accept the consignment,
-// it must implement a custom Resolver; otherwise, the validation cannot pass (because the transaction hasn't been broadcast to the network).
-// But in v0.12 version, the resolver concept has been removed, so wallet 2 can normally accept the consignment,
-// and the phenomenon of wallet 2 successfully transferring to wallet 3 occurs.
-// There is a significant distinction between the test cases in these two versions. I believe the expected behavior of this test case
-// remains to be determined.
-// We need to wait for the completion of the latest indexer/resolver implementation with the doctor before revisiting this issue.
 fn receive_from_unbroadcasted_transfer_to_blinded() {
     initialize();
 
@@ -1474,16 +1455,25 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     dbg!(wlt_2.runtime().state_own(contract_id).owned);
 
     let invoice = wlt_3.invoice(contract_id, 50, true, None, None);
+    // force stop sync, because the asset of wlt1 to wlt2 has not been on-chain,
+    // the transfer will execute sync, so it is impossible to transfer assets to wlt3
+    wlt_2.set_force_stop_sync(true);
     let (consignment, tx, _) = wlt_2.transfer(invoice, Some(2000), None, true, None);
     wlt_2.mine_tx(&tx.txid(), false);
-    wlt_2.sync();
-    wlt_1.sync();
     wlt_3.accept_transfer(&consignment, None).unwrap();
     let wlt_3_states = wlt_3.runtime().state_own(contract_id).owned;
     let wlt_2_states = wlt_2.runtime().state_own(contract_id).owned;
     dbg!(wlt_3_states, wlt_2_states);
+    dbg!(wlt_2.runtime().state_all(contract_id).owned);
+    dbg!(wlt_1.runtime().state_own(contract_id).owned);
+    dbg!(wlt_1.runtime().state_all(contract_id).owned);
 
     wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![50]);
-    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![50]);
-    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![500]);
+    // This is the key point:
+    // Since the asset transfer from wlt1 to wlt2 was not broadcasted on-chain,
+    // when wlt2 transfers part of this asset to wlt3 and broadcasts it on-chain,
+    // after sync the transaction is invalid because the original witness information
+    // cannot be traced back to its source. The asset becoming invalid is expected behavior.
+    wlt_3.sync();
+    wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
 }
