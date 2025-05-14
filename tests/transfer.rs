@@ -1213,6 +1213,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
 }
 
 #[test]
+#[serial]
 fn revert_transfer_state() {
     initialize();
     // connecting before disconnecting since disconnect is not idempotent
