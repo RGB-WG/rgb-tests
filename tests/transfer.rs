@@ -610,6 +610,7 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
 
     let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
     let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
 
     let issue_supply = 2000;
     // Create and issue NIA asset
@@ -619,13 +620,22 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
     let contract_id = wlt_1.issue_nia_with_params(params);
     wlt_1.send_contract("TestAsset", &mut wlt_2);
     wlt_2.reload_runtime();
+    wlt_1.send_contract("TestAsset", &mut wlt_3);
+    wlt_3.reload_runtime();
 
     let amount = 100;
     let wout = match transfer_type {
         TransferType::Blinded => false,
         TransferType::Witness => true,
     };
-    let invoice = wlt_2.invoice(contract_id, amount, wout, Some(0), None);
+    let wlt1_utxo = wlt_1.get_utxo(None);
+    let wlt2_utxo = wlt_2.get_utxo(None);
+    let wlt3_utxo = wlt_3.get_utxo(None);
+    wlt_1.set_force_stop_sync(true);
+    wlt_2.set_force_stop_sync(true);
+    wlt_3.set_force_stop_sync(true);
+
+    let invoice = wlt_2.invoice(contract_id, amount, wout, Some(0), Some(wlt2_utxo));
     let (_, _tx, payment) = wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
 
     let (consignment, _) = wlt_1.transfer_rbf(contract_id, payment, 1000, None);
@@ -639,32 +649,16 @@ fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) 
         wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
     }
 
-    wlt_2.send(
-        &mut wlt_1,
-        wout,
-        contract_id,
-        amount,
-        1000,
-        None,
-        None,
-        None,
-    );
-
-    let mut wlt_3 = get_wallet(&DescriptorType::Wpkh);
-    wlt_1.send_contract("TestAsset", &mut wlt_3);
-    wlt_3.reload_runtime();
+    let invoice = wlt_1.invoice(contract_id, amount, wout, Some(0), Some(wlt1_utxo));
+    let (consignment, _tx, _payment) =
+        wlt_2.transfer(invoice.clone(), None, Some(500), false, None);
+    wlt_1.accept_transfer(&consignment, None).unwrap();
 
     // The receiver will fail to accept the consignment
-    wlt_1.send(
-        &mut wlt_3,
-        wout,
-        contract_id,
-        issue_supply,
-        1000,
-        None,
-        None,
-        None,
-    );
+    let invoice = wlt_3.invoice(contract_id, issue_supply, wout, Some(0), Some(wlt3_utxo));
+    let (consignment, _tx, _payment) =
+        wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+    wlt_3.accept_transfer(&consignment, None).unwrap();
 }
 
 #[test]
