@@ -1081,6 +1081,7 @@ dependencies = [
  "aora",
  "commit_verify",
  "getrandom 0.2.14",
+ "indexmap 2.9.0",
  "serde",
  "sonic-api",
  "sonic-callreq",

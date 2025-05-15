@@ -748,8 +748,6 @@ fn check_fungible_history() {
     wlt_1.send_contract("TestAsset", &mut wlt_2);
     wlt_2.reload_runtime();
 
-    // debug contract info
-    dbg!(wlt_1.contracts_info());
     dbg!(wlt_1.runtime().state_own(contract_id).owned);
 
     // transfer
@@ -909,6 +907,7 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
     let utxo_wlt_1_2 = wlt_1.get_utxo(None);
     let utxo_wlt_2_1 = wlt_2.get_utxo(None);
     let utxo_wlt_2_2 = wlt_2.get_utxo(None);
+    dbg!(utxo_wlt_1_1, utxo_wlt_1_2, utxo_wlt_2_1, utxo_wlt_2_2);
     mine_custom(false, INSTANCE_2, 6);
 
     dbg!(get_height_custom(INSTANCE_2));
@@ -926,14 +925,23 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             // Create blinded invoice with specific UTXO
             let invoice = wlt_2.invoice(contract_id, amt_0, false, Some(0), Some(utxo_wlt_2_1));
             let (_, tx_0, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+            let wlt_1_state = wlt_1.runtime().state_own(contract_id).owned;
+            let wlt_2_state = wlt_2.runtime().state_own(contract_id).owned;
+            dbg!(tx_0.txid(), wlt_1_state, wlt_2_state);
 
             let amt_1 = 100;
             let invoice = wlt_1.invoice(contract_id, amt_1, false, Some(0), Some(utxo_wlt_1_1));
             let (_, tx_1, _) = wlt_2.send_to_invoice(&mut wlt_1, invoice, Some(1000), None, None);
+            let wlt_1_state = wlt_1.runtime().state_own(contract_id).owned;
+            let wlt_2_state = wlt_2.runtime().state_own(contract_id).owned;
+            dbg!(tx_1.txid(), wlt_1_state, wlt_2_state);
 
             let amt_2 = 80;
             let invoice = wlt_2.invoice(contract_id, amt_2, false, Some(0), Some(utxo_wlt_2_2));
             let (_, tx_2, _) = wlt_1.send_to_invoice(&mut wlt_2, invoice, Some(1000), None, None);
+            let wlt_1_state = wlt_1.runtime().state_own(contract_id).owned;
+            let wlt_2_state = wlt_2.runtime().state_own(contract_id).owned;
+            dbg!(tx_2.txid(), wlt_1_state, wlt_2_state);
 
             vec![tx_0, tx_1, tx_2]
         }
@@ -1012,8 +1020,14 @@ fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgTyp
             wlt_2.switch_to_instance(INSTANCE_3);
             let wlt_1_alloc_1 = 600;
             dbg!(tx_status(txs[0].txid(), INSTANCE_3));
-            dbg!(wlt_1.runtime().state_own(contract_id).owned);
-            dbg!(wlt_2.runtime().state_own(contract_id).owned);
+            dbg!(
+                "after revert tx_0",
+                wlt_1.runtime().state_own(contract_id).owned
+            );
+            dbg!(
+                "after revert tx_0",
+                wlt_2.runtime().state_own(contract_id).owned
+            );
             wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt_1_alloc_1]);
             wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
         }

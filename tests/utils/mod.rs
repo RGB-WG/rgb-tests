@@ -82,8 +82,8 @@ pub use rand::RngCore;
 pub use rgb::{
     invoice::{RgbBeneficiary, RgbInvoice},
     popls::bp::{Coinselect, OpRequestSet, PaymentScript, PrefabBundle, RgbWallet, WalletProvider},
-    AuthToken, CallScope, CellAddr, CodexId, Consensus, ContractId, ContractInfo, Contracts,
-    CreateParams, EitherSeal, RgbSealDef, Schema, StateCalc, StockpileDir,
+    AuthToken, CallScope, CellAddr, CodexId, Consensus, ContractId, Contracts, CreateParams,
+    EitherSeal, RgbSealDef, Schema, StateCalc, StockpileDir,
 };
 pub use rgbp::{
     descriptor::RgbDescr, CoinselectStrategy, Owner, PayError, RgbRuntime, RgbpRuntimeDir,

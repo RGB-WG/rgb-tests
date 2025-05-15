@@ -417,10 +417,6 @@ impl TestWallet {
         &mut self.runtime
     }
 
-    pub fn contracts_info(&self) -> Vec<ContractInfo> {
-        self.runtime.contracts.contracts_info().collect()
-    }
-
     pub fn issue_with_params(&mut self, params: CreateParams<Outpoint>) -> ContractId {
         let contract_id = self
             .runtime
@@ -589,6 +585,7 @@ impl TestWallet {
             .get(allocation_field)
             .unwrap()
             .iter()
+            .filter(|(_, state)| state.status.is_valid())
             .map(|(_, state)| state.assignment.data.unwrap_num().unwrap_uint::<u64>())
             .collect::<Vec<_>>();
         actual_fungible_allocations.sort();
