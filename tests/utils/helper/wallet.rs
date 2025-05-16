@@ -213,7 +213,7 @@ fn _get_wallet(
         for entry in std::fs::read_dir(issuer_dir).unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "issuer") {
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "issuer") {
                 // println!("Auto-importing issuer file: {}", path.display());
                 if let Err(err) = test_wallet.import(path) {
                     println!("Warning: Failed to import issuer: {}", err);
@@ -761,7 +761,7 @@ impl TestWallet {
         let accept_start = Instant::now();
         self.runtime
             .consume_from_file(consignment)
-            .map_err(|e| format!("consume_from_file error: {}", e.to_string()))?;
+            .map_err(|e| format!("consume_from_file error: {}", e))?;
         let accept_duration = accept_start.elapsed();
         if let Some(report) = report {
             let column_name = format!("{}_accept", self.wallet_id());
@@ -805,7 +805,7 @@ impl TestWallet {
         self.runtime
             .contracts
             .import_issuer(schema)
-            .map_err(|e| format!("import error: {}", e.to_string()))?;
+            .map_err(|e| format!("import error: {}", e))?;
 
         Ok(())
     }
@@ -969,7 +969,7 @@ fn extract_from_tuple(v: &StrictVal) -> Option<StrictVal> {
 /// Extract the first element from a two-layer tuple
 fn extract_from_2_layer_tuple(v: &StrictVal) -> Option<StrictVal> {
     if let StrictVal::Tuple(t) = v {
-        if let Some(inner) = t.get(0) {
+        if let Some(inner) = t.first() {
             extract_from_tuple(inner)
         } else {
             None
@@ -1027,11 +1027,11 @@ impl TestWallet {
 
                     let index_name = FieldName::from_str("tokenIndex").unwrap();
                     let index = s.get_mut(&index_name).unwrap();
-                    *index = StrictVal::Number(StrictNum::from(params.index as u32));
+                    *index = StrictVal::Number(StrictNum::from(params.index));
 
                     let amount_name = FieldName::from_str("fraction").unwrap();
                     let amount = s.get_mut(&amount_name).unwrap();
-                    *amount = StrictVal::Number(StrictNum::from(params.total_fractions as u64));
+                    *amount = StrictVal::Number(StrictNum::from(params.total_fractions));
                 }
 
                 if let Some(ref nft_spec) = params.nft_spec {
@@ -1041,7 +1041,7 @@ impl TestWallet {
                         StrictVal::Struct(s) => {
                             let index_name = FieldName::from_str("index").unwrap();
                             let index = s.get_mut(&index_name).unwrap();
-                            *index = StrictVal::Number(StrictNum::from(params.index as u32));
+                            *index = StrictVal::Number(StrictNum::from(params.index));
 
                             if let Some(ref ticker_params) = nft_spec.ticker {
                                 let ticker_name = FieldName::from_str("ticker").unwrap();
@@ -1213,7 +1213,7 @@ impl TestWallet {
                                 );
 
                                 map_inner.push((
-                                    StrictVal::Number(StrictNum::from(*id as u8)),
+                                    StrictVal::Number(StrictNum::from(*id)),
                                     StrictVal::Struct(attachmet_inner),
                                 ));
                             }
@@ -1295,8 +1295,7 @@ impl TestWallet {
             }
         }
 
-        let contract_id = self.issue_with_params(create_params);
-        contract_id
+        self.issue_with_params(create_params)
     }
 
     /// Get RGB21 contract state
@@ -1372,7 +1371,7 @@ impl TestWallet {
                                 // Parse preview
                                 let preview_struct = s
                                     .get(&FieldName::from_str("preview").unwrap())
-                                    .and_then(|v| extract_from_union_and_tuple(v));
+                                    .and_then(extract_from_union_and_tuple);
 
                                 if let Some(StrictVal::Struct(ref p)) = preview_struct {
                                     let media_type = if let Some(StrictVal::Struct(ref t)) =
@@ -1426,7 +1425,7 @@ impl TestWallet {
                                 // Parse media
                                 let media_struct = s
                                     .get(&FieldName::from_str("media").unwrap())
-                                    .and_then(|v| extract_from_union_and_tuple(v));
+                                    .and_then(extract_from_union_and_tuple);
 
                                 if let Some(StrictVal::Struct(ref m)) = media_struct {
                                     let media_type = if let Some(StrictVal::Struct(ref t)) =
@@ -1543,7 +1542,7 @@ impl TestWallet {
                                 // Parse reserves
                                 let reserves_struct = s
                                     .get(&FieldName::from_str("reserves").unwrap())
-                                    .and_then(|v| extract_from_union_and_tuple(v));
+                                    .and_then(extract_from_union_and_tuple);
 
                                 if let Some(StrictVal::Struct(ref r)) = reserves_struct {
                                     if let Some(StrictVal::Struct(ref u)) =
@@ -1551,7 +1550,7 @@ impl TestWallet {
                                     {
                                         let txid_bytes = u
                                             .get(&FieldName::from_str("txid").unwrap())
-                                            .and_then(|v| extract_from_tuple(v))
+                                            .and_then(extract_from_tuple)
                                             .and_then(|v| {
                                                 if let StrictVal::Bytes(Blob(tx)) = v {
                                                     Some(tx)
@@ -1563,7 +1562,7 @@ impl TestWallet {
 
                                         let vout = u
                                             .get(&FieldName::from_str("vout").unwrap())
-                                            .and_then(|v| extract_from_tuple(v))
+                                            .and_then(extract_from_tuple)
                                             .and_then(|v| {
                                                 if let StrictVal::Number(n) = v {
                                                     Some(n.unwrap_uint::<u32>())
