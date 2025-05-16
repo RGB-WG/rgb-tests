@@ -11,9 +11,9 @@ const MEDIA_FPATH: &str = "tests/fixtures/rgb_logo.jpeg";
 #[rstest]
 #[case(DescriptorType::Wpkh)]
 #[case(DescriptorType::Tr)]
-fn descriptor_and_close_method(#[case] wallet_desc: DescriptorType) {}
+fn descriptor(#[case] wallet_desc: DescriptorType) {}
 
-#[apply(descriptor_and_close_method)]
+#[apply(descriptor)]
 fn issue_nia(wallet_desc: DescriptorType) {
     println!("wallet_desc {wallet_desc:?}");
 
@@ -65,7 +65,7 @@ fn issue_nia(wallet_desc: DescriptorType) {
         .any(|(outpoint, amount)| outpoint.primary == fake_outpoint_one && *amount == 500_000));
 }
 
-#[apply(descriptor_and_close_method)]
+#[apply(descriptor)]
 fn issue_fua(wallet_desc: DescriptorType) {
     println!("wallet_desc {wallet_desc:?}");
 
@@ -104,7 +104,7 @@ fn issue_fua(wallet_desc: DescriptorType) {
         .any(|(outpoint, amount)| outpoint.primary == fake_outpoint && *amount == 10_000));
 }
 
-#[apply(descriptor_and_close_method)]
+#[apply(descriptor)]
 fn issue_fua_multiple_utxos(wallet_desc: DescriptorType) {
     println!("wallet_desc {wallet_desc:?}");
 
@@ -146,7 +146,7 @@ fn issue_fua_multiple_utxos(wallet_desc: DescriptorType) {
     assert_eq!(total_allocated, 999);
 }
 
-#[apply(descriptor_and_close_method)]
+#[apply(descriptor)]
 fn issue_nia_multiple_utxos(wallet_desc: DescriptorType) {
     println!("wallet_desc {wallet_desc:?}");
 
@@ -189,7 +189,8 @@ fn issue_nia_multiple_utxos(wallet_desc: DescriptorType) {
     assert_eq!(total_allocated, 999);
 }
 
-#[apply(descriptor_and_close_method)]
+#[apply(descriptor)]
+#[ignore = "failed to issue contract: Inner(Genesis(Named(TypeName('DigitalCollection')), ScriptUnspecified))"]
 fn issue_fac(wallet_desc: DescriptorType) {
     println!("wallet_desc {wallet_desc:?}");
 

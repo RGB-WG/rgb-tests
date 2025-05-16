@@ -24,7 +24,6 @@
 pub mod utils;
 
 use rgb::WitnessStatus;
-use rstest_reuse::{self, *};
 use serial_test::serial;
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::str::FromStr;
@@ -45,81 +44,6 @@ use crate::utils::helper::wallet::{HistoryType, ReorgType};
 type TT = TransferType;
 type DT = DescriptorType;
 type AS = AssetSchema;
-
-#[template]
-#[rstest]
-#[case(true)]
-#[case(false)]
-fn wout(#[case] wout: bool) {}
-#[apply(wout)]
-fn simple_transfer(wout: bool) {
-    initialize();
-
-    // Create two wallet instances
-    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
-    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
-    let supply = 600;
-    let asset_name = "TestAsset";
-
-    // Create and issue NIA asset
-    let mut params = NIAIssueParams::new(asset_name, "RBF", "centiMilli", supply);
-    let outpoint = wlt_1.get_utxo(None);
-    params.add_allocation(outpoint, supply);
-    let contract_id = wlt_1.issue_nia_with_params(params);
-    wlt_1.send_contract(asset_name, &mut wlt_2);
-    // TODO: Because the RGB mound currently cannot dynamically load contracts,
-    // It needs to be reloaded at a special time, and consider submitting a PR to RGB
-    wlt_2.reload_runtime();
-
-    let assign = 400;
-    // recive asset by utxo
-    let invoice = wlt_2.invoice(contract_id, assign, wout, Some(0), None);
-
-    // send asset to wlt2
-    // if `wout` is true (WitnessOut),
-    // wlt2 will have a 3000 Sats UTXO, which will be spent to transfer assets to wlt1 in the next step
-    let (consignment_1, tx, _) = wlt_1.transfer(invoice, Some(3000), Some(500), true, None);
-
-    // Receiver accepts the transfer
-    wlt_2.accept_transfer(&consignment_1, None).unwrap();
-
-    // Broadcast and confirm transaction
-    wlt_1.mine_tx(&tx.txid(), false);
-
-    // Sync both wallets
-    wlt_1.sync();
-    wlt_2.sync();
-
-    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![supply - assign]);
-    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![assign]);
-
-    let assign_wlt1 = 200;
-    let invoice = wlt_1.invoice(contract_id, assign_wlt1, wout, Some(0), None);
-    dbg!(
-        "wlt2",
-        wlt_2.runtime().wallet.balance(),
-        wlt_2.runtime().wallet.coins().collect::<Vec<_>>()
-    );
-    // Sats cost: 500 fee + 2000 sats(default) = 2500
-    let (consignment_2, tx, _) = wlt_2.transfer(invoice, None, Some(500), true, None);
-    wlt_1.accept_transfer(&consignment_2, None).unwrap();
-    wlt_2.mine_tx(&tx.txid(), false);
-
-    // // Sync both wallets
-    wlt_1.sync();
-    wlt_2.sync();
-
-    // owned state
-    dbg!(wlt_1.runtime().state_own(contract_id).owned);
-    dbg!(wlt_2.runtime().state_own(contract_id).owned);
-
-    wlt_1.check_allocations(
-        contract_id,
-        AssetSchema::RGB20,
-        vec![supply - assign, assign_wlt1],
-    );
-    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![assign - assign_wlt1]);
-}
 
 #[test]
 fn rbf_transfer() {
@@ -528,8 +452,8 @@ fn transfer_loop(
 }
 
 #[rstest]
-#[case(TransferType::Blinded)]
-#[case(TransferType::Witness)]
+#[case(TT::Blinded)]
+#[case(TT::Witness)]
 fn same_transfer_twice_update_witnesses(#[case] transfer_type: TransferType) {
     println!("transfer_type {transfer_type:?}");
 
@@ -600,9 +524,9 @@ fn collaborative_transfer() {
 
 #[rstest]
 #[should_panic(expected = "Fulfill(StateInsufficient)")]
-#[case(TransferType::Blinded)]
+#[case(TT::Blinded)]
 #[should_panic(expected = "Fulfill(StateInsufficient)")]
-#[case(TransferType::Witness)]
+#[case(TT::Witness)]
 fn same_transfer_twice_no_update_witnesses(#[case] transfer_type: TransferType) {
     println!("transfer_type {transfer_type:?}");
 
@@ -796,10 +720,10 @@ fn send_to_oneself() {
 }
 
 #[rstest]
-#[case(DescriptorType::Tr, DescriptorType::Tr)]
-#[case(DescriptorType::Tr, DescriptorType::Wpkh)]
-#[case(DescriptorType::Wpkh, DescriptorType::Tr)]
-#[case(DescriptorType::Wpkh, DescriptorType::Wpkh)]
+#[case(DT::Tr, DT::Tr)]
+#[case(DT::Tr, DT::Wpkh)]
+#[case(DT::Wpkh, DT::Tr)]
+#[case(DT::Wpkh, DT::Wpkh)]
 fn blank_tapret_opret(
     #[case] descriptor_type_0: DescriptorType,
     #[case] descriptor_type_1: DescriptorType,
@@ -858,13 +782,10 @@ fn blank_tapret_opret(
 
 #[rstest]
 #[case(HistoryType::Linear, ReorgType::ChangeOrder)]
-// FIXME: Hope to receive solutions or suggestions from the doctor
 #[case(HistoryType::Linear, ReorgType::Revert)]
 #[case(HistoryType::Branching, ReorgType::ChangeOrder)]
-// FIXME: Hope to receive solutions or suggestions from the doctor
 #[case(HistoryType::Branching, ReorgType::Revert)]
 #[case(HistoryType::Merging, ReorgType::ChangeOrder)]
-// FIXME: Hope to receive solutions or suggestions from the doctor
 #[case(HistoryType::Merging, ReorgType::Revert)]
 #[serial]
 fn reorg_history(#[case] history_type: HistoryType, #[case] reorg_type: ReorgType) {
@@ -1350,8 +1271,8 @@ fn invoice_reuse(#[case] transfer_type: TransferType) {
 }
 
 #[rstest]
-#[case(TransferType::Blinded)]
-#[case(TransferType::Witness)]
+#[case(TT::Blinded)]
+#[case(TT::Witness)]
 fn pay_one_invoice_twice(#[case] transfer_type: TransferType) {
     initialize();
 

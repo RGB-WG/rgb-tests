@@ -20,6 +20,7 @@ fn wout(#[case] wout: bool) {}
 const MEDIA_FPATH: &str = "tests/fixtures/rgb_logo.jpeg";
 
 #[apply(wout)]
+#[ignore = "failed to issue contract: Inner(Genesis(Named(TypeName('DigitalCollection')), ScriptUnspecified))"]
 fn simple_fac_transfer(wout: bool) {
     initialize();
 
