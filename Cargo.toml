@@ -70,6 +70,7 @@ strict_types = { path = "./strict-types" }
 commit_verify = { path = "./client_side_validation/commit_verify" }
 ## sonic
 hypersonic = { path = "./sonic" }
+sonic-persist-fs = { path = "./sonic/persistence/fs" }
 ## single_use_seals
 single_use_seals = { path = "./client_side_validation/single_use_seals", features = ["strict_encoding"] }
 tabled = "0.18.0"
@@ -109,7 +110,7 @@ bp-wallet = { path = "./bp-wallet" }
 ## client_side_validation
 commit_verify = { path = "./client_side_validation/commit_verify" }
 commit_encoding_derive = { path = "./client_side_validation/commit_verify/derive" }
-single_use_seals = { path = "./client_side_validation/single_use_seals"}
+single_use_seals = { path = "./client_side_validation/single_use_seals" }
 ## rgb
 rgb-runtime = { path = "./rgb" }
 rgb-psbt = { path = "./rgb/psbt" }
@@ -124,8 +125,10 @@ aluvm = { path = "./rust-aluvm" }
 zk-aluvm = { path = "./zk-aluvm" }
 ## SONIC
 ultrasonic = { path = "./ultrasonic" }
-hypersonic = { path = "./sonic" }
+sonic-api = { path = "./sonic/api" }
 sonic-callreq = { path = "./sonic/callreq" }
+hypersonic = { path = "./sonic" }
+sonic-persist-fs = { path = "./sonic/persistence/fs" }
 ## strict-encoding
 strict_encoding = { path = "./strict-encoding/rust" }
 strict_encoding_derive = { path = "./strict-encoding/rust/derive" }

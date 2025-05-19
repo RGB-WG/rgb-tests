@@ -1,5 +1,4 @@
 use super::*;
-use rgbp::Payment;
 
 enum WalletAccount {
     Private(XprivAccount),
@@ -524,7 +523,13 @@ impl TestWallet {
             RgbBeneficiary::Token(auth.unwrap())
         };
         let value = StrictVal::num(amount);
-        RgbInvoice::new(contract_id, beneficiary, Some(value))
+        RgbInvoice::new(
+            contract_id,
+            Consensus::Bitcoin,
+            true,
+            beneficiary,
+            Some(value),
+        )
     }
 
     /// Set the coin selection strategy
@@ -757,10 +762,22 @@ impl TestWallet {
         consignment: &Path,
         report: Option<&mut Report>,
     ) -> Result<(), String> {
+        pub struct DumbValidator;
+        impl SigValidator for DumbValidator {
+            fn validate_sig(
+                &self,
+                _: impl Into<[u8; 32]>,
+                _: &Identity,
+                _: &SigBlob,
+            ) -> Result<u64, impl std::error::Error> {
+                Result::<_, Infallible>::Ok(0)
+            }
+        }
+
         self.sync();
         let accept_start = Instant::now();
         self.runtime
-            .consume_from_file(consignment)
+            .consume_from_file(consignment, DumbValidator)
             .map_err(|e| format!("consume_from_file error: {}", e))?;
         let accept_duration = accept_start.elapsed();
         if let Some(report) = report {
@@ -791,7 +808,7 @@ impl TestWallet {
         // );
 
         // Load schema and get codex ID
-        let schema = Schema::load(schema_path)?;
+        let schema = Issuer::load(schema_path)?;
         let codex_id = schema.codex.codex_id();
 
         // print!("codex id {} ... ", codex_id);
@@ -884,7 +901,7 @@ impl TestWallet {
         Some((
             rgb_contract_state.immutable,
             rgb_contract_state.owned,
-            rgb_contract_state.computed,
+            rgb_contract_state.aggregated,
         ))
     }
 }

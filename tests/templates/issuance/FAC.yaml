@@ -1,6 +1,6 @@
 consensus: bitcoin
 testnet: true
-codexId: cv343X_v-prQy_G7-utFnpPb-T2BpYVE-ibgujHd-zYzSLEw#horse-journal-voyage
+codexId: 3DrJ~lGh-IgvMl3X-lLFKWQo-4v~~MiV-0eIvR1L-2nOuvBQ#angel-tokyo-mystery
 
 name: DemoFAC
 method: issue
@@ -32,9 +32,9 @@ global:
           subtype: jpeg
           charset: null
         data:
-        - 1
-        - 3
-        - 9
+          - 1
+          - 3
+          - 9
       media:
         type:
           type: image
@@ -42,33 +42,33 @@ global:
           charset: null
         digest: 02d2cc5d7883885bb7472e4fe96a07344b1d7cf794cb06943e1cdb5c57754d8a
       attachments:
-        # TODO: the following fields cannot be recognized by strict-types directly,
-        # need to be converted in code
-        # 0:
-        #   type:
-        #     type: text
-        #     subtype: plain
-        #     charset: 
-        #   digest: 4bdf15cfc812b9c6d7a7b335daeb73dea8bef0e69c88b69e15db37c016c0737a
-        # 1:
-        #   type:
-        #     type: text
-        #     subtype: plain
-        #     charset: 
-        #   digest: dd0d0ed1a817858d4597336e4faa1061b81dc95b3ca77d4ecd352b6e940555d7
+      # TODO: the following fields cannot be recognized by strict-types directly,
+      # need to be converted in code
+      # 0:
+      #   type:
+      #     type: text
+      #     subtype: plain
+      #     charset:
+      #   digest: 4bdf15cfc812b9c6d7a7b335daeb73dea8bef0e69c88b69e15db37c016c0737a
+      # 1:
+      #   type:
+      #     type: text
+      #     subtype: plain
+      #     charset:
+      #   digest: dd0d0ed1a817858d4597336e4faa1061b81dc95b3ca77d4ecd352b6e940555d7
       reserves:
-        utxo: 
+        utxo:
           txid: e5a3e577309df31bd606f48049049d2e1e02b048206ba232944fcc053a176ccb
           vout: 0
         proof:
-        - 2
-        - 4
-        - 6
-        - 10
+          - 2
+          - 4
+          - 6
+          - 10
 owned:
   - name: fractions
     seal: b7116550736fbe5d3e234d0141c6bc8d1825f94da78514a3cede5674e9a5eae9:1
-    data: 
+    data:
       tokenIndex: 0
       fraction: 10000
       # TODO: `align` is a 26-sized U8 array,

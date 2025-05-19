@@ -45,7 +45,7 @@ impl Coinselect for CustomCoinselectStrategy {
     fn coinselect(
         &mut self,
         invoiced_state: &StrictVal,
-        calc: &mut (impl StateCalc + ?Sized),
+        calc: &mut StateCalc,
         // Sorted vector by values
         owned_state: Vec<(CellAddr, &StrictVal)>,
     ) -> Option<Vec<CellAddr>> {
