@@ -28,7 +28,7 @@ dependencies = [
 
 [[package]]
 name = "aluvm"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "baid64",
@@ -43,12 +43,14 @@ dependencies = [
 
 [[package]]
 name = "amplify"
-version = "4.8.1"
+version = "4.9.0"
 dependencies = [
  "amplify_derive",
  "amplify_num",
  "amplify_syn",
  "ascii",
+ "getrandom 0.2.16",
+ "getrandom 0.3.3",
  "serde",
  "stringly_conversions",
  "wasm-bindgen",
@@ -284,7 +286,7 @@ checksum = "3eeab4423108c5d7c744f4d234de88d18d636100093ae04caf4825134b9c3a32"
 
 [[package]]
 name = "bp-consensus"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "chrono",
@@ -300,7 +302,7 @@ dependencies = [
 
 [[package]]
 name = "bp-core"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "bp-consensus",
  "bp-dbc",
@@ -315,7 +317,7 @@ dependencies = [
 
 [[package]]
 name = "bp-dbc"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "base85",
@@ -331,7 +333,7 @@ dependencies = [
 
 [[package]]
 name = "bp-derive"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-consensus",
@@ -345,7 +347,7 @@ dependencies = [
 
 [[package]]
 name = "bp-electrum"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-core",
@@ -362,7 +364,7 @@ dependencies = [
 
 [[package]]
 name = "bp-esplora"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-core",
@@ -378,7 +380,7 @@ dependencies = [
 
 [[package]]
 name = "bp-invoice"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bech32",
@@ -390,7 +392,7 @@ dependencies = [
 
 [[package]]
 name = "bp-seals"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-consensus",
@@ -406,7 +408,7 @@ dependencies = [
 
 [[package]]
 name = "bp-std"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-consensus",
@@ -415,6 +417,7 @@ dependencies = [
  "bp-invoice",
  "descriptors",
  "getrandom 0.2.16",
+ "getrandom 0.3.3",
  "psbt",
  "secp256k1",
  "serde",
@@ -423,13 +426,15 @@ dependencies = [
 
 [[package]]
 name = "bp-wallet"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-electrum",
  "bp-esplora",
  "bp-std",
  "descriptors",
+ "getrandom 0.2.16",
+ "getrandom 0.3.3",
  "nonasync",
  "psbt",
  "serde",
@@ -438,6 +443,7 @@ dependencies = [
  "sha2",
  "strict_encoding",
  "toml",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -527,7 +533,7 @@ dependencies = [
 
 [[package]]
 name = "commit_encoding_derive"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "amplify_syn",
@@ -538,7 +544,7 @@ dependencies = [
 
 [[package]]
 name = "commit_verify"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "commit_encoding_derive",
@@ -671,7 +677,7 @@ dependencies = [
 
 [[package]]
 name = "descriptors"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-derive",
@@ -1079,7 +1085,7 @@ dependencies = [
 
 [[package]]
 name = "hypersonic"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "aluvm",
  "amplify",
@@ -1653,7 +1659,7 @@ dependencies = [
 
 [[package]]
 name = "psbt"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "base64",
@@ -1847,7 +1853,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-core"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-core",
@@ -1863,12 +1869,13 @@ dependencies = [
 
 [[package]]
 name = "rgb-interfaces"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "bp-consensus",
  "commit_verify",
  "getrandom 0.2.16",
+ "getrandom 0.3.3",
  "serde",
  "strict_encoding",
  "strict_types",
@@ -1877,7 +1884,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-invoice"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "baid64",
@@ -1893,7 +1900,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-psbt"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1.1"
 dependencies = [
  "amplify",
  "bp-core",
@@ -1903,7 +1910,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-runtime"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1.1"
 dependencies = [
  "amplify",
  "bp-std",
@@ -1911,6 +1918,7 @@ dependencies = [
  "chrono",
  "commit_verify",
  "getrandom 0.2.16",
+ "getrandom 0.3.3",
  "indexmap 2.9.0",
  "nonasync",
  "rgb-psbt",
@@ -1923,7 +1931,7 @@ dependencies = [
 
 [[package]]
 name = "rgb-std"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "aora",
@@ -2407,7 +2415,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "single_use_seals"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "serde",
  "strict_encoding",
@@ -2440,7 +2448,7 @@ dependencies = [
 
 [[package]]
 name = "sonic-api"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "aluvm",
  "amplify",
@@ -2460,7 +2468,7 @@ dependencies = [
 
 [[package]]
 name = "sonic-callreq"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "baid64",
@@ -2478,7 +2486,7 @@ dependencies = [
 
 [[package]]
 name = "sonic-persist-fs"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "aora",
@@ -2497,9 +2505,11 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "strict_encoding"
-version = "2.8.2"
+version = "2.9.1"
 dependencies = [
  "amplify",
+ "getrandom 0.2.16",
+ "getrandom 0.3.3",
  "serde",
  "strict_encoding_derive",
  "wasm-bindgen",
@@ -2507,7 +2517,7 @@ dependencies = [
 
 [[package]]
 name = "strict_encoding_derive"
-version = "2.8.2"
+version = "2.9.1"
 dependencies = [
  "amplify_syn",
  "heck",
@@ -2518,11 +2528,13 @@ dependencies = [
 
 [[package]]
 name = "strict_types"
-version = "2.8.3"
+version = "2.9.0"
 dependencies = [
  "amplify",
  "ascii-armor",
  "baid64",
+ "getrandom 0.2.16",
+ "getrandom 0.3.3",
  "indexmap 2.9.0",
  "serde",
  "serde_json",
@@ -2861,7 +2873,7 @@ checksum = "1dccffe3ce07af9386bfd29e80c0ab1a8205a2fc34e4bcd40364df902cfa8f3f"
 
 [[package]]
 name = "ultrasonic"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "amplify",
  "baid64",
@@ -3449,7 +3461,7 @@ dependencies = [
 
 [[package]]
 name = "zk-aluvm"
-version = "0.12.0-beta.6"
+version = "0.12.0-rc.1"
 dependencies = [
  "aluvm",
  "amplify",

@@ -7,7 +7,7 @@ enum WalletAccount {
 /// Test wallet structure type
 pub struct TestWallet {
     /// RGB runtime for wallet operations
-    pub runtime: RgbpRuntimeDir,
+    pub runtime: RgbpRuntimeDir<Owner>,
     /// RGB descriptor for wallet
     pub descriptor: RgbDescr,
     /// Signer for transaction signing
@@ -236,7 +236,11 @@ pub fn contracts(network: Network, wallet_dir: PathBuf) -> Contracts<StockpileDi
 }
 
 /// Create a runtime for the wallet
-fn make_runtime(descriptor: &RgbDescr, network: Network, wallet_dir: &PathBuf) -> RgbpRuntimeDir {
+fn make_runtime(
+    descriptor: &RgbDescr,
+    network: Network,
+    wallet_dir: &PathBuf,
+) -> RgbpRuntimeDir<Owner> {
     let name = "bp_wallet.wallet";
     let provider = FsTextStore::new(wallet_dir.join(name)).unwrap();
 
@@ -412,7 +416,7 @@ impl TestWallet {
         self.runtime.sync(&indexer).expect("Failed to sync wallet");
     }
 
-    pub fn runtime(&mut self) -> &mut RgbpRuntimeDir {
+    pub fn runtime(&mut self) -> &mut RgbpRuntimeDir<Owner> {
         &mut self.runtime
     }
 
@@ -420,7 +424,7 @@ impl TestWallet {
         let contract_id = self
             .runtime
             .issue(params)
-            .expect("failed to issue contract");
+            .expect("failed to issue a contract");
         println!("A new contract issued with ID {contract_id}");
         contract_id
     }

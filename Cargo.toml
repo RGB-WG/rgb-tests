@@ -133,6 +133,4 @@ sonic-persist-fs = { path = "./sonic/persistence/fs" }
 strict_encoding = { path = "./strict-encoding/rust" }
 strict_encoding_derive = { path = "./strict-encoding/rust/derive" }
 ## strict-types
-# Temporarily use the `fix/value-type-order-mismatch` branch of `will-bitlightlabs/strict-types`
-# After the upstream PR is merged, switch back to `strict-types/strict-types`
 strict_types = { path = "./strict-types" }
