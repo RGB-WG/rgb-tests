@@ -167,7 +167,7 @@ _wait_for_bitcoin_ready() {
 }
 
 _start_services() {
-    _stop_services
+    _clean_environment
 
     # Check exposed ports
     EXPOSED_PORTS=(
