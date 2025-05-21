@@ -1,6 +1,6 @@
 consensus: bitcoin
 testnet: true
-codexId: C11V4boH-t0lNXdS-U6MDKet-us0NCCo-1cWX7xU-7ahdfqw#regard-genius-belgium
+codexId: BOoO7uU4-jEJQVTW-5InKqHv-AFQd01q-3bToMSP-KedmASY#tonight-hunter-crater
 name: DemoToken
 method: issue
 timestamp: "2025-04-27T10:32:00-02:00"
@@ -8,7 +8,6 @@ timestamp: "2025-04-27T10:32:00-02:00"
 global:
   - name: ticker
     verified: NFA
-# TODO: why name is first, it can't issue contract?
   - name: name
     verified: NFA
   - name: precision

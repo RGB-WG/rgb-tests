@@ -83,14 +83,17 @@ pub use rgb::{
     invoice::{RgbBeneficiary, RgbInvoice},
     popls::bp::{Coinselect, OpRequestSet, PaymentScript, PrefabBundle, RgbWallet, WalletProvider},
     AuthToken, CallScope, CellAddr, CodexId, Consensus, ContractId, Contracts, CreateParams,
-    EitherSeal, RgbSealDef, Schema, StateCalc, StockpileDir,
+    EitherSeal, Issuer, RgbSealDef, StateCalc, StockpileDir,
 };
+use rgb::{Identity, SigBlob, SigValidator};
+use rgbp::Payment;
 pub use rgbp::{
     descriptor::RgbDescr, CoinselectStrategy, Owner, PayError, RgbRuntime, RgbpRuntimeDir,
 };
 pub use rgpsbt::ScriptResolver;
 pub use rstest::rstest;
 pub use serial_test::serial;
+use std::convert::Infallible;
 pub use strict_encoding::{fname, tn, StrictSerialize};
 pub use strict_types::{
     value::{Blob, StrictNum, StrictVal},
