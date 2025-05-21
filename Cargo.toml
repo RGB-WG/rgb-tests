@@ -7,7 +7,7 @@ authors = [
     "Nicola Busanello <nicola.busanello@gmail.com>",
 ]
 edition = "2021"
-rust-version = "1.77.0"
+rust-version = "1.81.0"
 repository = "https://github.com/RGB-WG/rgb-tests"
 homepage = "https://github.com/RGB-WG/rgb-tests"
 license = "Apache-2.0"
@@ -15,12 +15,13 @@ description = "RGB tests"
 
 [dependencies]
 bitcoin_hashes = "0.14.0"
+chrono = "0.4.41"
 file-format = { version = "0.25.0", features = ["reader"] }
 once_cell = "1.19.0"
 rand = "0.8.5"
 rstest = "0.19.0"
 rstest_reuse = "0.6.0"
-serde_yaml = "0.9"
+serde_json = "1.0.140"
 serial_test = "3.2.0"
 strum = { version = "0.26.2", features = ["derive"] }
 strum_macros = "0.26.2"
@@ -51,7 +52,6 @@ rgb-runtime = { path = "./rgb", features = [
     "electrum_blocking",
     "esplora_blocking",
     "fs",
-    "serde",
 ] }
 rgb-psbt = { path = "./rgb/psbt" }
 ## altered_submodules/rgb (cannot use path, see https://github.com/rust-lang/cargo/issues/10353)
@@ -59,11 +59,8 @@ rgb_altered = { git = "https://github.com/RGB-WG/rgb", branch = "revert_fix_same
     "electrum_blocking",
     "esplora_blocking",
     "fs",
-    "serde",
 ], optional = true }
 psrgbt_altered = { git = "https://github.com/RGB-WG/rgb", branch = "revert_fix_same_blinded_transfer", package = "rgb-psbt", optional = true }
-## rgb-interfaces
-rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
 rgb-schemata = { path = "./rgb-schemata" }
 ## rgb-std
@@ -77,6 +74,8 @@ strict_types = { path = "./strict-types" }
 
 [patch.crates-io]
 # patching all RGB-related deps, to measure code coverage
+## aluvm
+aluvm = { path = "./aluvm" }
 ## amplify-derive
 amplify_derive = { path = "./amplify-derive" }
 amplify_syn = { path = "./amplify-derive/syn" }
@@ -115,15 +114,11 @@ rgb-runtime = { path = "./rgb" }
 rgb-psbt = { path = "./rgb/psbt" }
 ## rgb-core
 rgb-core = { path = "./rgb-core" }
-## rgb-interfaces
-rgb-interfaces = { path = "./rgb-interfaces" }
 ## rgb-schemata
 rgb-schemata = { path = "./rgb-schemata" }
 ## rgb-std
 rgb-std = { path = "./rgb-std" }
 rgb-invoice = { path = "./rgb-std/invoice" }
-## rust-aluvm
-aluvm = { path = "./rust-aluvm" }
 ## rust-amplify
 amplify = { path = "./rust-amplify" }
 ## strict-encoding
