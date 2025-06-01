@@ -1,22 +1,25 @@
 consensus: bitcoin
 testnet: true
-codexId: ti~gONQJ-XsxUn8I-lxaZSsv-jf0T7CK-2a3Fm_8-NBFdtas#grace-grand-gibson
+issuer:
+  codexId: qg8TdlRF-~RGz7bI-pceS960-evWjLKg-NcWTNWy-D9pIYBA
+  version: 0
+  api: r~mUOw
 name: DemoFUA
 method: issue
 timestamp: "2025-03-17T10:32:00-02:00"
 
 global:
   - name: details
-    verified:
+    verified: { }
     unverified: first
   - name: name
     verified: FUA
   - name: precision
     verified: centiMilli
-  - name: circulating
+  - name: issued
     verified: 10000
 
 owned:
-  - name: amount
+  - name: balance
     seal: b7116550736fbe5d3e234d0141c6bc8d1825f94da78514a3cede5674e9a5eae9:1
     data: 10000

@@ -56,7 +56,8 @@ rgb-runtime = { path = "./rgb", features = [
 ] }
 rgb-psbt = { path = "./rgb/psbt", features = ["bp"] }
 ## rgb-std
-rgb-std = { path = "./rgb-std", features = ["fs"] }
+rgb-std = { path = "./rgb-std", features = ["binfile"] }
+rgb-persist-fs = { path = "./rgb-std/persistence/fs" }
 ## rgb-interfaces
 rgb-interfaces = { path = "./rgb-interfaces", features = ["serde"] }
 ## rust-amplify
@@ -117,7 +118,9 @@ rgb-psbt = { path = "./rgb/psbt" }
 ## rgb-core
 rgb-core = { path = "./rgb-core" }
 ## rgb-std
+rgb-invoice = { path = "./rgb-std/invoice" }
 rgb-std = { path = "./rgb-std" }
+rgb-persist-fs = { path = "./rgb-std/persistence/fs" }
 ## rgb-interfaces
 rgb-interfaces = { path = "./rgb-interfaces" }
 ## rust-aluvm

@@ -1,6 +1,9 @@
 consensus: bitcoin
 testnet: true
-codexId: BOoO7uU4-jEJQVTW-5InKqHv-AFQd01q-3bToMSP-KedmASY#tonight-hunter-crater
+issuer:
+  codexId: y6L7YTlM-5_v4LWy-oQsj5hV-I2imvxD-zRu0JBo-yaguhrY
+  version: 0
+  api: rLosfg
 name: DemoToken
 method: issue
 timestamp: "2025-04-27T10:32:00-02:00"
@@ -12,10 +15,10 @@ global:
     verified: NFA
   - name: precision
     verified: centiMilli
-  - name: circulating
+  - name: issued
     verified: 10000
 
 owned:
-  - name: amount
+  - name: balance
     seal: b7116550736fbe5d3e234d0141c6bc8d1825f94da78514a3cede5674e9a5eae9:1
     data: 10000

@@ -211,7 +211,7 @@ fn issue_fac(wallet_desc: DescriptorType) {
     let data = vec![1u8, 3u8, 9u8];
     let preview_ty = "image/jpeg";
     let token_data_preview = EmbeddedMedia {
-        ty: MediaType::with(preview_ty),
+        mime: MediaType::with(preview_ty),
         data: Confined::try_from(data.clone()).unwrap(),
     };
     let proof = vec![2u8, 4u8, 6u8, 10u8];
@@ -226,12 +226,9 @@ fn issue_fac(wallet_desc: DescriptorType) {
     }
 
     let nft_spec = nft_spec(
-        ticker,
         name,
-        details,
         token_data_preview.clone(),
         token_data_attachment.clone(),
-        token_data_attachments.clone(),
         token_data_reserves.clone(),
     );
 
@@ -252,7 +249,7 @@ fn issue_fac(wallet_desc: DescriptorType) {
     assert_eq!(token.details.unwrap().to_string(), details);
     assert_eq!(
         token.preview.as_ref().unwrap().media_type.r#type.as_str(),
-        token_data_preview.ty.ty.as_str()
+        token_data_preview.mime.ty.as_str()
     );
 
     assert_eq!(

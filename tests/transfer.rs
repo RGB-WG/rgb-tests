@@ -1183,14 +1183,7 @@ fn revert_transfer_state() {
     recv_wlt.sync();
 
     let state = recv_wlt.runtime().state_own(contract_id).owned;
-    let witness_status = state
-        .values()
-        .next()
-        .unwrap()
-        .values()
-        .next()
-        .unwrap()
-        .status;
+    let witness_status = state.values().next().unwrap().iter().next().unwrap().status;
     dbg!(state, witness_status);
     assert!(matches!(witness_status, WitnessStatus::Mined(_)));
 
