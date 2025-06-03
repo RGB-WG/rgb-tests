@@ -40,13 +40,12 @@ fn simple_fac_transfer(wout: bool) {
     // Prepare NFT data
     let ticker = "DCOLL";
     let name = "Digital Collection #1";
-    let details = "First item in the digital collection";
 
     // Create preview data
     let data = vec![1u8, 3u8, 9u8];
     let preview_ty = "image/jpeg";
     let token_data_preview = EmbeddedMedia {
-        ty: MediaType::with(preview_ty),
+        mime: MediaType::with(preview_ty),
         data: Confined::try_from(data.clone()).unwrap(),
     };
 
@@ -68,12 +67,9 @@ fn simple_fac_transfer(wout: bool) {
 
     // Create NFT spec
     let nft_spec = nft_spec(
-        ticker,
         name,
-        details,
         token_data_preview.clone(),
         token_data_attachment.clone(),
-        token_data_attachments,
         token_data_reserves.clone(),
     );
 

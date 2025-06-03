@@ -579,11 +579,11 @@ impl TestWallet {
         let allocation_field = match asset_schema {
             AssetSchema::RGB20 | AssetSchema::RGB25 => {
                 // For fungible assets, we need to check the "amount" allocation
-                "amount"
+                "balance"
             }
             AssetSchema::RGB21 => {
                 // for RGB21, we need to check the "fractions" allocation
-                "fractions"
+                "balance"
             }
         };
 
@@ -594,8 +594,8 @@ impl TestWallet {
             .get(allocation_field)
             .unwrap()
             .iter()
-            .filter(|(_, state)| state.status.is_valid())
-            .map(|(_, state)| state.assignment.data.unwrap_num().unwrap_uint::<u64>())
+            .filter(|state| state.status.is_valid())
+            .map(|state| state.assignment.data.unwrap_num().unwrap_uint::<u64>())
             .collect::<Vec<_>>();
         actual_fungible_allocations.sort();
         expected_fungible_allocations.sort();
@@ -766,22 +766,14 @@ impl TestWallet {
         consignment: &Path,
         report: Option<&mut Report>,
     ) -> Result<(), String> {
-        pub struct DumbValidator;
-        impl SigValidator for DumbValidator {
-            fn validate_sig(
-                &self,
-                _: impl Into<[u8; 32]>,
-                _: &Identity,
-                _: &SigBlob,
-            ) -> Result<u64, impl std::error::Error> {
-                Result::<_, Infallible>::Ok(0)
-            }
-        }
-
         self.sync();
         let accept_start = Instant::now();
         self.runtime
-            .consume_from_file(consignment, DumbValidator)
+            .consume_from_file(
+                false,
+                consignment,
+                |_, _, _| Result::<_, Infallible>::Ok(()),
+            )
             .map_err(|e| format!("consume_from_file error: {}", e))?;
         let accept_duration = accept_start.elapsed();
         if let Some(report) = report {
@@ -812,8 +804,8 @@ impl TestWallet {
         // );
 
         // Load schema and get codex ID
-        let schema = Issuer::load(schema_path)?;
-        let codex_id = schema.codex.codex_id();
+        let issuer = Issuer::load(schema_path, |_, _, _| Result::<_, Infallible>::Ok(()))?;
+        let codex_id = issuer.codex_id();
 
         // print!("codex id {} ... ", codex_id);
 
@@ -825,7 +817,7 @@ impl TestWallet {
 
         self.runtime
             .contracts
-            .import_issuer(schema)
+            .import_issuer(issuer)
             .map_err(|e| format!("import error: {}", e))?;
 
         Ok(())
@@ -840,19 +832,19 @@ impl TestWallet {
                 // Parse immutable state
                 let name = immutable
                     .get(&VariantName::from_str("name").unwrap())
-                    .and_then(|m| m.values().next())
+                    .and_then(|m| m.iter().next())
                     .map(|v| v.data.verified.unwrap_string())
                     .unwrap_or_default();
 
                 let ticker = immutable
                     .get(&VariantName::from_str("ticker").unwrap())
-                    .and_then(|m| m.values().next())
+                    .and_then(|m| m.iter().next())
                     .map(|v| v.data.verified.unwrap_string())
                     .unwrap_or_default();
 
                 let precision = immutable
                     .get(&VariantName::from_str("precision").unwrap())
-                    .and_then(|m| m.values().next())
+                    .and_then(|m| m.iter().next())
                     .map(|v| {
                         let tag = v.data.verified.unwrap_enum_tag();
                         if let EnumTag::Name(name) = tag {
@@ -864,15 +856,15 @@ impl TestWallet {
                     .unwrap_or_default();
 
                 let circulating_supply = immutable
-                    .get(&VariantName::from_str("circulating").unwrap())
-                    .and_then(|m: &BTreeMap<CellAddr, ImmutableState>| m.values().next())
+                    .get(&VariantName::from_str("issued").unwrap())
+                    .and_then(|m: &Vec<ImmutableState>| m.iter().next())
                     .map(|v| v.data.verified.unwrap_num().unwrap_uint::<u64>())
                     .unwrap_or_default();
 
                 // Parse ownership state
                 let mut allocations = vec![];
-                if let Some(owned_map) = owned.get(&VariantName::from_str("amount").unwrap()) {
-                    for state in owned_map.values() {
+                if let Some(owned_map) = owned.get(&VariantName::from_str("balance").unwrap()) {
+                    for state in owned_map {
                         allocations.push((
                             state.assignment.seal,
                             state.assignment.data.unwrap_num().unwrap_uint::<u64>(),
@@ -896,8 +888,8 @@ impl TestWallet {
         &mut self,
         contract_id: ContractId,
     ) -> Option<(
-        BTreeMap<StateName, BTreeMap<CellAddr, ImmutableState>>,
-        BTreeMap<StateName, BTreeMap<CellAddr, OwnedState<TxoSeal>>>,
+        BTreeMap<StateName, Vec<ImmutableState>>,
+        BTreeMap<StateName, Vec<OwnedState<TxoSeal>>>,
         BTreeMap<StateName, StrictVal>,
     )> {
         let rgb_contract_state = self.runtime().state_all(contract_id);
@@ -1064,84 +1056,67 @@ impl TestWallet {
                             let index = s.get_mut(&index_name).unwrap();
                             *index = StrictVal::Number(StrictNum::from(params.index));
 
-                            if let Some(ref ticker_params) = nft_spec.ticker {
-                                let ticker_name = FieldName::from_str("ticker").unwrap();
-                                let ticker = s.get_mut(&ticker_name).unwrap();
-                                *ticker = StrictVal::String(ticker_params.to_string());
-                            }
-
                             if let Some(ref name_params) = nft_spec.name {
                                 let name_name = FieldName::from_str("name").unwrap();
                                 let name = s.get_mut(&name_name).unwrap();
                                 *name = StrictVal::String(name_params.to_string());
                             }
 
-                            if let Some(ref details_params) = nft_spec.details {
-                                let details_name = FieldName::from_str("details").unwrap();
-                                let details = s.get_mut(&details_name).unwrap();
-                                *details = StrictVal::String(details_params.to_string());
-                            }
+                            let preview_params = &nft_spec.embedded;
+                            let preview_name = FieldName::from_str("preview").unwrap();
+                            let preview = s.get_mut(&preview_name).unwrap();
+                            match preview {
+                                StrictVal::Struct(s) => {
+                                    let preview_type_name = FieldName::from_str("type").unwrap();
+                                    let preview_type = s.get_mut(&preview_type_name).unwrap();
+                                    match preview_type {
+                                        StrictVal::Struct(ty) => {
+                                            let ty_name = FieldName::from_str("type").unwrap();
+                                            let ty_type = ty.get_mut(&ty_name).unwrap();
+                                            *ty_type = StrictVal::String(
+                                                preview_params.mime.ty.to_string(),
+                                            );
 
-                            if let Some(ref preview_params) = nft_spec.preview {
-                                let preview_name = FieldName::from_str("preview").unwrap();
-                                let preview = s.get_mut(&preview_name).unwrap();
-                                match preview {
-                                    StrictVal::Struct(s) => {
-                                        let preview_type_name =
-                                            FieldName::from_str("type").unwrap();
-                                        let preview_type = s.get_mut(&preview_type_name).unwrap();
-                                        match preview_type {
-                                            StrictVal::Struct(ty) => {
-                                                let ty_name = FieldName::from_str("type").unwrap();
-                                                let ty_type = ty.get_mut(&ty_name).unwrap();
-                                                *ty_type = StrictVal::String(
-                                                    preview_params.ty.ty.to_string(),
-                                                );
+                                            let subtype_name =
+                                                FieldName::from_str("subtype").unwrap();
+                                            let subtype = ty.get_mut(&subtype_name).unwrap();
 
-                                                let subtype_name =
-                                                    FieldName::from_str("subtype").unwrap();
-                                                let subtype = ty.get_mut(&subtype_name).unwrap();
-
-                                                if let Some(ref subtype_params) =
-                                                    preview_params.ty.subtype
-                                                {
-                                                    *subtype = StrictVal::String(
-                                                        subtype_params.to_string(),
-                                                    );
-                                                } else {
-                                                    *subtype = StrictVal::Unit;
-                                                }
-
-                                                let charset_name =
-                                                    FieldName::from_str("charset").unwrap();
-                                                let charset = ty.get_mut(&charset_name).unwrap();
-                                                if let Some(ref charset_params) =
-                                                    preview_params.ty.charset
-                                                {
-                                                    *charset = StrictVal::String(
-                                                        charset_params.to_string(),
-                                                    );
-                                                } else {
-                                                    *charset = StrictVal::Unit;
-                                                }
+                                            if let Some(ref subtype_params) =
+                                                preview_params.mime.subtype
+                                            {
+                                                *subtype =
+                                                    StrictVal::String(subtype_params.to_string());
+                                            } else {
+                                                *subtype = StrictVal::Unit;
                                             }
-                                            _ => {
-                                                panic!("Invalid preview type");
+
+                                            let charset_name =
+                                                FieldName::from_str("charset").unwrap();
+                                            let charset = ty.get_mut(&charset_name).unwrap();
+                                            if let Some(ref charset_params) =
+                                                preview_params.mime.charset
+                                            {
+                                                *charset =
+                                                    StrictVal::String(charset_params.to_string());
+                                            } else {
+                                                *charset = StrictVal::Unit;
                                             }
                                         }
+                                        _ => {
+                                            panic!("Invalid preview type");
+                                        }
+                                    }
 
-                                        let data_name = FieldName::from_str("data").unwrap();
-                                        let data = s.get_mut(&data_name).unwrap();
-                                        *data =
-                                            StrictVal::Bytes(Blob(preview_params.data.to_vec()));
-                                    }
-                                    _ => {
-                                        panic!("Invalid preview");
-                                    }
+                                    let data_name = FieldName::from_str("data").unwrap();
+                                    let data = s.get_mut(&data_name).unwrap();
+                                    *data = StrictVal::Bytes(Blob(preview_params.data.to_vec()));
+                                }
+                                _ => {
+                                    panic!("Invalid preview");
                                 }
                             }
 
-                            if let Some(ref media_params) = nft_spec.media {
+                            if let Some(ref media_params) = nft_spec.external {
                                 let media_name = FieldName::from_str("media").unwrap();
                                 let media = s.get_mut(&media_name).unwrap();
                                 match media {
@@ -1153,14 +1128,14 @@ impl TestWallet {
                                                 let ty_name = FieldName::from_str("type").unwrap();
                                                 let ty_type = ty.get_mut(&ty_name).unwrap();
                                                 *ty_type = StrictVal::String(
-                                                    media_params.ty.ty.to_string(),
+                                                    media_params.mime.ty.to_string(),
                                                 );
 
                                                 let subtype_name =
                                                     FieldName::from_str("subtype").unwrap();
                                                 let subtype = ty.get_mut(&subtype_name).unwrap();
                                                 if let Some(ref subtype_params) =
-                                                    media_params.ty.subtype
+                                                    media_params.mime.subtype
                                                 {
                                                     *subtype = StrictVal::String(
                                                         subtype_params.to_string(),
@@ -1173,7 +1148,7 @@ impl TestWallet {
                                                     FieldName::from_str("charset").unwrap();
                                                 let charset = ty.get_mut(&charset_name).unwrap();
                                                 if let Some(ref charset_params) =
-                                                    media_params.ty.charset
+                                                    media_params.mime.charset
                                                 {
                                                     *charset = StrictVal::String(
                                                         charset_params.to_string(),
@@ -1197,51 +1172,6 @@ impl TestWallet {
                                     }
                                 }
                             }
-
-                            let mut map_inner = vec![];
-                            let attachments = nft_spec.attachments.deref();
-                            for (id, attachment) in attachments {
-                                // let mut attachment = StrictVal::Struct(IndexMap::new());
-                                let mut attachmet_inner: IndexMap<FieldName, StrictVal> =
-                                    IndexMap::new();
-                                let mut ty_inner: IndexMap<FieldName, StrictVal> = IndexMap::new();
-                                ty_inner.insert(
-                                    FieldName::from("type"),
-                                    StrictVal::String(attachment.ty.ty.to_string()),
-                                );
-                                ty_inner.insert(
-                                    FieldName::from("subtype"),
-                                    if let Some(ref subtype_params) = attachment.ty.subtype {
-                                        StrictVal::String(subtype_params.to_string())
-                                    } else {
-                                        StrictVal::Unit
-                                    },
-                                );
-                                ty_inner.insert(
-                                    FieldName::from("charset"),
-                                    if let Some(ref charset_params) = attachment.ty.charset {
-                                        StrictVal::String(charset_params.to_string())
-                                    } else {
-                                        StrictVal::Unit
-                                    },
-                                );
-
-                                attachmet_inner
-                                    .insert(FieldName::from("type"), StrictVal::Struct(ty_inner));
-                                attachmet_inner.insert(
-                                    FieldName::from("digest"),
-                                    StrictVal::Bytes(Blob(attachment.digest.to_vec())),
-                                );
-
-                                map_inner.push((
-                                    StrictVal::Number(StrictNum::from(*id)),
-                                    StrictVal::Struct(attachmet_inner),
-                                ));
-                            }
-
-                            let attachments_name = FieldName::from_str("attachments").unwrap();
-                            let attachments_val = s.get_mut(&attachments_name).unwrap();
-                            *attachments_val = StrictVal::Map(map_inner);
 
                             if let Some(ref reserves_params) = nft_spec.reserves {
                                 let reserves_name = FieldName::from_str("reserves").unwrap();
@@ -1301,11 +1231,11 @@ impl TestWallet {
                 let nft_data = StrictVal::Struct(IndexMap::from([
                     (
                         FieldName::from_str("tokenIndex").unwrap(),
-                        StrictVal::Number(StrictNum::from(nft.token_index.into_inner())),
+                        StrictVal::Number(StrictNum::from(nft.token_no.into_inner())),
                     ),
                     (
                         FieldName::from_str("fraction").unwrap(),
-                        StrictVal::Number(StrictNum::from(nft.fraction.into_inner())),
+                        StrictVal::Number(StrictNum::from(nft.fractions.into_inner())),
                     ),
                     (
                         FieldName::from_str("align").unwrap(),
@@ -1326,20 +1256,20 @@ impl TestWallet {
                 // Parse immutable state
                 let name = immutable
                     .get(&VariantName::from_str("name").unwrap())
-                    .and_then(|m| m.values().next())
+                    .and_then(|m| m.iter().next())
                     .map(|v| v.data.verified.unwrap_string())
                     .unwrap_or_default();
 
                 let total_fractions = immutable
                     .get(&VariantName::from_str("fractions").unwrap())
-                    .and_then(|m| m.values().next())
+                    .and_then(|m| m.iter().next())
                     .map(|v| v.data.verified.unwrap_num().unwrap_uint::<u64>())
                     .unwrap_or_default();
 
                 // Parse token/NFT metadata
                 let token = immutable
                     .get(&VariantName::from_str("token").unwrap())
-                    .and_then(|m| m.values().next())
+                    .and_then(|m| m.iter().next())
                     .map(|v| {
                         let mut index = 0u32;
                         let mut amount = 0u64;
@@ -1352,7 +1282,7 @@ impl TestWallet {
                                 index = n.unwrap_uint::<u32>();
                             }
                             if let Some(StrictVal::Number(n)) =
-                                s.get(&FieldName::from_str("amount").unwrap())
+                                s.get(&FieldName::from_str("balance").unwrap())
                             {
                                 amount = n.unwrap_uint::<u64>();
                             }
@@ -1637,7 +1567,7 @@ impl TestWallet {
                 // Parse ownership state (fractions)
                 let mut fractions = vec![];
                 if let Some(owned_map) = owned.get(&VariantName::from_str("fractions").unwrap()) {
-                    for state in owned_map.values() {
+                    for state in owned_map {
                         let amt_val = state.assignment.data.unwrap_num().unwrap_uint::<u64>();
                         fractions.push((state.assignment.seal, amt_val));
                     }

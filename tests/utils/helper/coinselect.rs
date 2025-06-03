@@ -42,13 +42,16 @@ impl Default for CustomCoinselectStrategy {
 
 /// Implementation of the Coinselect trait for our custom strategy
 impl Coinselect for CustomCoinselectStrategy {
-    fn coinselect(
+    fn coinselect<'a>(
         &mut self,
         invoiced_state: &StrictVal,
         calc: &mut StateCalc,
         // Sorted vector by values
-        owned_state: Vec<(CellAddr, &StrictVal)>,
-    ) -> Option<Vec<CellAddr>> {
+        owned_state: impl IntoIterator<
+            Item = &'a OwnedState<Outpoint>,
+            IntoIter: DoubleEndedIterator<Item = &'a OwnedState<Outpoint>>,
+        >,
+    ) -> Option<Vec<(CellAddr, Outpoint)>> {
         match self {
             // For standard strategies, delegate to the original implementation
             CustomCoinselectStrategy::Standard(strategy) => {
@@ -58,14 +61,16 @@ impl Coinselect for CustomCoinselectStrategy {
             // True small size implementation - sort by value before selection
             CustomCoinselectStrategy::TrueSmallSize => {
                 // Clone the state to allow sorting (we need to own the data)
-                let mut value_sorted_state: Vec<(CellAddr, &StrictVal, u64)> = owned_state
-                    .iter()
-                    .filter_map(|(addr, val)| {
-                        // Extract numeric value (assuming we're dealing with u64 values)
-                        let amount: u64 = val.unwrap_num().unwrap_uint();
-                        Some((*addr, *val, amount))
-                    })
-                    .collect();
+                let mut value_sorted_state: Vec<(CellAddr, &StrictVal, u64, Outpoint)> =
+                    owned_state
+                        .into_iter()
+                        .filter_map(|state| {
+                            // Extract numeric value (assuming we're dealing with u64 values)
+                            let val = &state.assignment.data;
+                            let amount: u64 = val.unwrap_num().unwrap_uint();
+                            Some((state.addr, val, amount, state.assignment.seal))
+                        })
+                        .collect();
 
                 // Sort by value in descending order (largest first)
                 value_sorted_state.sort_by(|a, b| b.2.cmp(&a.2));
@@ -73,13 +78,13 @@ impl Coinselect for CustomCoinselectStrategy {
                 // Now use the sorted state for iteration
                 let res = value_sorted_state
                     .into_iter()
-                    .take_while(|(_, val, _)| {
+                    .take_while(|(_, val, _, _)| {
                         if calc.is_satisfied(invoiced_state) {
                             return false;
                         }
                         calc.accumulate(val).is_ok()
                     })
-                    .map(|(addr, _, _)| addr)
+                    .map(|(addr, _, _, outpoint)| (addr, outpoint))
                     .collect();
 
                 if !calc.is_satisfied(invoiced_state) {

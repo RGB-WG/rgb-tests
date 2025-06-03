@@ -70,7 +70,7 @@ pub use electrum::{Client as ElectrumClient, ElectrumApi, Param};
 pub use file_format::FileFormat;
 pub use ifaces::{
     AssetName, Attachment, Details, EmbeddedMedia, MediaType, Nft, NftSpec, ProofOfReserves,
-    Ticker, TokenIndex,
+    Ticker, TokenNo,
 };
 pub use indexmap::IndexMap;
 pub use once_cell::sync::Lazy;
@@ -83,9 +83,9 @@ pub use rgb::{
     invoice::{RgbBeneficiary, RgbInvoice},
     popls::bp::{Coinselect, OpRequestSet, PaymentScript, PrefabBundle, RgbWallet, WalletProvider},
     AuthToken, CallScope, CellAddr, CodexId, Consensus, ContractId, Contracts, CreateParams,
-    EitherSeal, Issuer, RgbSealDef, StateCalc, StockpileDir,
+    EitherSeal, Issuer, RgbSealDef, StateCalc,
 };
-use rgb::{Identity, SigBlob, SigValidator};
+pub use rgb_persist_fs::StockpileDir;
 use rgbp::Payment;
 pub use rgbp::{
     descriptor::RgbDescr, CoinselectStrategy, Owner, PayError, RgbRuntime, RgbpRuntimeDir,

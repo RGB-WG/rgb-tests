@@ -179,29 +179,28 @@ impl FACIssueParams {
 /// Create a minimal NFT spec with just index
 pub fn nft_spec_minimal() -> NftSpec {
     NftSpec {
-        index: TokenIndex::from(UDA_FIXED_INDEX),
-        ..Default::default()
+        name: None,
+        embedded: EmbeddedMedia {
+            mime: MediaType::with("text/plain"),
+            data: Default::default(),
+        },
+        external: None,
+        reserves: None,
     }
 }
 
 /// Create a complete NFT spec with all details
 pub fn nft_spec(
-    ticker: &str,
     name: &str,
-    details: &str,
     preview: EmbeddedMedia,
     media: Attachment,
-    attachments: BTreeMap<u8, Attachment>,
     reserves: ProofOfReserves,
 ) -> NftSpec {
     let mut nft_spec = nft_spec_minimal();
-    nft_spec.preview = Some(preview);
-    nft_spec.media = Some(media);
-    nft_spec.attachments = Confined::try_from(attachments.clone()).unwrap();
+    nft_spec.embedded = preview;
+    nft_spec.external = Some(media);
     nft_spec.reserves = Some(reserves);
-    nft_spec.ticker = Some(Ticker::try_from(ticker.to_string()).unwrap());
     nft_spec.name = Some(AssetName::try_from(name.to_string()).unwrap());
-    nft_spec.details = Some(Details::from_str(details).unwrap());
     nft_spec
 }
 
@@ -217,7 +216,7 @@ pub fn attachment_from_fpath(fpath: &str) -> Attachment {
     let media_ty: &'static str = Box::leak(mime.clone().into_boxed_str());
     let media_type = MediaType::with(media_ty);
     Attachment {
-        ty: media_type,
+        mime: media_type,
         digest,
     }
 }

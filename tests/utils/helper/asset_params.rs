@@ -1,4 +1,5 @@
 use super::*;
+use hypersonic::IssuerSpec;
 
 /// RGB Asset creation parameters builder
 #[derive(Clone)]
@@ -38,7 +39,7 @@ impl AssetParamsBuilder {
 
     /// Set the contract template ID
     pub fn codex_id(mut self, codex_id: CodexId) -> Self {
-        self.params.codex_id = codex_id;
+        self.params.issuer = IssuerSpec::Latest(codex_id);
         self
     }
 
@@ -126,7 +127,7 @@ impl AssetParamsBuilder {
             .params
             .global
             .iter_mut()
-            .find(|s| s.name == "circulating".into())
+            .find(|s| s.name == "issued".into())
         {
             state.state.verified = value.into();
         }
@@ -166,7 +167,7 @@ impl AssetParamsBuilder {
     /// Add owned state
     pub fn add_owned_state(mut self, seal: Outpoint, val: u64) -> Self {
         self.params.owned.push(NamedState {
-            name: "amount".into(),
+            name: "balance".into(),
             state: Assignment {
                 seal: EitherSeal::Alt(seal),
                 data: val.into(),
