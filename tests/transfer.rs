@@ -25,7 +25,6 @@ pub mod utils;
 
 use rgb::WitnessStatus;
 use serial_test::serial;
-use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::str::FromStr;
 use utils::chain::{get_tx_height, tx_status};
 use utils::helper::wallet::{
@@ -393,25 +392,7 @@ fn transfer_loop(
     );
     wlt_1.check_allocations(contract_id_1, asset_schema_1, vec![]);
 
-    // Theoretically, there should be two outputs, one for the change UTXO and one for the income UTXO.
-    // But because the change UTXO is associated with two assets (asset 1 and asset 2), asset 1 has been fully transferred to the UTXO of wlt2.
-    // So there will only be one UTXO, which combines the change and income of asset 2.
-    //
-    // In most cases, it will be merged into one UTXO,
-    // And in a few cases, there will be two UTXOs.
-    if let Err(_) = catch_unwind(AssertUnwindSafe(|| {
-        wlt_1.check_allocations(
-            contract_id_2,
-            asset_schema_2,
-            vec![issued_supply_2 - amount_3 + amount_5],
-        );
-    })) {
-        wlt_1.check_allocations(
-            contract_id_2,
-            asset_schema_2,
-            vec![issued_supply_2 - amount_3, amount_5],
-        );
-    }
+    wlt_1.check_allocation_sum(contract_id_2, issued_supply_2 - amount_3 + amount_5);
 
     wlt_2.check_allocations(
         contract_id_1,
