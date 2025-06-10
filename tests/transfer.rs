@@ -115,6 +115,70 @@ fn rbf_transfer() {
     );
 }
 
+#[test]
+fn rbf_fail() {
+    initialize();
+
+    // Create two wallet instances
+    let mut wlt_1 = get_wallet(&DescriptorType::Wpkh);
+    let mut wlt_2 = get_wallet(&DescriptorType::Wpkh);
+
+    // Create and issue NIA asset
+    let mut params = NIAIssueParams::new("RBFTestAsset", "RBF", "centiMilli", 600);
+    let outpoint = wlt_1.get_utxo(None);
+    params.add_allocation(outpoint, 600);
+    let contract_id = wlt_1.issue_nia_with_params(params);
+    wlt_1.send_contract("RBFTestAsset", &mut wlt_2);
+    wlt_2.reload_runtime();
+
+    let invoice = wlt_2.invoice(contract_id, 400, false, Some(0), None);
+
+    // Stop mining to test RBF
+    stop_mining();
+    let initial_height = get_height();
+
+    // First transfer attempt - with a lower fee
+    let (consignment_1, first_tx, payment) =
+        wlt_1.transfer(invoice.clone(), None, Some(500), false, None);
+    let first_txid = first_tx.txid();
+    dbg!(first_txid, tx_status(first_txid, wlt_1.instance));
+
+    // Receiver accepts the transfer
+    wlt_2.accept_transfer(&consignment_1, None).unwrap();
+
+    // Verify block height hasn't changed (transaction not confirmed)
+    let mid_height = get_height();
+    assert_eq!(initial_height, mid_height);
+
+    // Second transfer -- just make it
+    let unbroadcast_psbt = wlt_1.runtime.rbf(&payment, 1000_u64).unwrap();
+
+    // Verify block height still hasn't changed
+    let final_height = get_height();
+    assert_eq!(initial_height, final_height);
+
+    // Only broadcast and confirm first transaction
+    wlt_1.broadcast_tx(&first_tx);
+    wlt_1.mine_tx(&first_tx.txid(), true);
+    dbg!(first_txid, tx_status(first_txid, wlt_1.instance));
+
+    // Sync both wallets
+    wlt_1.sync();
+    wlt_2.sync();
+
+    println!("broadcasted tx: {}", first_tx.txid());
+    println!("unbroadcasted tx: {}", unbroadcast_psbt.txid());
+    dbg!(wlt_1.runtime.state_own(contract_id).owned);
+    dbg!(wlt_2.runtime.state_own(contract_id).owned);
+
+    dbg!("all", wlt_1.runtime.state_all(contract_id).owned);
+    dbg!("all", wlt_2.runtime.state_all(contract_id).owned);
+
+    // Verify asset allocations in both wallets
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![200]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![400]);
+}
+
 #[rstest]
 // blinded: nia - nia
 #[case(TT::Blinded, DT::Wpkh, DT::Wpkh, AS::RGB20, AS::RGB20)]
