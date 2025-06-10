@@ -116,7 +116,7 @@ fn rbf_transfer() {
 }
 
 #[test]
-fn rbf_fail() {
+fn rbf_unbroadcasted_state_all() {
     initialize();
 
     // Create two wallet instances
@@ -172,7 +172,20 @@ fn rbf_fail() {
     dbg!(wlt_2.runtime.state_own(contract_id).owned);
 
     dbg!("all", wlt_1.runtime.state_all(contract_id).owned);
-    dbg!("all", wlt_2.runtime.state_all(contract_id).owned);
+    let wlt_1_state_all = wlt_1.runtime.state_all(contract_id).owned;
+    let unbroadcast_txid = unbroadcast_psbt.txid();
+    // get the status of the unbroadcast_txid
+    let wlt_1_state_all_unbroadcast = wlt_1_state_all
+        .iter()
+        .find_map(|(_, states)| {
+            states
+                .iter()
+                .find(|s| s.assignment.seal.primary.txid == unbroadcast_txid)
+                .map(|s| s.status)
+        })
+        .unwrap();
+    assert_eq!(wlt_1_state_all_unbroadcast, WitnessStatus::Archived);
+    dbg!("unbroadcast", unbroadcast_txid, wlt_1_state_all_unbroadcast);
 
     // Verify asset allocations in both wallets
     wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![200]);
