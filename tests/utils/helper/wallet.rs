@@ -602,17 +602,21 @@ impl TestWallet {
         assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
     }
 
-    pub fn check_allocation_sum(&mut self, contract_id: ContractId, expected_sum: u64) {
+    pub fn get_allocation_sum(&mut self, contract_id: ContractId) -> u64 {
         let allocation_field = "balance";
         let state = self.runtime.state_own(contract_id);
-        let actual_allocation_sum = state
+        state
             .owned
             .get(allocation_field)
             .unwrap()
             .iter()
             .filter(|state| state.status.is_valid())
             .map(|state| state.assignment.data.unwrap_num().unwrap_uint::<u64>())
-            .sum::<u64>();
+            .sum::<u64>()
+    }
+
+    pub fn check_allocation_sum(&mut self, contract_id: ContractId, expected_sum: u64) {
+        let actual_allocation_sum = self.get_allocation_sum(contract_id);
         assert_eq!(actual_allocation_sum, expected_sum);
     }
 

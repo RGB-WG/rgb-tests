@@ -1457,3 +1457,90 @@ fn receive_from_unbroadcasted_transfer_to_blinded() {
     wlt_3.sync();
     wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
 }
+
+#[test]
+#[serial]
+fn tr_multi_wallet_blind_transfers() {
+    initialize();
+
+    // Create three wallets using TR descriptor
+    let mut wlt_1 = get_wallet(&DescriptorType::Tr);
+    let mut wlt_2 = get_wallet(&DescriptorType::Tr);
+    let mut wlt_3 = get_wallet(&DescriptorType::Tr);
+
+    // Issue NIA asset with 21 million supply
+    let circulating_supply = 21_000_000;
+    let mut params = NIAIssueParams::new(
+        "TestAssetMultiTransfer",
+        "TEST",
+        "centiMilli",
+        circulating_supply,
+    );
+    let utxo = wlt_1.get_utxo(None);
+    params.add_allocation(utxo, circulating_supply);
+    let contract_id = wlt_1.issue_nia_with_params(params);
+
+    // Send contract to other wallets
+    wlt_1.send_contract("TestAssetMultiTransfer", &mut wlt_2);
+    wlt_2.reload_runtime();
+    wlt_1.send_contract("TestAssetMultiTransfer", &mut wlt_3);
+    wlt_3.reload_runtime();
+
+    // Transfer 120k from wallet 1 to wallet 2 using blind invoice
+    let wlt1_to_wlt2_amount = 120_000;
+    let invoice = wlt_2.invoice(contract_id, wlt1_to_wlt2_amount, false, None, None);
+    let (consignment, wlt1_to_wlt2_tx, _) = wlt_1.transfer(invoice, None, Some(1000), true, None);
+    wlt_2.accept_transfer(&consignment, None).unwrap();
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt1_to_wlt2_amount]);
+
+    // Check wallet states after first transfer (unconfirmed transaction state)
+    // wlt1 shows 0 available assets, wlt2 shows 120k available assets
+    println!("After Wallet 1 makes a payment to Wallet 2, the unconfirmed status of the witnessed transaction is not in the sync state");
+    println!("wlt1_state: {:?}", wlt_1.get_allocation_sum(contract_id));
+    println!("wlt2_state: {:?}", wlt_2.get_allocation_sum(contract_id));
+
+    // Transfer 100k from wallet 2 to wallet 3 using blind invoice
+    let wlt2_to_wlt3_amount = 100_000;
+    let invoice = wlt_3.invoice(contract_id, wlt2_to_wlt3_amount, false, None, None);
+    let (consignment, wlt2_to_wlt3_tx, _) = wlt_2.transfer(invoice, None, Some(1000), true, None);
+    wlt_3.accept_transfer(&consignment, None).unwrap();
+
+    wlt_1.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+    wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt2_to_wlt3_amount]);
+
+    // Check wallet states after second transfer (unconfirmed transaction state)
+    // wlt2 shows 0 available assets, wlt3 shows 100k available assets
+    println!("After Wallet 2 makes a payment to Wallet 3, the unconfirmed status of the witnessed transaction is not in the sync state");
+    println!("wlt2_state: {:?}", wlt_2.get_allocation_sum(contract_id));
+    println!("wlt3_state: {:?}", wlt_3.get_allocation_sum(contract_id));
+
+    // Mine both transactions
+    wlt_1.mine_tx(&wlt1_to_wlt2_tx.txid(), false);
+    wlt_2.mine_tx(&wlt2_to_wlt3_tx.txid(), false);
+
+    // Sync all wallets
+    wlt_1.sync();
+    wlt_2.sync();
+    wlt_3.sync();
+
+    // Verify final allocations after sync
+    wlt_1.check_allocations(
+        contract_id,
+        AssetSchema::RGB20,
+        vec![circulating_supply - wlt1_to_wlt2_amount],
+    );
+    wlt_2.check_allocations(
+        contract_id,
+        AssetSchema::RGB20,
+        vec![wlt1_to_wlt2_amount - wlt2_to_wlt3_amount],
+    );
+    wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![wlt2_to_wlt3_amount]);
+
+    // Print final wallet states after sync - all states should be correct
+    println!("After sync");
+    println!("wlt1_state: {:?}", wlt_1.get_allocation_sum(contract_id));
+    println!("wlt2_state: {:?}", wlt_2.get_allocation_sum(contract_id));
+    println!("wlt3_state: {:?}", wlt_3.get_allocation_sum(contract_id));
+}
