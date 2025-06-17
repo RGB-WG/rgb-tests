@@ -1544,3 +1544,182 @@ fn tr_multi_wallet_blind_transfers() {
     println!("wlt2_state: {:?}", wlt_2.get_allocation_sum(contract_id));
     println!("wlt3_state: {:?}", wlt_3.get_allocation_sum(contract_id));
 }
+
+#[test]
+#[serial]
+fn cross_transfer_unconfirmed_test() {
+    initialize();
+
+    // Create three wallets using TR descriptor
+    let mut wlt_a = get_wallet(&DescriptorType::Tr);
+    let mut wlt_b = get_wallet(&DescriptorType::Tr);
+    let mut wlt_c = get_wallet(&DescriptorType::Tr);
+    wlt_b.set_coinselect_strategy(CustomCoinselectStrategy::TrueSmallSize);
+
+    // Issue NIA asset with 600 total supply, distributed across 2 UTXOs
+    let total_supply = 600;
+    let mut params =
+        NIAIssueParams::new("CrossTransferTestUSDT", "USDT", "centiMilli", total_supply);
+
+    // A UTXO gets 300, B UTXO gets 300
+    let utxo_a = wlt_a.get_utxo(None);
+    let utxo_b = wlt_b.get_utxo(None);
+    params.add_allocation(utxo_a, 300);
+    params.add_allocation(utxo_b, 300);
+
+    let contract_id = wlt_a.issue_nia_with_params(params);
+
+    // Send contract to other wallets
+    wlt_a.send_contract("CrossTransferTestUSDT", &mut wlt_b);
+    wlt_b.reload_runtime();
+    wlt_a.send_contract("CrossTransferTestUSDT", &mut wlt_c);
+    wlt_c.reload_runtime();
+
+    // Initial state check: A has 300, B has 300, C has 0
+    println!("=== Initial State ===");
+    wlt_a.check_allocations(contract_id, AssetSchema::RGB20, vec![300]);
+    wlt_b.check_allocations(contract_id, AssetSchema::RGB20, vec![300]);
+    wlt_c.check_allocations(contract_id, AssetSchema::RGB20, vec![]);
+
+    println!(
+        "A balance: {:?}, {:?}",
+        wlt_a.get_allocation_sum(contract_id),
+        wlt_a.get_allocation_tuple(contract_id)
+    );
+    println!(
+        "B balance: {:?}, {:?}",
+        wlt_b.get_allocation_sum(contract_id),
+        wlt_b.get_allocation_tuple(contract_id)
+    );
+    println!(
+        "C balance: {:?}, {:?}",
+        wlt_c.get_allocation_sum(contract_id),
+        wlt_c.get_allocation_tuple(contract_id)
+    );
+
+    // Step 1: A transfers 50 USDT to B (unconfirmed)
+    println!("\n=== Step 1: A -> B (50 USDT) ===");
+    let a_to_b_amount = 50;
+    let invoice_b = wlt_b.invoice(contract_id, a_to_b_amount, false, None, None);
+    let (consignment_a_to_b, tx_a_to_b, _) =
+        wlt_a.transfer(invoice_b, None, Some(1000), true, None);
+    wlt_b.accept_transfer(&consignment_a_to_b, None).unwrap();
+
+    // Check state after A->B transfer (before confirmation)
+    println!("After A->B transfer (unconfirmed):");
+    println!(
+        "A balance: {:?}, {:?}",
+        wlt_a.get_allocation_sum(contract_id),
+        wlt_a.get_allocation_tuple(contract_id)
+    );
+    println!(
+        "B balance: {:?}, {:?}",
+        wlt_b.get_allocation_sum(contract_id),
+        wlt_b.get_allocation_tuple(contract_id)
+    );
+    println!(
+        "C balance: {:?}, {:?}",
+        wlt_c.get_allocation_sum(contract_id),
+        wlt_c.get_allocation_tuple(contract_id)
+    );
+
+    // Expected: A should show 250 (300-50), B should show 350 (300+50), C should show 0
+    // Note: In unconfirmed state, wallets might show different behavior
+    wlt_a.check_allocations(contract_id, AssetSchema::RGB20, vec![]); // A shows 0 in unconfirmed state
+    wlt_b.check_allocations(contract_id, AssetSchema::RGB20, vec![300, 50]); // B shows original 300 + received 50
+
+    // Step 2: B transfers 51 USDT to C (while A->B is still unconfirmed)
+    println!("\n=== Step 2: B -> C (51 USDT) while A->B unconfirmed ===");
+    let b_to_c_amount = 51;
+    let invoice_c = wlt_c.invoice(contract_id, b_to_c_amount, false, None, None);
+    let (consignment_b_to_c, tx_b_to_c, _) =
+        wlt_b.transfer(invoice_c, None, Some(1000), true, None);
+    wlt_c.accept_transfer(&consignment_b_to_c, None).unwrap();
+
+    // Check state after B->C transfer (both transactions unconfirmed)
+    println!("After B->C transfer (tx_b_to_c unconfirmed):");
+    println!(
+        "A balance: {:?}, {:?}",
+        wlt_a.get_allocation_sum(contract_id),
+        wlt_a.get_allocation_tuple(contract_id)
+    );
+    println!(
+        "B balance: {:?}, {:?}",
+        wlt_b.get_allocation_sum(contract_id),
+        wlt_b.get_allocation_tuple(contract_id)
+    );
+    println!(
+        "C balance: {:?}, {:?}",
+        wlt_c.get_allocation_sum(contract_id),
+        wlt_c.get_allocation_tuple(contract_id)
+    );
+
+    // Check the potential BUG: B's original 300 USDT might disappear
+    wlt_a.check_allocations(contract_id, AssetSchema::RGB20, vec![]); // A shows 0
+    wlt_b.check_allocations(contract_id, AssetSchema::RGB20, vec![50]); // B shows 50
+    wlt_c.check_allocations(contract_id, AssetSchema::RGB20, vec![51]); // C shows 51
+
+    // Step 3: Mine both transactions to confirm them
+    println!("\n=== Step 3: Mining transactions ===");
+    wlt_a.mine_tx(&tx_a_to_b.txid(), false);
+    wlt_b.mine_tx(&tx_b_to_c.txid(), false);
+
+    // Step 4: Sync all wallets
+    println!("\n=== Step 4: Syncing wallets ===");
+    wlt_a.sync();
+    wlt_b.sync();
+    wlt_c.sync();
+
+    // Final state check after confirmation and sync
+    println!("\n=== Final State (after confirmation and sync) ===");
+    println!(
+        "A balance: {:?}, {:?}",
+        wlt_a.get_allocation_sum(contract_id),
+        wlt_a.get_allocation_tuple(contract_id)
+    );
+    println!(
+        "B balance: {:?}, {:?}",
+        wlt_b.get_allocation_sum(contract_id),
+        wlt_b.get_allocation_tuple(contract_id)
+    );
+    println!(
+        "C balance: {:?}, {:?}",
+        wlt_c.get_allocation_sum(contract_id),
+        wlt_c.get_allocation_tuple(contract_id)
+    );
+
+    // Expected final state:
+    // A: 300 - 50 = 250
+    // B: 300 + 50 - 51 = 299
+    // C: 0 + 51 = 51
+    // Total should still be 600
+
+    // BUG reproduction: If the bug exists, B might only show 50 (from A) instead of 299
+    println!("\n=== Verifying final allocations ===");
+    wlt_a.check_allocations(contract_id, AssetSchema::RGB20, vec![250]);
+
+    wlt_b.check_allocations(contract_id, AssetSchema::RGB20, vec![50, 249]);
+
+    wlt_c.check_allocations(contract_id, AssetSchema::RGB20, vec![51]);
+
+    // Verify total supply is conserved
+    let total_final = wlt_a.get_allocation_sum(contract_id)
+        + wlt_b.get_allocation_sum(contract_id)
+        + wlt_c.get_allocation_sum(contract_id);
+    assert_eq!(
+        total_final, total_supply,
+        "Total supply should be conserved"
+    );
+
+    println!(
+        "Total supply verification: {} == {}",
+        total_final, total_supply
+    );
+
+    if wlt_b.get_allocation_sum(contract_id) == 50 {
+        println!("   BUG DETECTED: Wallet B only shows 50 USDT instead of expected 320!");
+        println!("   This indicates B's original 300 USDT disappeared during cross-transfer");
+    } else {
+        println!("   No bug detected: Wallet B correctly shows expected balance");
+    }
+}

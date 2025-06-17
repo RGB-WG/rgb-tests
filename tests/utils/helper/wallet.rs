@@ -1,3 +1,5 @@
+use rgb::WitnessStatus;
+
 use super::*;
 
 enum WalletAccount {
@@ -602,6 +604,22 @@ impl TestWallet {
         assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
     }
 
+    pub fn get_allocation_tuple(&mut self, contract_id: ContractId) -> Vec<(u64, WitnessStatus)> {
+        let allocation_field = "balance";
+        let state = self.runtime.state_own(contract_id);
+        state
+            .owned
+            .get(allocation_field)
+            .unwrap()
+            .iter()
+            .map(|state| {
+                (
+                    state.assignment.data.unwrap_num().unwrap_uint::<u64>(),
+                    state.status,
+                )
+            })
+            .collect::<Vec<_>>()
+    }
     pub fn get_allocation_sum(&mut self, contract_id: ContractId) -> u64 {
         let allocation_field = "balance";
         let state = self.runtime.state_own(contract_id);
