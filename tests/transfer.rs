@@ -1723,3 +1723,210 @@ fn cross_transfer_unconfirmed_test() {
         println!("   No bug detected: Wallet B correctly shows expected balance");
     }
 }
+
+#[rstest]
+#[serial]
+#[case(DT::Tr, CustomCoinselectStrategy::TrueSmallSize)]
+#[case(DT::Wpkh, CustomCoinselectStrategy::TrueSmallSize)]
+#[case(
+    DT::Tr,
+    CustomCoinselectStrategy::Standard(CoinselectStrategy::Aggregate)
+)]
+#[case(
+    DT::Wpkh,
+    CustomCoinselectStrategy::Standard(CoinselectStrategy::Aggregate)
+)]
+fn spend_from_utxo_with_multiple_allocations(
+    #[case] descriptor_type: DescriptorType,
+    #[case] coinselect_strategy: CustomCoinselectStrategy,
+) {
+    initialize();
+
+    let mut wlt_1 = get_wallet(&descriptor_type);
+    let mut wlt_2 = get_wallet(&descriptor_type);
+    wlt_2.set_coinselect_strategy(coinselect_strategy);
+    let mut wlt_3 = get_wallet(&descriptor_type);
+
+    println!("\n=== Test: spend_from_utxo_with_multiple_allocations ===");
+    println!("Testing scenario: spending from UTXO with multiple confirmed allocations");
+
+    // 1. Preparation phase: Construct a state of "one UTXO, multiple allocations"
+
+    // 1.1. wlt_1 issues the asset
+    let issue_supply = 1200;
+    let mut params = NIAIssueParams::new("ConsolidationTest", "CON", "centiMilli", issue_supply);
+    let outpoint = wlt_1.get_utxo(None);
+    params.add_allocation(outpoint, issue_supply);
+    let contract_id = wlt_1.issue_nia_with_params(params);
+    wlt_1.send_contract("ConsolidationTest", &mut wlt_2);
+    wlt_2.reload_runtime();
+    wlt_1.send_contract("ConsolidationTest", &mut wlt_3);
+    wlt_3.reload_runtime();
+
+    println!("\n--- Phase 1.1: Asset issuance completed ---");
+    println!("Issued {} tokens to wlt_1", issue_supply);
+    println!("Contract shared with wlt_2 and wlt_3");
+    println!(
+        "wlt_1 initial balance: {}",
+        wlt_1.get_allocation_sum(contract_id)
+    );
+
+    // 1.2. wlt_2 obtains a specific UTXO to receive two payments
+    let receiving_utxo = wlt_2.get_utxo(None);
+
+    println!("\n--- Phase 1.2: Receiving UTXO prepared ---");
+    println!("wlt_2 receiving UTXO: {}", receiving_utxo);
+
+    // 1.3. wlt_1 sends assets twice to the same UTXO of wlt_2
+    // First send 800
+    let invoice1 = wlt_2.invoice(contract_id, 800, false, None, Some(receiving_utxo));
+    wlt_1.send_to_invoice(&mut wlt_2, invoice1, None, None, None);
+
+    println!("\n--- Phase 1.3a: First transfer completed ---");
+    println!("wlt_1 -> wlt_2: 800 tokens (confirmed)");
+    println!("wlt_1 balance: {}", wlt_1.get_allocation_sum(contract_id));
+    println!("wlt_2 balance: {}", wlt_2.get_allocation_sum(contract_id));
+    for (addr, outpoint, amount, status) in wlt_2.get_allocation_tuple(contract_id) {
+        println!(
+            "wlt_2 addr: {}, outpoint: {}, amount: {}, status: {:?}",
+            addr, outpoint, amount, status
+        );
+    }
+
+    // Second send 200 to the exact same UTXO
+    let invoice2 = wlt_2.invoice(contract_id, 200, false, None, Some(receiving_utxo));
+    wlt_1.send_to_invoice(&mut wlt_2, invoice2, None, None, None);
+    wlt_2.sync();
+
+    println!("\n--- Phase 1.3b: Second transfer completed ---");
+    println!("wlt_1 -> wlt_2: 200 tokens (confirmed)");
+    println!("wlt_1 balance: {}", wlt_1.get_allocation_sum(contract_id));
+    println!("wlt_2 balance: {}", wlt_2.get_allocation_sum(contract_id));
+    for (addr, outpoint, amount, status) in wlt_2.get_allocation_tuple(contract_id) {
+        println!(
+            "wlt_2 addr: {}, outpoint: {}, amount: {}, status: {:?}",
+            addr, outpoint, amount, status
+        );
+    }
+
+    // 1.4. Verify the initial state
+    // wlt_2 should now have two allocations on one UTXO, totaling 1000
+    println!("\n--- Phase 1.4: Verifying initial state ---");
+    wlt_2.check_allocations(contract_id, AssetSchema::RGB20, vec![800, 200]);
+    wlt_1.check_allocations(
+        contract_id,
+        AssetSchema::RGB20,
+        vec![issue_supply - 800 - 200],
+    ); // Change 200
+
+    println!("✓ wlt_2 has correct allocations: [800, 200]");
+    println!(
+        "✓ wlt_1 has correct remaining balance: {}",
+        issue_supply - 800 - 200
+    );
+
+    // 2. Action phase: wlt_2 spends part of the assets from this UTXO
+
+    println!("\n--- Phase 2: Action phase - wlt_2 spending from multi-allocation UTXO ---");
+    // wlt_2 sends 400 to wlt_3
+    let amount_to_spend = 400;
+    println!("wlt_2 will send {} tokens to wlt_3", amount_to_spend);
+    println!(
+        "wlt_2 balance before spending: {}",
+        wlt_2.get_allocation_sum(contract_id)
+    );
+    println!(
+        "wlt_3 balance before receiving: {}",
+        wlt_3.get_allocation_sum(contract_id)
+    );
+
+    wlt_2.send(
+        &mut wlt_3,
+        false,
+        contract_id,
+        amount_to_spend,
+        1000,
+        None,
+        None,
+        None,
+    );
+
+    println!("\n--- Phase 2 completed: Transfer executed ---");
+    println!(
+        "wlt_2 balance after spending: {}",
+        wlt_2.get_allocation_sum(contract_id)
+    );
+    println!(
+        "wlt_3 balance after receiving: {}",
+        wlt_3.get_allocation_sum(contract_id)
+    );
+    for (addr, outpoint, amount, status) in wlt_2.get_allocation_tuple(contract_id) {
+        println!(
+            "wlt_2 addr: {}, outpoint: {}, amount: {}, status: {:?}",
+            addr, outpoint, amount, status
+        );
+    }
+    for (addr, outpoint, amount, status) in wlt_3.get_allocation_tuple(contract_id) {
+        println!(
+            "wlt_3 addr: {}, outpoint: {}, amount: {}, status: {:?}",
+            addr, outpoint, amount, status
+        );
+    }
+
+    // 3. Verification phase: Check if the results are correct
+
+    println!("\n--- Phase 3: Verification phase ---");
+
+    // 3.1. wlt_3 should have received 400
+    println!("Verifying wlt_3 received correct amount...");
+    wlt_3.check_allocations(contract_id, AssetSchema::RGB20, vec![amount_to_spend]);
+    println!("✓ wlt_3 correctly received {} tokens", amount_to_spend);
+
+    // 3.2. This is the most critical check:
+    // The change of wlt_2 should be 1000 - 400 = 600, and it should be a single merged allocation
+    let expected_change = 800 + 200 - amount_to_spend;
+    println!("\nCritical verification: wlt_2 change calculation");
+    println!(
+        "Expected change: {} + {} - {} = {}",
+        800, 200, amount_to_spend, expected_change
+    );
+
+    println!("\n--- Debug: wlt_2 owned state after spending ---");
+    dbg!(wlt_2.runtime.state_own(contract_id).owned);
+
+    println!("Verifying wlt_2 has correct remaining balance...");
+    wlt_2.check_allocation_sum(contract_id, expected_change);
+    println!("✓ wlt_2 correctly has {} tokens remaining", expected_change);
+
+    // Final verification: Total supply conservation
+    let total_final = wlt_1.get_allocation_sum(contract_id)
+        + wlt_2.get_allocation_sum(contract_id)
+        + wlt_3.get_allocation_sum(contract_id);
+
+    println!("\n--- Final verification: Total supply conservation ---");
+    println!(
+        "wlt_1 final balance: {}",
+        wlt_1.get_allocation_sum(contract_id)
+    );
+    println!(
+        "wlt_2 final balance: {}",
+        wlt_2.get_allocation_sum(contract_id)
+    );
+    println!(
+        "wlt_3 final balance: {}",
+        wlt_3.get_allocation_sum(contract_id)
+    );
+    println!("Total final: {}", total_final);
+    println!("Original supply: {}", issue_supply);
+
+    assert_eq!(
+        total_final, issue_supply,
+        "Total supply should be conserved"
+    );
+    println!(
+        "✓ Total supply conservation verified: {} == {}",
+        total_final, issue_supply
+    );
+
+    println!("\n=== Test completed successfully ===");
+}

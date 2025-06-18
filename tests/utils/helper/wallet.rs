@@ -604,7 +604,10 @@ impl TestWallet {
         assert_eq!(actual_fungible_allocations, expected_fungible_allocations);
     }
 
-    pub fn get_allocation_tuple(&mut self, contract_id: ContractId) -> Vec<(u64, WitnessStatus)> {
+    pub fn get_allocation_tuple(
+        &mut self,
+        contract_id: ContractId,
+    ) -> Vec<(String, String, u64, WitnessStatus)> {
         let allocation_field = "balance";
         let state = self.runtime.state_own(contract_id);
         state
@@ -614,6 +617,8 @@ impl TestWallet {
             .iter()
             .map(|state| {
                 (
+                    state.addr.to_string(),
+                    state.assignment.seal.to_string(),
                     state.assignment.data.unwrap_num().unwrap_uint::<u64>(),
                     state.status,
                 )
