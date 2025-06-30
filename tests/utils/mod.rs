@@ -45,8 +45,13 @@ pub use std::{
 
 pub use amplify::{
     bmap, bset,
-    confinement::{Confined, U16},
-    map, s, ByteArray, Bytes64, Wrapper,
+    confinement::{
+        Collection, Confined, LargeVec, NonEmptyOrdMap, NonEmptyOrdSet, NonEmptyVec, SmallOrdMap,
+        TinyOrdMap, TinyOrdSet, U16,
+    },
+    map,
+    num::u24,
+    s, ByteArray, Bytes64, Wrapper,
 };
 use bitcoin_hashes::{sha256, Hash};
 pub use bp::{
@@ -64,6 +69,7 @@ pub use bpwallet::{
     Wallet, WalletUtxo,
 };
 pub use chrono::Utc;
+pub use commit_verify::mpc;
 pub use descriptors::Wpkh;
 pub use electrum::{Client as ElectrumClient, ElectrumApi, Param};
 pub use file_format::FileFormat;
@@ -73,35 +79,45 @@ pub use psbt::{
     Utxo,
 };
 #[cfg(not(feature = "altered"))]
-pub use psrgbt::{RgbExt, RgbInExt, RgbPsbt, TxParams};
+pub use psrgbt::{RgbExt, RgbPsbt, TxParams};
 #[cfg(feature = "altered")]
-pub use psrgbt_altered::{RgbExt, RgbInExt, RgbPsbt, TxParams};
+pub use psrgbt_altered::{RgbExt, RgbPsbt, TxParams};
 pub use rand::RngCore;
 #[cfg(not(feature = "altered"))]
 pub use rgb::{
+    assignments::AssignVec,
     containers::{PubWitness, ValidContract, WitnessBundle},
     contract::{AllocatedState, AssignmentsFilter, ContractOp, FilterIncludeAll, OpDirection},
     info::ContractInfo,
     invoice::Pay2Vout,
     persistence::{MemContract, MemContractState, Stock},
     stl::{ContractTerms, OpidRejectUrl},
+    validation::Validator,
     validation::{Failure, ResolveWitness, Scripts, Validity, Warning, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos},
-    AssignmentType, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
-    RgbWallet, StateType, TapretKey, TransferParams, Transition, WalletProvider,
+    Assign, AssignmentDetails, AssignmentType, BundleId, DescriptorRgb, FungibleState, GenesisSeal,
+    GlobalDetails, GlobalStateSchema, GraphSeal, Identity, KnownTransition, MetaDetails, MetaType,
+    MetaValue, Occurrences, OccurrencesMismatch, OpId, Opout, OwnedStateSchema, RevealedData,
+    RevealedValue, RgbDescr, RgbKeychain, RgbWallet, StateType, TapretKey, TransferParams,
+    Transition, TransitionBundle, TransitionType, TypedAssigns, VoidState, WalletProvider,
 };
 #[cfg(feature = "altered")]
 pub use rgb_altered::{
+    assignments::AssignVec,
     containers::{PubWitness, ValidContract, WitnessBundle},
     contract::{AllocatedState, AssignmentsFilter, ContractOp, FilterIncludeAll, OpDirection},
     info::ContractInfo,
     invoice::Pay2Vout,
     persistence::{MemContract, MemContractState, Stock},
     stl::{ContractTerms, OpidRejectUrl},
+    validation::Validator,
     validation::{Failure, ResolveWitness, Scripts, Validity, Warning, WitnessResolverError},
     vm::{WitnessOrd, WitnessPos},
-    AssignmentType, DescriptorRgb, GenesisSeal, GraphSeal, Identity, OpId, RgbDescr, RgbKeychain,
-    RgbWallet, StateType, TapretKey, TransferParams, Transition, WalletProvider,
+    Assign, AssignmentDetails, AssignmentType, BundleId, DescriptorRgb, FungibleState, GenesisSeal,
+    GlobalDetails, GlobalStateSchema, GraphSeal, Identity, KnownTransition, MetaDetails, MetaType,
+    MetaValue, Occurrences, OccurrencesMismatch, OpId, Opout, OwnedStateSchema, RevealedData,
+    RevealedValue, RgbDescr, RgbKeychain, RgbWallet, StateType, TapretKey, TransferParams,
+    Transition, TransitionBundle, TransitionType, TypedAssigns, VoidState, WalletProvider,
 };
 pub use rgbstd::{
     containers::{
@@ -128,11 +144,11 @@ pub use rstest::rstest;
 pub use schemata::{
     CollectibleFungibleAsset, InflatableFungibleAsset, NonInflatableAsset,
     PermissionedFungibleAsset, UniqueDigitalAsset, CFA_SCHEMA_ID, IFA_SCHEMA_ID, NIA_SCHEMA_ID,
-    PFA_SCHEMA_ID, UDA_SCHEMA_ID,
+    OS_ASSET, PFA_SCHEMA_ID, UDA_SCHEMA_ID,
 };
 pub use serial_test::serial;
 pub use strict_encoding::{fname, tn, FieldName, StrictSerialize, TypeName};
-pub use strict_types::{StrictVal, TypeSystem};
+pub use strict_types::{SemId, StrictDumb, StrictVal, TypeSystem};
 pub use strum::IntoEnumIterator;
 pub use strum_macros::EnumIter;
 pub use time::OffsetDateTime;

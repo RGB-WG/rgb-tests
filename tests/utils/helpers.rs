@@ -1,7 +1,7 @@
 use super::*;
 
 pub struct TestWallet {
-    wallet: RgbWallet<Wallet<XpubDerivable, RgbDescr>>,
+    pub wallet: RgbWallet<Wallet<XpubDerivable, RgbDescr>>,
     signer: Option<TestnetSigner>,
     wallet_dir: PathBuf,
     instance: u8,
@@ -79,7 +79,7 @@ pub enum DescriptorType {
 
 impl fmt::Display for DescriptorType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
+        write!(f, "{}", format!("{self:?}").to_lowercase())
     }
 }
 
@@ -104,7 +104,7 @@ pub enum TransferType {
 
 impl fmt::Display for TransferType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
+        write!(f, "{}", format!("{self:?}").to_lowercase())
     }
 }
 
@@ -159,7 +159,7 @@ pub enum AssetSchema {
 
 impl fmt::Display for AssetSchema {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
+        write!(f, "{}", format!("{self:?}").to_lowercase())
     }
 }
 
@@ -202,14 +202,14 @@ impl AssetSchema {
         kit.validate().unwrap()
     }
 
-    fn default_state_type(&self) -> StateType {
+    pub fn default_state_type(&self) -> StateType {
         match self {
             Self::Cfa | Self::Nia | Self::Pfa | Self::Ifa => StateType::Fungible,
             Self::Uda => StateType::Structured,
         }
     }
 
-    fn allocated_state(&self, value: u64) -> AllocatedState {
+    pub fn allocated_state(&self, value: u64) -> AllocatedState {
         match self {
             Self::Cfa | Self::Nia | Self::Pfa | Self::Ifa => AllocatedState::Amount(value.into()),
             Self::Uda => AllocatedState::Data(
@@ -1061,6 +1061,10 @@ impl TestWallet {
         self.schema_id(contract_id).into()
     }
 
+    pub fn stock(&self) -> &Stock {
+        self.wallet.stock()
+    }
+
     pub fn import_contract(&mut self, contract: &ValidContract, resolver: impl ResolveWitness) {
         self.wallet
             .stock_mut()
@@ -1570,8 +1574,10 @@ impl TestWallet {
         secret_key: SecretKey,
     ) {
         let transition_signer = |witness_bundle: &mut WitnessBundle| {
-            for transition in witness_bundle.bundle_mut().known_transitions.values_mut() {
-                let transition_id: [u8; 32] = transition.id().as_ref().into_inner();
+            for KnownTransition { opid, transition } in
+                witness_bundle.bundle_mut().known_transitions.iter_mut()
+            {
+                let transition_id: [u8; 32] = opid.as_ref().into_inner();
                 let msg = Message::from_digest(transition_id);
                 let signature = secret_key.sign_ecdsa(msg);
                 transition.signature =
@@ -1703,11 +1709,6 @@ impl TestWallet {
             .add_metadata("allowedInflation", Amount::from(inflation_change))
             .unwrap();
         let transition = asset_transition_builder.complete_transition().unwrap();
-        for input in psbt.inputs_mut() {
-            input
-                .set_rgb_consumer(contract_id, transition.id())
-                .unwrap();
-        }
         psbt.push_rgb_transition(transition).unwrap();
         psbt.construct_output_expect(ScriptPubkey::op_return(&[]), Sats::ZERO)
             .set_opret_host()
@@ -1726,7 +1727,7 @@ impl TestWallet {
             let all_opids = consignment
                 .bundles
                 .iter()
-                .flat_map(|b| b.bundle().known_transitions.keys().copied())
+                .flat_map(|b| b.bundle().known_transitions_opids())
                 .collect::<BTreeSet<_>>();
             let validated_consignment = consignment
                 .clone()
@@ -1787,11 +1788,6 @@ impl TestWallet {
             .add_rights("replaceRight", seal)
             .unwrap(); // add replace right
         let transition = asset_transition_builder.complete_transition().unwrap();
-        for input in psbt.inputs_mut() {
-            input
-                .set_rgb_consumer(contract_id, transition.id())
-                .unwrap();
-        }
         psbt.push_rgb_transition(transition).unwrap();
         psbt.construct_output_expect(ScriptPubkey::op_return(&[]), Sats::ZERO)
             .set_opret_host()
@@ -1854,11 +1850,6 @@ impl TestWallet {
             }
         }
         let transition = asset_transition_builder.complete_transition().unwrap();
-        for input in psbt.inputs_mut() {
-            input
-                .set_rgb_consumer(contract_id, transition.id())
-                .unwrap();
-        }
         psbt.push_rgb_transition(transition).unwrap();
         psbt.construct_output_expect(ScriptPubkey::op_return(&[]), Sats::ZERO)
             .set_opret_host()
@@ -2089,7 +2080,7 @@ impl TestWallet {
             .map(|txin| txin.prev_output)
             .collect::<HashSet<Outpoint>>();
 
-        let mut all_transitions: HashMap<ContractId, Transition> = HashMap::new();
+        let mut all_transitions: HashSet<Transition> = HashSet::new();
         let mut asset_beneficiaries: AssetBeneficiariesMap = bmap![];
 
         for (contract_id, asset_coloring_info) in coloring_info.asset_info_map.clone() {
@@ -2170,7 +2161,7 @@ impl TestWallet {
             }
 
             let transition = asset_transition_builder.complete_transition().unwrap();
-            all_transitions.insert(contract_id, transition);
+            all_transitions.insert(transition);
             asset_beneficiaries.insert(contract_id, beneficiaries);
         }
 
@@ -2191,24 +2182,7 @@ impl TestWallet {
             opreturn_output.set_mpc_entropy(blinding).unwrap();
         }
 
-        let tx_inputs = psbt.clone().to_unsigned_tx().inputs;
-        for (contract_id, transition) in all_transitions {
-            for (input, txin) in psbt.inputs_mut().zip(&tx_inputs) {
-                let prevout = txin.prev_output;
-                let outpoint = Outpoint::new(prevout.txid.to_byte_array().into(), prevout.vout);
-                if coloring_info
-                    .asset_info_map
-                    .clone()
-                    .get(&contract_id)
-                    .unwrap()
-                    .input_outpoints
-                    .contains(&outpoint)
-                {
-                    input
-                        .set_rgb_consumer(contract_id, transition.id())
-                        .unwrap();
-                }
-            }
+        for transition in all_transitions {
             psbt.push_rgb_transition(transition).unwrap();
         }
 
